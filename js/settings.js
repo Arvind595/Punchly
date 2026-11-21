@@ -140,6 +140,7 @@ const Preferences = (() => {
       byId('profileName').value = settings.displayName;
       byId('fontSelect').value = settings.font;
       byId('compactMode').checked = settings.compactMode;
+      byId('mobileHaptics').checked = settings.mobileHaptics;
       avatarInputs.find(input => input.value === settings.avatar).checked = true;
       byId('reminderIn').value = settings.reminderIn;
       byId('reminderLunchOut').value = settings.reminderLunchOut;
@@ -182,6 +183,7 @@ const Preferences = (() => {
     else if (systemDark.addListener) systemDark.addListener(onSystemTheme);
     byId('fontSelect').addEventListener('change', event => save({ font: event.target.value }, 'appearance'));
     byId('compactMode').addEventListener('change', event => save({ compactMode: event.target.checked }, 'appearance'));
+    byId('mobileHaptics').addEventListener('change', event => save({ mobileHaptics: event.target.checked }, 'interaction'));
     byId('remindersForm').addEventListener('submit', event => {
       event.preventDefault();
       save({

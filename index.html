@@ -4,27 +4,31 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f7f7ff">
-  <meta name="punchly-release" content="7">
+  <meta name="punchly-release" content="8">
   <meta name="description" content="A private, browser-based time tracker and weekly time-card calculator.">
   <title>Punchly | Time Tracker</title>
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-192.png">
-  <link rel="manifest" href="manifest.webmanifest?v=7">
-  <link rel="stylesheet" href="css/style.css?v=7">
+  <link rel="manifest" href="manifest.webmanifest?v=8">
+  <link rel="stylesheet" href="css/style.css?v=8">
 </head>
 <body>
   <header class="app-header">
     <a class="brand" href="#today-view" aria-label="Punchly home">
       <span class="brand-mark" aria-hidden="true">◷</span><h1>Punchly</h1>
     </a>
-    <button class="profile-button" id="openSettings" type="button" aria-label="Open profile settings">
-      <span id="headerInitials" class="avatar" aria-hidden="true">P</span><span id="headerProfileName">Profile</span>
-    </button>
+    <div class="header-actions">
+      <button class="btn-secondary desktop-only" type="button" id="miniTimerToggle" aria-pressed="false">Mini timer</button>
+      <button class="profile-button" id="openSettings" type="button" aria-label="Open profile settings">
+        <span id="headerInitials" class="avatar" aria-hidden="true">P</span><span id="headerProfileName">Profile</span>
+      </button>
+    </div>
   </header>
 
   <nav class="tab-nav" aria-label="Main navigation" role="tablist">
     <button class="tab-btn active" id="tab-today" role="tab" aria-selected="true" aria-controls="today-view" data-target="today-view"><span class="ui-icon" data-icon="clock" aria-hidden="true"></span>Today</button>
     <button class="tab-btn" id="tab-weekly" role="tab" aria-selected="false" aria-controls="weekly-view" data-target="weekly-view" tabindex="-1"><span class="ui-icon" data-icon="calendar" aria-hidden="true"></span>Week</button>
+    <button class="tab-btn" id="tab-calendar" role="tab" aria-selected="false" aria-controls="calendar-view" data-target="calendar-view" tabindex="-1"><span class="ui-icon" data-icon="calendar" aria-hidden="true"></span>Calendar</button>
     <button class="tab-btn" id="tab-history" role="tab" aria-selected="false" aria-controls="history-view" data-target="history-view" tabindex="-1"><span class="ui-icon" data-icon="chart" aria-hidden="true"></span>History</button>
     <button class="tab-btn" id="tab-settings" role="tab" aria-selected="false" aria-controls="settings-view" data-target="settings-view" tabindex="-1"><span class="ui-icon" data-icon="settings" aria-hidden="true"></span>Settings</button>
   </nav>
@@ -93,10 +97,6 @@
           <div class="button-row"><button id="saveDayBtn" class="btn-primary" type="button">Save shift</button><button id="clearDayBtn" class="btn-secondary compact-hide" type="button">Clear punches</button></div>
         </div>
       </div>
-      <details class="matte-panel quick-log" id="quickLog" open>
-        <summary>Quick log <span>Last 7 days</span></summary>
-        <ul class="daily-log" id="quickLogRows"></ul>
-      </details>
     </section>
 
     <section id="weekly-view" class="tab-pane" role="tabpanel" aria-labelledby="tab-weekly" hidden>
@@ -107,6 +107,10 @@
         </div>
         <ul class="daily-log" id="weekLogRows"></ul>
       </div>
+      <details class="matte-panel quick-log" id="quickLog" open>
+        <summary>Quick log <span>Last 7 days</span></summary>
+        <ul class="daily-log" id="quickLogRows"></ul>
+      </details>
       <details class="matte-panel manual-week" id="manualWeek">
         <summary>Manual report</summary>
         <div class="section-heading"><h3>Manual weekly report</h3><button id="printWeekly" class="btn-secondary" type="button">Print report</button></div>
@@ -131,11 +135,36 @@
       </details>
     </section>
 
+    <section id="calendar-view" class="tab-pane" role="tabpanel" aria-labelledby="tab-calendar" hidden>
+      <div class="matte-panel attendance-panel">
+        <div class="section-heading"><h2>Attendance calendar</h2></div>
+        <div class="calendar-toolbar">
+          <button id="calendarPrevious" class="btn-secondary" type="button" aria-label="Previous month">‹</button>
+          <h3 id="calendarMonth" aria-live="polite"></h3>
+          <button id="calendarNext" class="btn-secondary" type="button" aria-label="Next month">›</button>
+        </div>
+        <div class="calendar-weekdays" aria-hidden="true"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+        <div class="calendar-grid" id="calendarDays" aria-labelledby="calendarMonth"></div>
+        <ul class="attendance-legend" aria-label="Attendance key">
+          <li data-attendance="completed">Completed</li><li data-attendance="absent">Absent</li>
+          <li data-attendance="leave">Leave</li><li data-attendance="holiday">Holiday</li>
+          <li data-attendance="weekend">Weekend</li>
+        </ul>
+        <div class="calendar-selection" aria-live="polite">
+          <p id="calendarSelection"></p>
+          <p id="calendarPunches" class="help-text" hidden></p>
+          <p id="calendarNotes" class="help-text log-detail" hidden></p>
+        </div>
+        <button type="button" class="btn-primary" id="calendarEdit">Open shift</button>
+      </div>
+    </section>
+
     <section id="history-view" class="tab-pane" role="tabpanel" aria-labelledby="tab-history" hidden>
       <div class="card matte-panel">
         <div class="history-controls">
           <h2>History &amp; analytics</h2>
           <label class="inline-field" for="timeRangeFilter">Date range<select id="timeRangeFilter" class="matte-input"><option value="weekly">This week</option><option value="monthly">This month</option><option value="yearly">This year</option><option value="all">All time</option></select></label>
+          <label class="inline-field history-search" for="historySearch">Search records<input type="search" id="historySearch" class="matte-input" placeholder="Date or notes"></label>
           <button id="historyOptionsToggle" class="btn-text mobile-only" type="button" aria-expanded="false" aria-controls="historyExports historySummary chartExportArea">Analytics &amp; exports</button>
           <div class="export-group compact-hide" id="historyExports">
             <button id="exportExcel" class="btn-secondary icon-button" type="button"><span class="ui-icon" data-icon="download" aria-hidden="true"></span>Export Excel</button>
@@ -144,7 +173,7 @@
             <button id="printHistory" class="btn-secondary" type="button">Print / save PDF</button>
           </div>
         </div>
-        <div class="summary-grid" id="historySummary" aria-live="polite"><article class="summary-card"><span>Daily hours</span><strong id="summaryHours">0h 0m</strong></article><article class="summary-card"><span>Average per day</span><strong id="summaryAverage">0h 0m</strong></article><article class="summary-card"><span>Overtime vs target</span><strong id="summaryOvertime">0h 0m</strong></article><article class="summary-card"><span>Targets met</span><strong id="summaryTargets">0 / 0</strong></article></div>
+        <div class="summary-grid" id="historySummary" aria-live="polite"><article class="summary-card"><span>Daily hours</span><strong id="summaryHours">0h 0m</strong></article><article class="summary-card"><span>Average per day</span><strong id="summaryAverage">0h 0m</strong></article><article class="summary-card"><span>Overtime vs target</span><strong id="summaryOvertime">0h 0m</strong></article><article class="summary-card"><span>Targets met</span><strong id="summaryTargets">0 / 0</strong></article><article class="summary-card" data-attendance="leave"><span>Leave days taken</span><strong id="summaryLeave">0</strong></article><article class="summary-card" data-attendance="holiday"><span>Holidays taken</span><strong id="summaryHolidays">0</strong></article></div>
         <div class="chart-container compact-hide" id="chartExportArea">
           <div class="chart-legend"><span class="chart-key">Daily hours</span><span class="chart-key trend-key">7-day average</span></div>
           <canvas id="analyticsChart" role="img" aria-label="Daily hours and 7-day average" aria-describedby="chartNote"></canvas>
@@ -172,6 +201,7 @@
           </fieldset>
           <label class="field font-field" for="fontSelect">App font<select class="matte-input" id="fontSelect"></select></label>
           <label class="toggle-field" for="compactMode"><input type="checkbox" id="compactMode"> Compact mode</label>
+          <label class="toggle-field" for="mobileHaptics"><input type="checkbox" id="mobileHaptics" checked> Mobile haptics</label>
         </details>
 
         <details class="matte-panel settings-fold" open>
@@ -269,6 +299,17 @@
       </div>
     </section>
   </main>
+  <aside id="miniTimer" class="mini-timer" aria-labelledby="miniTimerHeading" hidden>
+    <div class="mini-timer-heading">
+      <h2 id="miniTimerHeading">Punchly mini timer</h2>
+      <button class="btn-text" id="miniTimerClose" type="button" aria-label="Close mini timer">×</button>
+    </div>
+    <dl>
+      <div><dt>Worked</dt><dd id="miniTimerWorked">0h 0m</dd></div>
+      <div><dt>Target out</dt><dd id="miniTimerTarget">—</dd></div>
+    </dl>
+    <p class="help-text" id="miniTimerNote"></p>
+  </aside>
   <aside id="reminderBanner" class="reminder-banner" hidden>
     <span class="ui-icon" data-icon="bell" aria-hidden="true"></span>
     <p id="reminderMessage" role="status"></p>
@@ -299,12 +340,14 @@
       }, 0);
     });
   </script>
-  <script src="js/shift.js?v=7"></script>
-  <script src="js/storage.js?v=7"></script>
-  <script src="js/charts.js?v=7"></script>
-  <script src="js/export.js?v=7"></script>
-  <script src="js/settings.js?v=7"></script>
-  <script src="js/reminders.js?v=7"></script>
-  <script src="js/app.js?v=7"></script>
+  <script src="js/shift.js?v=8"></script>
+  <script src="js/storage.js?v=8"></script>
+  <script src="js/charts.js?v=8"></script>
+  <script src="js/export.js?v=8"></script>
+  <script src="js/settings.js?v=8"></script>
+  <script src="js/reminders.js?v=8"></script>
+  <script src="js/attendance.js?v=8"></script>
+  <script src="js/mini-timer.js?v=8"></script>
+  <script src="js/app.js?v=8"></script>
 </body>
 </html>

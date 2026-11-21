@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const shiftTarget = document.getElementById('targetShift');
   const dayNotes = document.getElementById('dayNotes');
   const historyRange = document.getElementById('timeRangeFilter');
+  const historySearch = document.getElementById('historySearch');
   const todayView = document.getElementById('today-view');
   const quickLog = document.getElementById('quickLog');
   const manualWeek = document.getElementById('manualWeek');
@@ -21,10 +22,17 @@ document.addEventListener('DOMContentLoaded', () => {
   let editingWeeklyId = null;
   let hasShiftTarget = false;
   let expandedWeekDay = null;
+  let miniTimer;
 
   connectClientLayout();
   const preferences = Preferences.connect(settings, { notify: toast, onChange: applyPreferences });
   const reminders = Reminders.connect(settings);
+  const attendance = Attendance.connect({
+    todayKey: () => localDateKey(new Date()), localDateKey, entriesFor: readDayEntries,
+    openDay: openDailyLog, workdays: () => settings.workdays, describePunches
+  });
+  miniTimer = MiniTimer.connect({ desktop: () => !handheld.matches, snapshot: timerSnapshot });
+  connectMobileHaptics();
   historyRange.value = settings.historyRange;
   workDate.max = todayKey;
   workDate.value = todayKey;
@@ -51,7 +59,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (updateLocation) history.replaceState(null, '', `#${tab.dataset.target}`);
     if (changed) window.scrollTo(0, 0);
     if (tab.dataset.target === 'history-view') updateHistory();
-    if (tab.dataset.target === 'weekly-view' || tab.dataset.target === 'today-view') refreshDayLogs();
+    if (tab.dataset.target === 'weekly-view') refreshDayLogs();
+    if (tab.dataset.target === 'calendar-view') attendance.refresh();
   }
 
   function openLinkedTab() {
@@ -78,6 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.documentElement.dataset.layout = mobile ? 'mobile' : 'desktop';
       settingsFolds.forEach(panel => { panel.open = !mobile; });
       quickLog.open = !mobile;
+      if (mobile) miniTimer?.close();
     }
     syncLayout();
     if (handheld.addEventListener) handheld.addEventListener('change', syncLayout);
@@ -103,6 +113,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function connectMobileHaptics() {
+    const touch = window.matchMedia('(any-pointer: coarse)');
+    document.addEventListener('click', event => {
+      if (!settings.mobileHaptics || !handheld.matches || typeof navigator.vibrate !== 'function' ||
+          (event.pointerType !== 'touch' && !touch.matches)) return;
+      if (event.target.closest('.tab-btn, .btn-now, .btn-primary, .calendar-day')) navigator.vibrate(12);
+    });
+  }
+
   function applyPreferences(section) {
     if (section === 'tracking') {
       if (!hasShiftTarget && !dayInputs.some(input => input.value)) shiftTarget.value = settings.targetShift;
@@ -117,6 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (section === 'tracking' || section === 'reminders') runReminders(new Date());
     if (section === 'appearance' || section === 'tracking') updateHistory();
+    miniTimer.refresh();
   }
   function punchNow(field) {
     const now = new Date();
@@ -180,6 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (updateDayDraft()) toast('Punches cleared.');
   });
   document.getElementById('timeRangeFilter').addEventListener('change', updateHistory);
+  historySearch.addEventListener('input', () => updateHistory());
   if ('ResizeObserver' in window) {
     const chart = document.getElementById('analyticsChart');
     new ResizeObserver(() => window.updateAnalytics?.(window.getVisibleHistory(), Storage.getHistory())).observe(chart);
@@ -196,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
     preferences.refresh();
     historyRange.value = settings.historyRange;
     editingWeeklyId = null;
-    restoreToday(); weekRows = loadWeek(); renderWeek(); renderDay(); updateHistory(); refreshDayLogs();
+    restoreToday(); weekRows = loadWeek(); renderWeek(); renderDay(); updateHistory(); refreshDayLogs(); miniTimer.refresh();
   });
   document.getElementById('printHistory').addEventListener('click', () => window.print());
   document.getElementById('printWeekly').addEventListener('click', printWeeklyReport);
@@ -396,6 +417,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderDayHeading();
       }
       updateHistory();
+      if (!document.getElementById('calendar-view').hidden) attendance.refresh();
     }
 
     const minute = Math.floor(now.getTime() / 60000);
@@ -404,6 +426,7 @@ document.addEventListener('DOMContentLoaded', () => {
       renderDay(now);
       refreshDayLogs(now);
       runReminders(now);
+      miniTimer.refresh(now);
     }
   }
 
@@ -460,19 +483,23 @@ document.addEventListener('DOMContentLoaded', () => {
       ? (result.error ? 'Draft · Check punches' : dayOff ? `Draft · ${Shift.label(entry.mode)}` : 'Draft')
       : Shift.recordStatus(record);
     const total = dayOff || (isDraft && result.error) ? null : isDraft ? result.total : record.totalMinutes;
-    return { date, ...entry, status, total, endDayOffset: result.endDayOffset };
+    return { date, ...entry, status, total, isDraft, complete: result.complete, endDayOffset: result.endDayOffset };
+  }
+
+  function readDayEntries(days, now = new Date()) {
+    const records = new Map(Storage.getHistory().filter(record => record.kind === 'daily').map(record => [record.date, record]));
+    const drafts = Storage.getDrafts();
+    const legacy = Storage.getToday();
+    return days.map(date => {
+      const record = records.get(date);
+      return logEntry(date, record, drafts[date] || (!record && legacyDraftOn(date, legacy)), now);
+    });
   }
 
   function refreshDayLogs(now = new Date()) {
     const today = localDateKey(now);
-    const records = new Map(Storage.getHistory().filter(record => record.kind === 'daily').map(record => [record.date, record]));
-    const drafts = Storage.getDrafts();
-    const legacy = Storage.getToday();
     const days = Array.from({ length: 7 }, (_, index) => offsetDate(today, -index));
-    const entries = days.map(date => {
-      const record = records.get(date);
-      return logEntry(date, record, drafts[date] || (!record && legacyDraftOn(date, legacy)), now);
-    });
+    const entries = readDayEntries(days, now);
     const week = entries.slice(0, ((now.getDay() + 6) % 7) + 1).reverse();
     const key = JSON.stringify([entries, settings.clockFormat]);
     if (key === lastDayLogs) return;
@@ -482,6 +509,33 @@ document.addEventListener('DOMContentLoaded', () => {
     setText(document.getElementById('weekLogRange'), `${formatDate(week[0].date)} – ${formatDate(today)}`);
     const total = week.reduce((minutes, entry) => minutes + (entry.total || 0), 0);
     setText(document.getElementById('weekLogTotal'), formatDuration(total));
+  }
+
+  function describePunches(entry, showLunch = true) {
+    const punch = value => {
+      const minutes = Shift.parseTime(value);
+      return minutes === null ? '' : displayClock(minutes);
+    };
+    const start = punch(entry.punches?.morningIn);
+    const end = punch(entry.punches?.eveningOut);
+    const times = [];
+    if (start) times.push(`In ${start}`);
+    if (showLunch) {
+      const lunch = [punch(entry.punches?.lunchOut), punch(entry.punches?.lunchReturn)].filter(Boolean);
+      if (lunch.length) times.push(`Lunch ${lunch.join('–')}`);
+    }
+    if (end) times.push(`Out ${end}${entry.endDayOffset ? ' (+1 day)' : ''}`);
+    return times;
+  }
+
+  function openDailyLog(date) {
+    if (date > localDateKey(new Date())) return;
+    workDate.value = date;
+    restoreToday();
+    renderDay();
+    activateTab(document.getElementById('tab-today'));
+    document.getElementById('todayHeading').focus();
+    window.scrollTo(0, 0);
   }
 
   function drawDayLog(list, entries, today, showLunch) {
@@ -503,19 +557,7 @@ document.addEventListener('DOMContentLoaded', () => {
       details.append(title);
       const line = document.createElement('p');
       line.className = 'help-text log-detail';
-      const punch = value => {
-        const minutes = Shift.parseTime(value);
-        return minutes === null ? '' : displayClock(minutes);
-      };
-      const start = punch(entry.punches?.morningIn);
-      const end = punch(entry.punches?.eveningOut);
-      const times = [];
-      if (start) times.push(`In ${start}`);
-      if (showLunch) {
-        const lunch = [punch(entry.punches?.lunchOut), punch(entry.punches?.lunchReturn)].filter(Boolean);
-        if (lunch.length) times.push(`Lunch ${lunch.join('–')}`);
-      }
-      if (end) times.push(`Out ${end}${entry.endDayOffset ? ' (+1 day)' : ''}`);
+      const times = describePunches(entry, showLunch);
       const status = entry.mode === 'half' ? `Half day · ${entry.status}` : entry.status;
       line.textContent = [times.join(' · '), status].filter(Boolean).join(' · ');
       details.append(line);
@@ -538,14 +580,7 @@ document.addEventListener('DOMContentLoaded', () => {
       open.dataset.date = entry.date;
       open.textContent = entry.status === 'No entry' ? 'Log' : 'Open';
       open.setAttribute('aria-label', `${open.textContent} shift for ${formatDate(entry.date)}`);
-      open.addEventListener('click', () => {
-        workDate.value = entry.date;
-        restoreToday();
-        renderDay();
-        activateTab(document.getElementById('tab-today'));
-        document.getElementById('todayHeading').focus();
-        window.scrollTo(0, 0);
-      });
+      open.addEventListener('click', () => openDailyLog(entry.date));
       if (entry.date === focusedDate) toRefocus = open;
       actions.append(open);
       row.append(details, actions);
@@ -614,6 +649,31 @@ document.addEventListener('DOMContentLoaded', () => {
     return {
       date, mode, punches: draft || record?.punches || { morningIn: record?.in, eveningOut: record?.out },
       baseTarget: toMinutes(draft?.targetShift) || record?.baseTargetMinutes || toMinutes(settings.targetShift)
+    };
+  }
+
+  function timerSnapshot(now) {
+    const today = localDateKey(now);
+    let shift = dayForReminder(today);
+    const measure = day => Shift.measure({ ...day, lunchLimit: settings.lunchLimit, now: nowMinutesForDay(now, day.date) });
+    let result = measure(shift);
+    if (!shift.punches.morningIn) {
+      const previous = dayForReminder(yesterdayKey(now));
+      const overnight = measure(previous);
+      const start = Shift.parseTime(previous.punches.morningIn);
+      const elapsed = nowMinutesForDay(now, previous.date);
+      if (start !== null && elapsed !== null && elapsed >= start && elapsed - start < 1440 &&
+          !overnight.complete && overnight.targetOut >= 1440) {
+        shift = previous;
+        result = overnight;
+      }
+    }
+    const nextDay = result.targetOut !== null && result.targetOut >= 1440 ? ' +1d' : '';
+    return {
+      worked: formatDuration(result.total),
+      target: result.targetOut === null ? '—' : `${displayClock(result.targetOut)}${nextDay}`,
+      note: result.error || (Shift.isDayOff(shift.mode) ? Shift.label(shift.mode) :
+        shift.date !== today ? `Overnight shift · ${formatDate(shift.date)}` : !result.started ? 'No shift started.' : '')
     };
   }
 
@@ -709,6 +769,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     if (!ok) toast('Could not save the draft to browser storage.');
     else refreshDayLogs();
+    miniTimer.refresh();
     return ok;
   }
 
@@ -757,7 +818,15 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (range === 'monthly') start.setDate(1);
     else if (range === 'yearly') start.setMonth(0, 1);
     const startKey = localDateKey(start);
-    const visible = all.filter(record => range === 'all' || (record.date >= startKey && record.date <= today)).sort((a, b) => b.date.localeCompare(a.date));
+    const query = historySearch.value.trim().toLocaleLowerCase();
+    const visible = all.filter(record => {
+      if (range !== 'all' && (record.date < startKey || record.date > today)) return false;
+      if (!query) return true;
+      const [year, month, day] = record.date.split('-');
+      const numericDate = new Date(`${record.date}T12:00:00`).toLocaleDateString();
+      return [record.date, formatDate(record.date), numericDate, `${day}/${month}/${year}`, record.notes, record.title]
+        .some(value => String(value ?? '').toLocaleLowerCase().includes(query));
+    }).sort((a, b) => b.date.localeCompare(a.date));
     window.getVisibleHistory = () => visible;
     const daily = visible.filter(record => record.kind === 'daily' && !Shift.isDayOff(record.mode));
     const sum = daily.reduce((acc, record) => acc + Math.max(0, Number(record.totalMinutes) || 0), 0);
@@ -766,8 +835,14 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('summaryAverage').textContent = formatDuration(daily.length ? Math.round(sum / daily.length) : 0);
     document.getElementById('summaryOvertime').textContent = formatDuration(over);
     document.getElementById('summaryTargets').textContent = `${daily.filter(record => record.targetMet).length} / ${daily.length}`;
+    for (const [id, mode] of [['summaryLeave', 'leave'], ['summaryHolidays', 'holiday']]) {
+      const dates = new Set(visible.filter(record => record.kind === 'daily' && record.mode === mode && record.date <= today).map(record => record.date));
+      document.getElementById(id).textContent = String(dates.size);
+    }
     const body = document.getElementById('historyTableBody'); body.replaceChildren();
-    document.getElementById('emptyHistory').hidden = visible.length > 0;
+    const empty = document.getElementById('emptyHistory');
+    empty.hidden = visible.length > 0;
+    empty.textContent = query ? 'No records match your search in this date range.' : 'No records in this date range yet.';
     visible.forEach(record => {
       const tr = document.createElement('tr');
       tr.setAttribute('role', 'row');

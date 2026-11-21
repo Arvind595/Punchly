@@ -5,6 +5,7 @@ const Storage = (() => {
     font: 'manrope',
     avatar: 'initials',
     compactMode: false,
+    mobileHaptics: true,
     reminderIn: '',
     reminderLunchOut: '',
     reminderLunchReturn: '',
@@ -82,6 +83,7 @@ const Storage = (() => {
     if (!['system', 'manrope', 'inter', 'satoshi', 'arial', 'verdana', 'tahoma', 'trebuchet', 'georgia', 'courier'].includes(settings.font)) settings.font = defaults.font;
     if (!['initials', 'sun', 'moon', 'bolt', 'leaf'].includes(settings.avatar)) settings.avatar = defaults.avatar;
     settings.compactMode = settings.compactMode === true;
+    settings.mobileHaptics = settings.mobileHaptics !== false;
     settings.reminderTarget = settings.reminderTarget === true;
     ['reminderIn', 'reminderLunchOut', 'reminderLunchReturn', 'reminderOut'].forEach(key => {
       if (Shift.parseTime(settings[key]) === null) settings[key] = '';
