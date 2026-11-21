@@ -1,0 +1,219 @@
+const Preferences = (() => {
+  const themes = [
+    { id: 'system', name: 'Match device', colors: ['#f7f7ff', '#6555e8', '#20213f'] },
+    { id: 'light', name: 'Periwinkle', colors: ['#f7f7ff', '#5546cc', '#4938c7', '#7338a3'] },
+    { id: 'ocean', name: 'Ocean', colors: ['#eef7ff', '#075eaa', '#1552ae', '#096e84'] },
+    { id: 'mint', name: 'Mint', colors: ['#eef9f4', '#12674d', '#14634d', '#207663'] },
+    { id: 'peach', name: 'Peach', colors: ['#fff4ed', '#a23d24', '#a33a32', '#9a4d1e'] },
+    { id: 'berry', name: 'Berry', colors: ['#fff0f7', '#9f2861', '#962255', '#843093'] },
+    { id: 'solar', name: 'Marigold', colors: ['#fff8e7', '#805007', '#825007', '#9d5419'] },
+    { id: 'dark', name: 'Midnight', dark: true, colors: ['#17172a', '#bfb4ff', '#4537aa', '#703993'] },
+    { id: 'lagoon', name: 'Lagoon', dark: true, colors: ['#102321', '#79dbc8', '#12665b', '#235a86'] },
+    { id: 'ember', name: 'Ember', dark: true, colors: ['#281b20', '#ffa594', '#90343e', '#944421'] },
+    { id: 'graphite', name: 'Graphite', dark: true, colors: ['#1b1c20', '#d4d8e4', '#424a64', '#545768'] },
+    { id: 'amoled', name: 'AMOLED Black', dark: true, colors: ['#000000', '#cabaff', '#352090', '#581f78'] }
+  ];
+  const fonts = [
+    ['system', 'System', 'system-ui, -apple-system, "Segoe UI", Arial, sans-serif'],
+    ['manrope', 'Manrope', 'Manrope, "Segoe UI", Arial, sans-serif'],
+    ['inter', 'Inter', 'Inter, "Segoe UI", Arial, sans-serif'],
+    ['satoshi', 'Satoshi', 'Satoshi, Inter, "Segoe UI", Arial, sans-serif'],
+    ['arial', 'Arial', 'Arial, Helvetica, sans-serif'],
+    ['verdana', 'Verdana', 'Verdana, Geneva, sans-serif'],
+    ['tahoma', 'Tahoma', 'Tahoma, Verdana, sans-serif'],
+    ['trebuchet', 'Trebuchet MS', '"Trebuchet MS", Arial, sans-serif'],
+    ['georgia', 'Georgia', 'Georgia, "Times New Roman", serif'],
+    ['courier', 'Courier New', '"Courier New", Courier, monospace']
+  ];
+  const avatars = [['initials', 'Initials'], ['sun', 'Sun'], ['moon', 'Moon'], ['bolt', 'Bolt'], ['leaf', 'Leaf']];
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+  const byId = id => document.getElementById(id);
+
+  function applyAppearance(settings) {
+    let theme = themes.find(option => option.id === settings.theme) || themes[1];
+    if (theme.id === 'system') theme = themes.find(option => option.id === (systemDark.matches ? 'dark' : 'light'));
+    const [background, accent, primary, secondary] = theme.colors;
+    const root = document.documentElement;
+    root.dataset.theme = theme.id;
+    root.dataset.colorMode = theme.dark ? 'dark' : 'light';
+    root.dataset.compact = String(settings.compactMode);
+    const font = fonts.find(option => option[0] === settings.font) || fonts[0];
+    root.style.setProperty('--app-font', font[2]);
+    if (settings.font === 'satoshi' && !byId('satoshiStyles')) {
+      const link = document.createElement('link');
+      link.id = 'satoshiStyles';
+      link.rel = 'stylesheet';
+      link.href = 'https://api.fontshare.com/v2/css?f[]=satoshi@400,700&display=swap';
+      link.referrerPolicy = 'no-referrer';
+      document.head.append(link);
+    }
+    root.style.setProperty('--bg-color', background);
+    root.style.setProperty('--accent-color', accent);
+    root.style.setProperty('--primary-color', primary);
+    root.style.setProperty('--secondary-color', secondary);
+    document.querySelector('meta[name="theme-color"]').content = background;
+  }
+
+  function applyProfile(name, avatar) {
+    const displayName = typeof name === 'string' ? name.trim() : '';
+    const initials = displayName.split(/\s+/).filter(Boolean).slice(0, 2)
+      .map(word => Array.from(word)[0].toLocaleUpperCase()).join('') || 'P';
+    ['headerInitials', 'profileInitials'].forEach(id => {
+      const node = byId(id);
+      node.classList.toggle('ui-icon', avatar !== 'initials');
+      node.dataset.icon = avatar;
+      node.textContent = avatar === 'initials' ? initials : '';
+    });
+    byId('headerProfileName').textContent = displayName || 'Profile';
+  }
+
+  function connect(settings, { onChange, notify }) {
+    const themeOptions = byId('themeOptions');
+    const workdayOptions = byId('workdayOptions');
+    const avatarOptions = byId('avatarOptions');
+    for (const [id, name, stack] of fonts) {
+      const option = document.createElement('option');
+      option.value = id;
+      option.textContent = name;
+      option.style.fontFamily = stack;
+      byId('fontSelect').append(option);
+    }
+    for (const [id, name] of avatars) {
+      const label = document.createElement('label');
+      label.className = 'avatar-option';
+      const input = document.createElement('input');
+      input.type = 'radio';
+      input.name = 'profile-icon';
+      input.value = id;
+      input.setAttribute('aria-label', name);
+      label.title = name;
+      const preview = document.createElement('span');
+      preview.className = id === 'initials' ? 'avatar' : 'avatar ui-icon';
+      preview.dataset.icon = id;
+      preview.textContent = id === 'initials' ? 'Aa' : '';
+      preview.setAttribute('aria-hidden', 'true');
+      label.append(input, preview);
+      avatarOptions.append(label);
+    }
+    for (const theme of themes) {
+      const label = document.createElement('label');
+      label.className = 'theme-option';
+      const input = document.createElement('input');
+      input.type = 'radio';
+      input.name = 'theme';
+      input.value = theme.id;
+      const tile = document.createElement('span');
+      tile.className = 'theme-tile';
+      const preview = document.createElement('span');
+      preview.className = 'theme-preview';
+      preview.setAttribute('aria-hidden', 'true');
+      preview.style.setProperty('--swatch-bg', theme.colors[0]);
+      preview.style.setProperty('--swatch-accent', theme.colors[1]);
+      preview.style.setProperty('--swatch-secondary', theme.colors[3] || theme.colors[2]);
+      const name = document.createElement('span');
+      name.textContent = theme.name;
+      tile.append(preview, name);
+      label.append(input, tile);
+      themeOptions.append(label);
+    }
+    days.forEach((day, index) => {
+      const label = document.createElement('label');
+      label.className = 'weekday-option';
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.value = (index + 1) % 7;
+      input.setAttribute('aria-label', day);
+      const text = document.createElement('span');
+      text.textContent = day.slice(0, 3);
+      label.append(input, text);
+      workdayOptions.append(label);
+    });
+
+    const themeInputs = [...themeOptions.querySelectorAll('input')];
+    const workdayInputs = [...workdayOptions.querySelectorAll('input')];
+    const avatarInputs = [...avatarOptions.querySelectorAll('input')];
+
+    function refresh() {
+      applyAppearance(settings);
+      applyProfile(settings.displayName, settings.avatar);
+      byId('profileName').value = settings.displayName;
+      byId('fontSelect').value = settings.font;
+      byId('compactMode').checked = settings.compactMode;
+      avatarInputs.find(input => input.value === settings.avatar).checked = true;
+      byId('reminderIn').value = settings.reminderIn;
+      byId('reminderLunchOut').value = settings.reminderLunchOut;
+      byId('reminderLunchReturn').value = settings.reminderLunchReturn;
+      byId('reminderOut').value = settings.reminderOut;
+      byId('reminderTarget').checked = settings.reminderTarget;
+      byId('defaultTarget').value = settings.targetShift;
+      byId('lunchLimit').value = settings.lunchLimit;
+      byId('defaultRounding').value = settings.rounding;
+      byId('clockFormat').value = settings.clockFormat;
+      byId('defaultRange').value = settings.historyRange;
+      const selectedTheme = themeInputs.find(input => input.value === settings.theme) || themeInputs[1];
+      selectedTheme.checked = true;
+      workdayInputs.forEach(input => { input.checked = settings.workdays.includes(Number(input.value)); });
+    }
+
+    function save(changes, section, message) {
+      const next = { ...settings, ...changes };
+      if (!Storage.saveSettings(next)) {
+        refresh();
+        notify('Browser storage is unavailable. Settings could not be saved.');
+        return;
+      }
+      Object.assign(settings, next);
+      if (section === 'appearance') applyAppearance(settings);
+      onChange(section);
+      if (message) notify(message);
+    }
+
+    themeOptions.addEventListener('change', event => {
+      save({ theme: event.target.value }, 'appearance');
+    });
+    const onSystemTheme = () => {
+      if (settings.theme === 'system') {
+        applyAppearance(settings);
+        onChange('appearance');
+      }
+    };
+    if (systemDark.addEventListener) systemDark.addEventListener('change', onSystemTheme);
+    else if (systemDark.addListener) systemDark.addListener(onSystemTheme);
+    byId('fontSelect').addEventListener('change', event => save({ font: event.target.value }, 'appearance'));
+    byId('compactMode').addEventListener('change', event => save({ compactMode: event.target.checked }, 'appearance'));
+    byId('remindersForm').addEventListener('submit', event => {
+      event.preventDefault();
+      save({
+        reminderIn: byId('reminderIn').value,
+        reminderLunchOut: byId('reminderLunchOut').value,
+        reminderLunchReturn: byId('reminderLunchReturn').value,
+        reminderOut: byId('reminderOut').value,
+        reminderTarget: byId('reminderTarget').checked
+      }, 'reminders', 'Reminders saved.');
+    });
+    byId('profileForm').addEventListener('submit', event => {
+      event.preventDefault();
+      save({
+        displayName: byId('profileName').value.trim(),
+        avatar: avatarInputs.find(input => input.checked).value
+      }, 'profile', 'Profile saved.');
+      applyProfile(settings.displayName, settings.avatar);
+    });
+    byId('trackingForm').addEventListener('submit', event => {
+      event.preventDefault();
+      save({
+        targetShift: byId('defaultTarget').value,
+        lunchLimit: byId('lunchLimit').valueAsNumber,
+        rounding: byId('defaultRounding').value,
+        clockFormat: byId('clockFormat').value,
+        historyRange: byId('defaultRange').value,
+        workdays: workdayInputs.filter(input => input.checked).map(input => Number(input.value))
+      }, 'tracking', 'Tracking preferences saved.');
+    });
+    refresh();
+    return { refresh };
+  }
+
+  return { days, connect };
+})();

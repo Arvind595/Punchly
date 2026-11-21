@@ -1,35 +1,43 @@
-# Punchly ⏱️
+# Punchly
 
-Punchly is a modern, responsive web application designed for precise time tracking, target shift calculation, and work-hour analytics. Built with a focus on ease-of-use and data privacy, Punchly operates entirely in the browser, storing daily punch data locally and generating actionable insights without requiring a backend server.
+Punchly is a browser-based time tracker and weekly time-card calculator. It uses no account or backend; your records remain in the browser's local storage unless you export a backup.
 
-![GitHub Pages](https://img.shields.io/badge/Hosted_on-GitHub_Pages-blue?style=flat-square&logo=github)
-![License](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)
+## Features
 
-## 🚀 Live Demo
-**[Access Punchly Here](https://YOUR_USERNAME.github.io/punchly)** *(Update this link after deploying to GitHub Pages)*
+- A live local clock with seconds and a Today view that shows net work, the target clock-out time, and extra time as it accrues.
+- Full day shifts deduct the entire recorded lunch break. The lunch limit defaults to 45 minutes and drives the pre-lunch estimate and over-limit indicator.
+- Half day shifts use a start and end punch and half the full day target, rounded up to the next minute if needed. Leave and holidays can be saved with notes without adding work hours.
+- Weekly time cards with editable days, workday toggles, flexible time entry, break deductions, optional 5/15/30 minute rounding, notes, and print-ready reports.
+- Local persistence for current punches and weekly drafts. Daily and weekly history can be loaded, edited, or deleted.
+- Weekly, monthly, yearly, or all-time history filters, colored daily bars, and a 7-day rolling average over logged workdays.
+- Filtered CSV and Excel exports, chart PNG, browser print, and full JSON backup and restore. Excel uses sortable date cells.
+- Settings with AMOLED Black, ten app fonts, five profile icons, tracking defaults, and Compact mode.
+- Reminders for individual punches and the work target while Punchly is open. Device alerts need permission and a browser that supports them.
+- Mobile bottom navigation, touch-friendly forms, keyboard-accessible tabs, and offline PWA support when served from localhost or HTTPS. Press Alt + 1 through Alt + 4 to enter the four punches.
+- Automatic import of weekly records saved by the former `Punchly.html` app.
 
-## ✨ Features
+## Run locally
 
-* **Smart Daily Tracking:** Log Morning In, Lunch Out, Lunch Return, and Evening Out times with native touch-friendly time pickers.
-* **Target Shift Calculation:** Set a custom daily target (e.g., 8 hours 20 minutes). The app automatically calculates your exact required "Evening Out" time the moment you punch back in from lunch.
-* **Session Persistence:** Accidentally closed the tab? Morning and afternoon punches are automatically saved to local storage and instantly reloaded when you return.
-* **Data Visualization:** View weekly, monthly, and yearly historical data backed by interactive graphs and statistical summaries.
-* **Export Anywhere:** Download your timesheets and charts in multiple formats (Excel/CSV, PDF, or PNG) for personal record-keeping or HR submission.
-* **Refined Aesthetics:** Features a clean, matte-finish UI with minimalist typography, subtle branding, and full dark/light theme support.
+No build step or package install is required. For PWA/offline support, serve the folder over localhost:
 
-## 🛠️ Technology Stack
+```bash
+python -m http.server 8000
+```
 
-* **Frontend:** HTML5, CSS3, Vanilla JavaScript (ES6+)
-* **Charting:** [Chart.js](https://www.chartjs.org/) for dynamic canvas-based analytics.
-* **Exports:** 
-  * [SheetJS](https://sheetjs.com/) for `.xlsx` spreadsheet generation.
-  * [html2pdf.js](https://ekoopmans.github.io/html2pdf.js/) for seamless document rendering.
-* **Storage:** Browser `localStorage` / IndexedDB for local data persistence.
+Then open <http://localhost:8000>. Opening `index.html` directly also runs the app, but service-worker installation is unavailable from a `file:` URL.
 
-## 💻 Local Installation & Development
+## Data and privacy
 
-Since Punchly is a client-side static app, no build steps or package managers are required to run it locally.
+Punches, settings, weekly drafts, and history are stored in this browser profile. Clearing site data removes them. Open **Settings → Data & backups** to export a portable JSON file. When restoring, choose **Merge** to add new records and drafts or **Replace** to restore the backup's records, drafts, and preferences. Browser storage is not synced between devices.
 
-1. **Clone the repository:**
-   ```bash
-   git clone [https://github.com/YOUR_USERNAME/punchly.git](https://github.com/YOUR_USERNAME/punchly.git)
+When opening the app on the same browser origin, records from the previous weekly calculator's `timecard_calculator_history_v1` storage key are imported into History automatically.
+
+## Deployment
+
+Publish the repository root on GitHub Pages or another static host. `index.html` is the entry point. Serve `service-worker.js` from the same directory and allow the web manifest for offline support. To install, use **Settings → Install & shortcuts** or your browser's Install or Add to Home Screen menu. Open the app online once so it can cache its files.
+
+## License
+
+GNU General Public License v3.0; see [LICENSE](LICENSE).
+
+Bundled [Inter](assets/fonts/Inter-OFL.txt) and [Manrope](assets/fonts/Manrope-OFL.txt) fonts use the SIL Open Font License. [SheetJS Community Edition](vendor/SheetJS-LICENSE.txt) is distributed under Apache 2.0. Selecting [Satoshi](https://www.fontshare.com/fonts/satoshi) loads it from Fontshare. Inter and system fonts provide a fallback when Satoshi is unavailable.
