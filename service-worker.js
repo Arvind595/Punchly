@@ -1,4 +1,4 @@
-const RELEASE = 6;
+const RELEASE = 7;
 const CACHE_NAME = `punchly-static-v${RELEASE}`;
 const APP_ASSETS = [
   ...['css/style.css', 'manifest.webmanifest', 'js/shift.js', 'js/storage.js',

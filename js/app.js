@@ -7,18 +7,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const shiftTarget = document.getElementById('targetShift');
   const dayNotes = document.getElementById('dayNotes');
   const historyRange = document.getElementById('timeRangeFilter');
-  const localClock = document.getElementById('localClock');
   const todayView = document.getElementById('today-view');
+  const quickLog = document.getElementById('quickLog');
+  const manualWeek = document.getElementById('manualWeek');
   const compactDetails = document.getElementById('compactDetails');
   const handheld = window.matchMedia('(max-width: 680px), (max-width: 1024px) and (hover: none) and (pointer: coarse)');
   const settingsFolds = [...document.querySelectorAll('.settings-fold')];
-  const clockFormatters = Object.fromEntries(['24', '12'].map(format => [
-    format, new Intl.DateTimeFormat(undefined, {
-      hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: format === '12' ? 'h12' : 'h23'
-    })
-  ]));
   let todayKey = localDateKey(new Date());
   let lastRenderedMinute = null;
+  let lastDayLogs = '';
   let weekRows = loadWeek();
   let weeklyMinutes = 0;
   let editingWeeklyId = null;
@@ -29,12 +26,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const preferences = Preferences.connect(settings, { notify: toast, onChange: applyPreferences });
   const reminders = Reminders.connect(settings);
   historyRange.value = settings.historyRange;
+  workDate.max = todayKey;
   workDate.value = todayKey;
   restoreToday();
   renderWeek();
-  tickClock();
-  setInterval(tickClock, 1000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) tickClock(); });
+  scheduleTrackingRefresh();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshTracking(); });
   updateHistory();
   connectInstall();
 
@@ -54,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (updateLocation) history.replaceState(null, '', `#${tab.dataset.target}`);
     if (changed) window.scrollTo(0, 0);
     if (tab.dataset.target === 'history-view') updateHistory();
+    if (tab.dataset.target === 'weekly-view' || tab.dataset.target === 'today-view') refreshDayLogs();
   }
 
   function openLinkedTab() {
@@ -79,6 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const mobile = handheld.matches;
       document.documentElement.dataset.layout = mobile ? 'mobile' : 'desktop';
       settingsFolds.forEach(panel => { panel.open = !mobile; });
+      quickLog.open = !mobile;
     }
     syncLayout();
     if (handheld.addEventListener) handheld.addEventListener('change', syncLayout);
@@ -113,8 +112,8 @@ document.addEventListener('DOMContentLoaded', () => {
         weekRows = loadWeek(null);
         renderWeek();
       }
-      tickClock();
       renderDay();
+      refreshDayLogs();
     }
     if (section === 'tracking' || section === 'reminders') runReminders(new Date());
     if (section === 'appearance' || section === 'tracking') updateHistory();
@@ -159,7 +158,16 @@ document.addEventListener('DOMContentLoaded', () => {
     compactDetails.textContent = expanded ? 'Hide shift details' : 'Show shift details';
   });
   dayInputs.forEach(input => input.addEventListener('input', updateDayDraft));
-  workDate.addEventListener('change', () => { restoreToday(); renderDay(); });
+  workDate.addEventListener('change', () => {
+    const today = localDateKey(new Date());
+    workDate.max = today;
+    if (workDate.value > today) {
+      workDate.value = today;
+      toast('Choose today or an earlier shift start date.');
+    }
+    restoreToday();
+    renderDay();
+  });
   shiftMode.addEventListener('change', updateDayDraft);
   dayNotes.addEventListener('input', () => { saveDayDraft(); });
   shiftTarget.addEventListener('input', () => {
@@ -188,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
     preferences.refresh();
     historyRange.value = settings.historyRange;
     editingWeeklyId = null;
-    restoreToday(); weekRows = loadWeek(); renderWeek(); tickClock(); renderDay(); updateHistory();
+    restoreToday(); weekRows = loadWeek(); renderWeek(); renderDay(); updateHistory(); refreshDayLogs();
   });
   document.getElementById('printHistory').addEventListener('click', () => window.print());
   document.getElementById('printWeekly').addEventListener('click', printWeeklyReport);
@@ -367,17 +375,20 @@ document.addEventListener('DOMContentLoaded', () => {
     window.print();
   }
 
-  function tickClock() {
-    const now = new Date();
-    setText(localClock, clockFormatters[settings.clockFormat].format(now));
-    localClock.dateTime = `${formatClock(now.getHours() * 60 + now.getMinutes())}:${String(now.getSeconds()).padStart(2, '0')}`;
+  function scheduleTrackingRefresh() {
+    refreshTracking();
+    setTimeout(scheduleTrackingRefresh, 60000 - (Date.now() % 60000));
+  }
 
+  function refreshTracking() {
+    const now = new Date();
     const nextDay = localDateKey(now);
     if (nextDay !== todayKey) {
       const wasToday = workDate.value === todayKey;
       const [, , , end] = dayInputs;
       const active = !Shift.isDayOff(shiftMode.value) && dayInputs[0].value && !end.value;
       todayKey = nextDay;
+      workDate.max = todayKey;
       if (wasToday && !active) {
         workDate.value = todayKey;
         restoreToday();
@@ -391,12 +402,157 @@ document.addEventListener('DOMContentLoaded', () => {
     if (minute !== lastRenderedMinute) {
       lastRenderedMinute = minute;
       renderDay(now);
+      refreshDayLogs(now);
       runReminders(now);
     }
   }
 
   function selectedDay() {
     return workDate.value || todayKey;
+  }
+
+  function offsetDate(date, days) {
+    const result = new Date(`${date}T12:00:00`);
+    result.setDate(result.getDate() + days);
+    return localDateKey(result);
+  }
+
+  function logInput(record, draft) {
+    const mode = Shift.normalizeMode(draft?.mode ?? record?.mode);
+    const punches = Shift.punchesForMode(
+      draft || record?.punches || { morningIn: record?.in, eveningOut: record?.out === '--:--' ? '' : record?.out },
+      mode
+    );
+    const savedTarget = record?.baseTargetMinutes ?? (record?.mode === 'half' ? record.targetMinutes * 2 : record?.targetMinutes);
+    return {
+      mode, punches,
+      baseTarget: toMinutes(draft?.targetShift) || savedTarget || toMinutes(settings.targetShift),
+      notes: String(draft?.notes ?? record?.notes ?? '').trim()
+    };
+  }
+
+  function matchingDraft(record, draft) {
+    if (!draft) return false;
+    const saved = logInput(record);
+    const current = logInput(record, draft);
+    return saved.mode === current.mode && saved.notes === current.notes &&
+      (Shift.isDayOff(saved.mode) || (saved.baseTarget === current.baseTarget &&
+        dayFields.every(field => saved.punches[field] === current.punches[field])));
+  }
+
+  function legacyDraftOn(date, legacy) {
+    if (legacy?.date === date || legacy?.date === new Date(`${date}T12:00:00`).toLocaleDateString()) {
+      return legacy.punches || legacy;
+    }
+    return null;
+  }
+
+  function logEntry(date, record, draft, now) {
+    const draftInput = draft && logInput(record, draft);
+    const hasDraft = draftInput && (draftInput.mode !== 'full' || draftInput.notes || Object.values(draftInput.punches).some(Boolean));
+    const isDraft = Boolean(hasDraft && (!record || !matchingDraft(record, draft)));
+    if (!record && !isDraft) return { date, status: 'No entry', total: null };
+
+    const entry = isDraft ? draftInput : logInput(record);
+    const result = Shift.measure({ ...entry, lunchLimit: settings.lunchLimit, now: nowMinutesForDay(now, date) });
+    const dayOff = Shift.isDayOff(entry.mode);
+    const status = isDraft
+      ? (result.error ? 'Draft · Check punches' : dayOff ? `Draft · ${Shift.label(entry.mode)}` : 'Draft')
+      : Shift.recordStatus(record);
+    const total = dayOff || (isDraft && result.error) ? null : isDraft ? result.total : record.totalMinutes;
+    return { date, ...entry, status, total, endDayOffset: result.endDayOffset };
+  }
+
+  function refreshDayLogs(now = new Date()) {
+    const today = localDateKey(now);
+    const records = new Map(Storage.getHistory().filter(record => record.kind === 'daily').map(record => [record.date, record]));
+    const drafts = Storage.getDrafts();
+    const legacy = Storage.getToday();
+    const days = Array.from({ length: 7 }, (_, index) => offsetDate(today, -index));
+    const entries = days.map(date => {
+      const record = records.get(date);
+      return logEntry(date, record, drafts[date] || (!record && legacyDraftOn(date, legacy)), now);
+    });
+    const week = entries.slice(0, ((now.getDay() + 6) % 7) + 1).reverse();
+    const key = JSON.stringify([entries, settings.clockFormat]);
+    if (key === lastDayLogs) return;
+    lastDayLogs = key;
+    drawDayLog(document.getElementById('quickLogRows'), entries, today, false);
+    drawDayLog(document.getElementById('weekLogRows'), week, today, true);
+    setText(document.getElementById('weekLogRange'), `${formatDate(week[0].date)} – ${formatDate(today)}`);
+    const total = week.reduce((minutes, entry) => minutes + (entry.total || 0), 0);
+    setText(document.getElementById('weekLogTotal'), formatDuration(total));
+  }
+
+  function drawDayLog(list, entries, today, showLunch) {
+    const focusedDate = list.contains(document.activeElement) ? document.activeElement.dataset.date : null;
+    const fragment = document.createDocumentFragment();
+    let toRefocus;
+    for (const entry of entries) {
+      const row = document.createElement('li');
+      const details = document.createElement('div');
+      const day = document.createElement('strong');
+      day.textContent = entry.date === today ? 'Today' :
+        new Date(`${entry.date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short' });
+      const date = document.createElement('time');
+      date.dateTime = entry.date;
+      date.textContent = new Date(`${entry.date}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      const title = document.createElement('div');
+      title.className = 'log-date';
+      title.append(day, date);
+      details.append(title);
+      const line = document.createElement('p');
+      line.className = 'help-text log-detail';
+      const punch = value => {
+        const minutes = Shift.parseTime(value);
+        return minutes === null ? '' : displayClock(minutes);
+      };
+      const start = punch(entry.punches?.morningIn);
+      const end = punch(entry.punches?.eveningOut);
+      const times = [];
+      if (start) times.push(`In ${start}`);
+      if (showLunch) {
+        const lunch = [punch(entry.punches?.lunchOut), punch(entry.punches?.lunchReturn)].filter(Boolean);
+        if (lunch.length) times.push(`Lunch ${lunch.join('–')}`);
+      }
+      if (end) times.push(`Out ${end}${entry.endDayOffset ? ' (+1 day)' : ''}`);
+      const status = entry.mode === 'half' ? `Half day · ${entry.status}` : entry.status;
+      line.textContent = [times.join(' · '), status].filter(Boolean).join(' · ');
+      details.append(line);
+      if (showLunch && entry.notes) {
+        const notes = document.createElement('p');
+        notes.className = 'help-text log-detail';
+        notes.textContent = entry.notes;
+        details.append(notes);
+      }
+      const actions = document.createElement('div');
+      actions.className = 'log-actions';
+      if (entry.total !== null) {
+        const total = document.createElement('strong');
+        total.textContent = formatDuration(entry.total);
+        actions.append(total);
+      }
+      const open = document.createElement('button');
+      open.type = 'button';
+      open.className = 'btn-text';
+      open.dataset.date = entry.date;
+      open.textContent = entry.status === 'No entry' ? 'Log' : 'Open';
+      open.setAttribute('aria-label', `${open.textContent} shift for ${formatDate(entry.date)}`);
+      open.addEventListener('click', () => {
+        workDate.value = entry.date;
+        restoreToday();
+        renderDay();
+        activateTab(document.getElementById('tab-today'));
+        document.getElementById('todayHeading').focus();
+        window.scrollTo(0, 0);
+      });
+      if (entry.date === focusedDate) toRefocus = open;
+      actions.append(open);
+      row.append(details, actions);
+      fragment.append(row);
+    }
+    list.replaceChildren(fragment);
+    toRefocus?.focus({ preventScroll: true });
   }
 
   function renderDayHeading() {
@@ -422,13 +578,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const date = selectedDay();
     const draft = Storage.getDraft(date);
     const record = Storage.getHistory().find(item => item.kind === 'daily' && item.date === date);
-    loadDayFields(draft, record);
-    if (!draft && !record) {
-      const legacy = Storage.getToday();
-      if (legacy?.date === date || legacy?.date === new Date(`${date}T12:00:00`).toLocaleDateString()) {
-        loadDayFields(legacy.punches || legacy);
-      }
-    }
+    loadDayFields(draft || (!record && legacyDraftOn(date, Storage.getToday())), record);
     renderDayHeading();
   }
 
@@ -514,6 +664,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const hint = document.getElementById('targetOutHint');
     hint.hidden = !result.estimatedLunch;
     setText(hint, 'Estimate until lunch is recorded');
+    const overnight = document.getElementById('overnightNote');
+    overnight.hidden = !result.endDayOffset;
+    setText(overnight, result.endDayOffset ? `Clock-out is on ${formatDate(offsetDate(selectedDay(), result.endDayOffset))} (next day).` : '');
 
     const remaining = Math.max(0, result.target - result.total);
     setText(document.getElementById('netTargetDisplay'), formatDuration(result.target));
@@ -547,12 +700,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function saveDayDraft(punches = readPunches()) {
+    const date = workDate.value;
+    if (!date || date > localDateKey(new Date())) return false;
     const draftTarget = (hasShiftTarget || Object.values(punches).some(Boolean)) && toMinutes(shiftTarget.value) > 0
       ? shiftTarget.value : '';
-    const ok = Storage.saveDraft(selectedDay(), {
+    const ok = Storage.saveDraft(date, {
       ...punches, targetShift: draftTarget, mode: shiftMode.value, notes: dayNotes.value
     });
     if (!ok) toast('Could not save the draft to browser storage.');
+    else refreshDayLogs();
     return ok;
   }
 
@@ -564,6 +720,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function saveDay() {
+    workDate.max = localDateKey(new Date());
     if (!workDate.reportValidity()) return;
     const mode = shiftMode.value;
     const punches = Shift.punchesForMode(readPunches(), mode);
@@ -585,6 +742,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!Storage.saveRecord(record)) return toast('Could not save. Browser storage may be full or unavailable.');
     if (!saveDayDraft()) {
       updateHistory();
+      refreshDayLogs();
       return;
     }
     renderDay();
@@ -629,14 +787,29 @@ document.addEventListener('DOMContentLoaded', () => {
       const status = document.createElement('td'); status.textContent = Shift.recordStatus(record); tr.append(status);
       const actions = document.createElement('td'); actions.className = 'action-cell';
       const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'btn-text'; edit.textContent = record.kind === 'weekly' ? 'Load' : 'Edit'; edit.addEventListener('click', () => record.kind === 'weekly' ? loadWeeklyRecord(record) : loadDailyRecord(record));
-      const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'btn-text danger'; remove.textContent = 'Delete'; remove.addEventListener('click', () => { if (confirm(`Delete this ${record.kind} record?`)) { Storage.deleteRecord(record.id); updateHistory(); toast('Record deleted.'); } });
-      actions.append(edit, remove); tr.append(actions);
+      const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'btn-text danger'; remove.textContent = 'Delete';
+      remove.addEventListener('click', () => {
+        if (!confirm(`Delete this ${record.kind} record?`)) return;
+        if (!Storage.deleteRecord(record.id)) return toast('Could not delete the record.');
+        if (record.kind === 'daily') {
+          const draft = Storage.getDraft(record.date);
+          if (matchingDraft(record, draft)) Storage.deleteDraft(record.date);
+          if (matchingDraft(record, legacyDraftOn(record.date, Storage.getToday()))) Storage.saveToday(null);
+          if (selectedDay() === record.date) { restoreToday(); renderDay(); }
+        }
+        updateHistory();
+        refreshDayLogs();
+        toast('Record deleted.');
+      });
+      if (record.kind === 'weekly' || record.date <= today) actions.append(edit);
+      actions.append(remove); tr.append(actions);
       Array.from(tr.cells).forEach(cell => cell.setAttribute('role', 'cell'));
       body.append(tr);
     });
     if (redraw) window.updateAnalytics?.(visible, all);
   }
   function loadDailyRecord(record) {
+    if (record.date > localDateKey(new Date())) return toast('This shift start date is still in the future.');
     workDate.value = record.date;
     loadDayFields(null, record);
     renderDayHeading();
@@ -650,7 +823,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (Array.isArray(record.schedule)) record.schedule.forEach((row, i) => { if (weekRows[i]) Object.assign(weekRows[i], row, { break: row.break ?? row.breakDeduction ?? '' }); });
     document.getElementById('reportHeaderInput').value = record.title || record.header || '';
     document.getElementById('reportNotesInput').value = record.notes || '';
-    document.getElementById('roundTimeSelect').value = record.rounding || 'none'; renderWeek(); activateTab(document.getElementById('tab-weekly')); toast('Weekly report loaded.');
+    document.getElementById('roundTimeSelect').value = record.rounding || 'none';
+    renderWeek();
+    manualWeek.open = true;
+    activateTab(document.getElementById('tab-weekly'));
+    manualWeek.scrollIntoView({ block: 'start' });
+    toast('Weekly report loaded.');
   }
   function toast(message) { const el = document.getElementById('toast'); el.textContent = message; el.classList.add('visible'); clearTimeout(toast.timer); toast.timer = setTimeout(() => el.classList.remove('visible'), 3200); }
   window.showPunchlyToast = toast;

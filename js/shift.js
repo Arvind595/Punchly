@@ -37,7 +37,7 @@ const Shift = (() => {
     const target = isDayOff(mode) ? 0 : mode === 'half' ? Math.ceil(baseTarget / 2) : baseTarget;
     const result = {
       target, total: 0, extra: 0, lunch: null, lunchOpen: false, started: false, complete: false,
-      targetOut: null, estimatedLunch: false, error: ''
+      targetOut: null, endDayOffset: 0, estimatedLunch: false, error: ''
     };
     if (isDayOff(mode)) return result;
 
@@ -78,6 +78,7 @@ const Shift = (() => {
 
     result.started = true;
     result.complete = end !== null;
+    result.endDayOffset = end !== null ? Math.floor(end / MINUTES_PER_DAY) : 0;
     result.total = firstSegment + secondSegment;
     const activeNow = now !== null && now >= start && now - start < MINUTES_PER_DAY ? now : null;
     if (!result.complete && activeNow !== null) {

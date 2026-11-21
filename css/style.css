@@ -16,7 +16,7 @@
   --input-bg: #f5f5fa;
   --danger-color: #a82741;
   --trend-color: #a54112;
-  --app-font: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --app-font: Manrope, "Segoe UI", Arial, sans-serif;
   --shadow: 0 10px 32px rgb(25 22 70 / 6%);
   --navigation-height: 68px;
 }
@@ -100,7 +100,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   top: 0;
   z-index: 8;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: .75rem;
   padding-top: max(.8rem, env(safe-area-inset-top));
@@ -109,22 +109,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 .brand { display: inline-flex; justify-self: start; align-items: center; gap: .65rem; color: inherit; text-decoration: none; }
 .brand h1 { font-size: 1.35rem; letter-spacing: -.05em; }
-.header-clock {
-  display: grid;
-  justify-items: center;
-  gap: .05rem;
-  align-content: center;
-  min-height: 44px;
-  padding: .3rem .65rem;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  background: var(--input-bg);
-  color: var(--accent-color);
-  line-height: 1.1;
-  white-space: nowrap;
-}
-.header-clock span { color: var(--text-secondary); font-size: .69rem; font-weight: 650; }
-.header-clock time { font-size: .96rem; font-weight: 750; font-variant-numeric: tabular-nums; }
 .brand-mark, .avatar {
   display: inline-grid;
   place-items: center;
@@ -244,6 +228,23 @@ textarea { resize: vertical; }
 .inline-field select { width: auto; flex: 1 1 auto; }
 .weekly-tools { justify-content: space-between; margin: 1rem 0; }
 .weekly-expectation { margin-top: .65rem; color: var(--text-secondary); font-size: .88rem; }
+.quick-log, .manual-week { margin-top: .8rem; }
+.quick-log > summary, .manual-week > summary { min-height: 44px; align-content: center; cursor: pointer; font-weight: 700; }
+.quick-log > summary span { margin-inline-start: .4rem; color: var(--text-secondary); font-size: .82rem; font-weight: 500; }
+.manual-week[open] > summary { margin-bottom: .8rem; }
+.week-log-total { color: var(--text-secondary); font-size: .86rem; }
+.week-log-total strong { display: block; color: var(--accent-color); font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+.daily-log { margin: 0; padding: 0; list-style: none; }
+.daily-log > li {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .5rem;
+  padding: .45rem 0; border-top: 1px solid var(--border-color);
+}
+.log-date { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .5rem; }
+.log-date time, .log-detail { font-size: .82rem; color: var(--text-secondary); }
+.log-detail { margin-top: .15rem; overflow-wrap: anywhere; }
+.log-actions { display: flex; flex-wrap: wrap; justify-content: end; align-items: center; gap: .15rem .35rem; }
+.log-actions strong { font-size: .9rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.overnight-note { margin: -.25rem 0 .65rem; }
 
 .table-container { min-width: 0; }
 .minimal-table { width: 100%; border-collapse: collapse; text-align: left; font-size: .9rem; }
@@ -422,8 +423,7 @@ dialog .button-row { margin-top: 1rem; }
   .toast { bottom: calc(var(--navigation-height) + env(safe-area-inset-bottom) + .65rem); }
 }
 @media screen and (max-width: 480px) {
-  .app-header { grid-template-columns: auto minmax(0, 1fr) auto; gap: .4rem; }
-  .header-clock { justify-self: center; }
+  .app-header { gap: .4rem; }
   .brand { gap: .35rem; }
   .brand h1 { font-size: 1.04rem; }
   .brand-mark { width: 32px; height: 32px; font-size: 1.4rem; }
@@ -446,6 +446,8 @@ dialog .button-row { margin-top: 1rem; }
   [data-layout="mobile"] .mobile-only { display: inline-flex; align-items: center; }
   [data-layout="mobile"] .content-area { padding-top: .8rem; }
   [data-layout="mobile"] .today-layout { gap: .65rem; }
+  [data-layout="mobile"] .log-actions { flex-direction: column; align-items: end; }
+  [data-layout="mobile"] .log-actions .btn-text { padding-inline: .4rem; }
   [data-layout="mobile"] #today-view .section-heading { margin-bottom: .65rem; }
   [data-layout="mobile"] #shiftSummary {
     display: grid;
@@ -542,7 +544,7 @@ dialog .button-row { margin-top: 1rem; }
   body { background: white; color: black; }
   .app-header, .tab-nav, .weekly-tools, .report-fields, .button-row, .toast, .reminder-banner,
   .export-group, .mobile-only, .history-controls .inline-field, .section-heading button, #weekly-view .section-heading,
-  .schedule-table, #weeklyExpectation, #weeklyValidation, .chart-container, .action-cell,
+  .schedule-table, .week-logged-card, .manual-week > summary, #weeklyExpectation, #weeklyValidation, .chart-container, .action-cell,
   #historyTable th:last-child, #settings-view { display: none !important; }
   .content-area, .matte-panel { padding: 0; border: 0; box-shadow: none; }
   .print-only { display: block; }

@@ -4,14 +4,14 @@ Punchly is a browser-based time tracker and weekly time-card calculator. It uses
 
 ## Features
 
-- A live local clock with seconds and a Today view that shows net work, the target clock-out time, and extra time as it accrues.
+- A Today view that shows net work, the target clock-out time, and extra time as it accrues. Pick today or an earlier date for the start of a shift. An overnight clock-out can fall on the next day.
 - Full day shifts deduct the entire recorded lunch break. The lunch limit defaults to 45 minutes and drives the pre-lunch estimate and over-limit indicator.
 - Half day shifts use a start and end punch and half the full day target, rounded up to the next minute if needed. Leave and holidays can be saved with notes without adding work hours.
-- Weekly time cards with editable days, workday toggles, flexible time entry, break deductions, optional 5/15/30 minute rounding, notes, and print-ready reports.
+- Weekly time cards show daily shifts entered since Monday, including drafts. Today’s Quick log shows the last seven days. The Week tab also offers a separate manual report with break deductions, rounding, and printing.
 - Local persistence for current punches and weekly drafts. Daily and weekly history can be loaded, edited, or deleted.
 - Weekly, monthly, yearly, or all-time history filters, colored daily bars, and a 7-day rolling average over logged workdays.
 - Filtered CSV and Excel exports, chart PNG, browser print, and full JSON backup and restore. Excel uses sortable date cells.
-- Settings with AMOLED Black, ten app fonts, five profile icons, tracking defaults, and Compact mode.
+- Settings with AMOLED Black, ten app fonts, five profile icons, tracking defaults, and Compact mode. New profiles start with the light theme, Manrope, and Monday through Saturday as workdays.
 - Reminders for individual punches and the work target while Punchly is open. Device alerts need permission and a browser that supports them.
 - Mobile bottom navigation, touch-friendly forms, keyboard-accessible tabs, and offline PWA support when served from localhost or HTTPS. Press Alt + 1 through Alt + 4 to enter the four punches.
 - Automatic import of weekly records saved by the former `Punchly.html` app.

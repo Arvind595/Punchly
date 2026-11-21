@@ -2,7 +2,7 @@ const Storage = (() => {
   const keys = { TODAY: 'punchly_today_state', DRAFTS: 'punchly_daily_drafts', HISTORY: 'punchly_history', SETTINGS: 'punchly_settings', WEEK: 'punchly_week_state' };
   const defaults = {
     targetShift: '08:20',
-    font: 'system',
+    font: 'manrope',
     avatar: 'initials',
     compactMode: false,
     reminderIn: '',
@@ -12,7 +12,7 @@ const Storage = (() => {
     reminderTarget: false,
     lunchLimit: 45,
     theme: 'light',
-    workdays: [1, 2, 3, 4, 5],
+    workdays: [1, 2, 3, 4, 5, 6],
     rounding: 'none',
     clockFormat: '24',
     historyRange: 'weekly',
@@ -99,6 +99,11 @@ const Storage = (() => {
     return write(keys.HISTORY, history);
   }
 
+  function getDrafts() {
+    const drafts = read(keys.DRAFTS, {});
+    return drafts && typeof drafts === 'object' && !Array.isArray(drafts) ? drafts : {};
+  }
+
   function validateBackup(data) {
     const object = value => value && typeof value === 'object' && !Array.isArray(value);
     const date = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) &&
@@ -163,8 +168,10 @@ const Storage = (() => {
   return {
     keys,
     getToday: () => read(keys.TODAY, null), saveToday: data => write(keys.TODAY, data),
-    getDraft(date) { const drafts = read(keys.DRAFTS, {}); return drafts && typeof drafts === 'object' ? drafts[date] || null : null; },
-    saveDraft(date, draft) { const stored = read(keys.DRAFTS, {}); const drafts = stored && typeof stored === 'object' ? stored : {}; drafts[date] = draft; return write(keys.DRAFTS, drafts); },
+    getDraft(date) { return getDrafts()[date] || null; },
+    getDrafts,
+    saveDraft(date, draft) { const drafts = getDrafts(); drafts[date] = draft; return write(keys.DRAFTS, drafts); },
+    deleteDraft(date) { const drafts = getDrafts(); delete drafts[date]; return write(keys.DRAFTS, drafts); },
     getWeek: () => read(keys.WEEK, null), saveWeek: data => write(keys.WEEK, data),
     getHistory: normalizeHistory, getSettings, saveSettings: value => write(keys.SETTINGS, value),
     saveRecord,
