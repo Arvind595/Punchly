@@ -36,6 +36,8 @@ When opening the app on the same browser origin, records from the previous weekl
 
 Publish the repository root on GitHub Pages or another static host. `index.html` is the entry point. Serve `service-worker.js` from the same directory and allow the web manifest for offline support. To install, use **Settings → Install & shortcuts** or your browser's Install or Add to Home Screen menu. Open the app online once so it can cache its files.
 
+When releasing changes to the app shell, update the release marker and asset query versions in `index.html` together with `RELEASE` in `service-worker.js`. Online navigation checks for fresh HTML, and the offline cache keeps a complete copy of a single release.
+
 ## License
 
 GNU General Public License v3.0; see [LICENSE](LICENSE).

@@ -4,12 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f7f7ff">
+  <meta name="punchly-release" content="5">
   <meta name="description" content="A private, browser-based time tracker and weekly time-card calculator.">
   <title>Punchly | Time Tracker</title>
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-192.png">
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="manifest" href="manifest.webmanifest?v=5">
+  <link rel="stylesheet" href="css/style.css?v=5">
 </head>
 <body>
   <header class="app-header">
@@ -33,6 +34,9 @@
   </nav>
 
   <main class="content-area">
+    <p id="startupNotice" class="matte-panel startup-notice" role="alert" hidden>
+      Punchly couldn’t finish loading. <a href="./">Reload Punchly</a> or <a href="mailto:arvindne555@gmail.com?subject=Punchly%20loading%20issue">report a loading issue</a>.
+    </p>
     <section id="today-view" class="tab-pane active" role="tabpanel" aria-labelledby="tab-today">
       <div class="section-heading"><div><p class="eyebrow" id="todayDate"></p><h2 id="todayHeading">Today's shift</h2></div></div>
       <div class="today-layout">
@@ -227,6 +231,21 @@
             <dt>Evening out</dt><dd><kbd>Alt + 4</kbd></dd>
           </dl>
         </section>
+        <section class="matte-panel support-panel" aria-labelledby="supportHeading">
+          <h3 id="supportHeading">Developer &amp; Support</h3>
+          <dl class="developer-contact">
+            <dt>Developer</dt>
+            <dd>Aravind</dd>
+            <dt>Email</dt>
+            <dd><a href="mailto:arvindne555@gmail.com">arvindne555@gmail.com</a></dd>
+            <dt>GitHub</dt>
+            <dd><a href="https://github.com/Arvind595">@Arvind595</a></dd>
+          </dl>
+          <div class="button-row">
+            <a class="btn-secondary support-action" href="mailto:arvindne555@gmail.com?subject=Punchly%20bug%20report">Report an issue</a>
+            <a class="btn-secondary support-action" href="mailto:arvindne555@gmail.com?subject=Punchly%20feature%20request">Request a feature</a>
+          </div>
+        </section>
       </div>
     </section>
   </main>
@@ -246,12 +265,26 @@
     </form>
   </dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="js/shift.js"></script>
-  <script src="js/storage.js"></script>
-  <script src="js/charts.js"></script>
-  <script src="js/export.js"></script>
-  <script src="js/settings.js"></script>
-  <script src="js/reminders.js"></script>
-  <script src="js/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator && window.isSecureContext && location.protocol !== 'file:') {
+      navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' }).catch(function (error) {
+        console.warn('Punchly offline support could not be enabled.', error);
+      });
+    }
+    document.addEventListener('DOMContentLoaded', function () {
+      window.setTimeout(function () {
+        if (!document.documentElement.hasAttribute('data-app-ready')) {
+          document.getElementById('startupNotice').hidden = false;
+        }
+      }, 0);
+    });
+  </script>
+  <script src="js/shift.js?v=5"></script>
+  <script src="js/storage.js?v=5"></script>
+  <script src="js/charts.js?v=5"></script>
+  <script src="js/export.js?v=5"></script>
+  <script src="js/settings.js?v=5"></script>
+  <script src="js/reminders.js?v=5"></script>
+  <script src="js/app.js?v=5"></script>
 </body>
 </html>

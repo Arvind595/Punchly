@@ -278,6 +278,8 @@ textarea { resize: vertical; }
 .empty-state { padding: 1rem; text-align: center; color: var(--text-secondary); }
 
 .settings-layout h3 { margin-bottom: .25rem; }
+.settings-layout > section, .settings-layout form, .settings-layout .field { min-width: 0; }
+.settings-layout .matte-input { display: block; max-width: 100%; }
 .settings-layout form { margin-top: .85rem; }
 .settings-layout form > .btn-primary { margin-top: .75rem; }
 .help-text { color: var(--text-secondary); font-size: .88rem; }
@@ -296,6 +298,12 @@ textarea { resize: vertical; }
 .shortcut-list dd { margin: 0; }
 kbd { padding: .12rem .35rem; border: 1px solid var(--border-color); border-radius: 5px; background: var(--input-bg); }
 #dataHeading ~ .button-row { margin-top: .8rem; }
+.developer-contact { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .35rem .85rem; margin: .8rem 0 1rem; font-size: .9rem; }
+.developer-contact dt { color: var(--text-secondary); }
+.developer-contact dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.developer-contact a, .startup-notice a { color: var(--accent-color); text-underline-offset: .2em; }
+.support-action { display: inline-flex; align-items: center; text-decoration: none; }
+.startup-notice { margin-bottom: 1rem; }
 .settings-group { min-width: 0; border: 0; padding: 0; margin: .75rem 0 0; }
 .settings-group legend { padding: 0; margin-bottom: .5rem; font-size: .88rem; font-weight: 650; }
 .theme-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: .5rem; }
@@ -421,6 +429,8 @@ dialog .button-row { margin-top: 1rem; }
   .brand-mark { width: 32px; height: 32px; font-size: 1.4rem; }
   .profile-button { min-width: 44px; justify-content: center; padding: 3px; }
   #headerProfileName { display: none; }
+  #settings-view .settings-row { grid-template-columns: minmax(0, 1fr); }
+  .support-action { flex: 1 1 auto; justify-content: center; }
 }
 @media screen and (max-width: 420px) {
   .punch-grid { grid-template-columns: minmax(0, 1fr); }

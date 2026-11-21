@@ -32,7 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
   setInterval(tickClock, 1000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) tickClock(); });
   updateHistory();
-  if ('serviceWorker' in navigator && window.isSecureContext && location.protocol !== 'file:') navigator.serviceWorker.register('service-worker.js').catch(error => console.warn('Punchly offline support could not be enabled.', error));
   connectInstall();
 
   document.querySelectorAll('.tab-btn').forEach((tab, index, tabs) => {
@@ -617,4 +616,5 @@ document.addEventListener('DOMContentLoaded', () => {
   function formatDuration(minutes) { minutes = Math.max(0, Math.floor(minutes || 0)); return `${Math.floor(minutes / 60)}h ${minutes % 60}m`; }
   function localDateKey(date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
   function formatDate(date) { return new Date(`${date}T12:00:00`).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); }
+  document.documentElement.setAttribute('data-app-ready', '');
 });
