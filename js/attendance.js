@@ -1,25 +1,27 @@
 const Attendance = (() => {
   const labels = {
-    completed: 'Completed workday', absent: 'Absent', leave: 'Leave', holiday: 'Holiday',
-    weekend: 'Weekend', today: 'No punches yet', upcoming: 'Upcoming',
+    completed: 'Completed workday', 'no-punch': 'No punch', leave: 'Leave', holiday: 'Holiday',
+    sat1: '1st Saturday', sat3: '3rd Saturday', half: 'Half day', upcoming: 'Upcoming',
     incomplete: 'Incomplete shift', draft: 'Draft'
   };
   const asDate = date => new Date(`${date}T12:00:00`);
   const monthTitle = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' });
   const fullDate = new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
-  function stateFor(date, today, entry, workdays) {
-    const scheduled = workdays.includes(asDate(date).getDay());
-    if (date > today) return scheduled ? 'upcoming' : 'weekend';
-    if (entry?.isDraft) return 'draft';
+  function stateFor(date, today, entry) {
+    const saturday = Shift.saturdayMode(date);
+    if (date > today) return saturday || 'upcoming';
     if (entry?.mode === 'leave' || entry?.mode === 'holiday') return entry.mode;
+    const hasPunches = Shift.hasPunches(entry?.punches);
+    if (entry?.mode === 'half' && hasPunches) return 'half';
+    if (saturday) return saturday;
+    if (!hasPunches) return 'no-punch';
+    if (entry?.isDraft) return 'draft';
     if (entry?.complete) return 'completed';
-    if (entry?.mode) return 'incomplete';
-    if (!scheduled) return 'weekend';
-    return date === today ? 'today' : 'absent';
+    return 'incomplete';
   }
 
-  function connect({ todayKey, localDateKey, entriesFor, openDay, workdays, describePunches }) {
+  function connect({ todayKey, localDateKey, entriesFor, openDay, describePunches }) {
     const byId = id => document.getElementById(id);
     const grid = byId('calendarDays');
     const next = byId('calendarNext');
@@ -31,8 +33,9 @@ const Attendance = (() => {
     function showSelection() {
       const today = todayKey();
       const entry = entries.get(selected);
-      const status = stateFor(selected, today, entry, workdays());
-      byId('calendarSelection').textContent = `${fullDate.format(asDate(selected))} · ${labels[status]}`;
+      const status = stateFor(selected, today, entry);
+      const detail = Shift.isSaturday(status) ? (Shift.hasPunches(entry?.punches) ? ' · Worked' : ' · Scheduled holiday') : '';
+      byId('calendarSelection').textContent = `${fullDate.format(asDate(selected))} · ${labels[status]}${detail}`;
       const punches = entry?.mode ? describePunches(entry).join(' · ') : '';
       const punchLine = byId('calendarPunches');
       punchLine.hidden = !punches;
@@ -68,9 +71,8 @@ const Attendance = (() => {
         spacer.setAttribute('aria-hidden', 'true');
         fragment.append(spacer);
       }
-      const scheduled = workdays();
       for (const date of dates) {
-        const status = stateFor(date, today, entries.get(date), scheduled);
+        const status = stateFor(date, today, entries.get(date));
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'calendar-day';
@@ -110,5 +112,5 @@ const Attendance = (() => {
     return { refresh };
   }
 
-  return { connect };
+  return { connect, stateFor, labels };
 })();

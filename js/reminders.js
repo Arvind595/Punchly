@@ -61,7 +61,7 @@ const Reminders = (() => {
         const minute = Shift.parseTime(value);
         return minute !== null && elapsed >= minute && elapsed - minute <= 5;
       }
-      const workingDay = !Shift.isDayOff(day.mode);
+      const workingDay = !Shift.isHoliday(day.mode, day.punches);
       const pendingClockOut = Boolean(activeShift?.punches.morningIn && !activeShift.punches.eveningOut);
       if (settings.workdays.includes(now.getDay()) && workingDay) {
         if (!day.punches.morningIn && !pendingClockOut && due(settings.reminderIn) &&

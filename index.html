@@ -4,19 +4,22 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f7f7ff">
-  <meta name="punchly-release" content="8">
+  <meta name="punchly-release" content="10">
   <meta name="description" content="A private, browser-based time tracker and weekly time-card calculator.">
   <title>Punchly | Time Tracker</title>
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-192.png">
-  <link rel="manifest" href="manifest.webmanifest?v=8">
-  <link rel="stylesheet" href="css/style.css?v=8">
+  <link rel="manifest" href="manifest.webmanifest?v=10">
+  <link rel="stylesheet" href="css/style.css?v=10">
 </head>
 <body>
   <header class="app-header">
-    <a class="brand" href="#today-view" aria-label="Punchly home">
-      <span class="brand-mark" aria-hidden="true">◷</span><h1>Punchly</h1>
-    </a>
+    <div class="brand-toolbar">
+      <a class="brand" href="#punch-view" aria-label="Punchly home">
+        <span class="brand-mark" aria-hidden="true">◷</span><h1>Punchly <small id="appVersion" class="app-version"></small></h1>
+      </a>
+      <button id="refreshPage" class="btn-text refresh-page" type="button" aria-label="Refresh Punchly" title="Refresh page"><span aria-hidden="true">↻</span></button>
+    </div>
     <div class="header-actions">
       <button class="btn-secondary desktop-only" type="button" id="miniTimerToggle" aria-pressed="false">Mini timer</button>
       <button class="profile-button" id="openSettings" type="button" aria-label="Open profile settings">
@@ -25,19 +28,42 @@
     </div>
   </header>
 
+  <div class="tab-dock" id="tabDock">
   <nav class="tab-nav" aria-label="Main navigation" role="tablist">
-    <button class="tab-btn active" id="tab-today" role="tab" aria-selected="true" aria-controls="today-view" data-target="today-view"><span class="ui-icon" data-icon="clock" aria-hidden="true"></span>Today</button>
+    <button class="tab-btn active" id="tab-punch" role="tab" aria-selected="true" aria-controls="punch-view" data-target="punch-view"><span class="ui-icon" data-icon="clock" aria-hidden="true"></span>Punch</button>
+    <button class="tab-btn" id="tab-today" role="tab" aria-selected="false" aria-controls="today-view" data-target="today-view" tabindex="-1"><span class="ui-icon" data-icon="list" aria-hidden="true"></span>Today</button>
     <button class="tab-btn" id="tab-weekly" role="tab" aria-selected="false" aria-controls="weekly-view" data-target="weekly-view" tabindex="-1"><span class="ui-icon" data-icon="calendar" aria-hidden="true"></span>Week</button>
-    <button class="tab-btn" id="tab-calendar" role="tab" aria-selected="false" aria-controls="calendar-view" data-target="calendar-view" tabindex="-1"><span class="ui-icon" data-icon="calendar" aria-hidden="true"></span>Calendar</button>
-    <button class="tab-btn" id="tab-history" role="tab" aria-selected="false" aria-controls="history-view" data-target="history-view" tabindex="-1"><span class="ui-icon" data-icon="chart" aria-hidden="true"></span>History</button>
+    <button class="tab-btn" id="tab-calendar" role="tab" aria-label="Attendance calendar" aria-selected="false" aria-controls="calendar-view" data-target="calendar-view" tabindex="-1"><span class="ui-icon" data-icon="calendar" aria-hidden="true"></span>Dates</button>
+    <div class="extra-tabs" id="extraTabs" role="presentation">
+    <button class="tab-btn" id="tab-history" role="tab" aria-selected="false" aria-controls="history-view" data-target="history-view" tabindex="-1"><span class="ui-icon" data-icon="list" aria-hidden="true"></span>History</button>
+    <button class="tab-btn" id="tab-stats" role="tab" aria-label="Statistics" aria-selected="false" aria-controls="stats-view" data-target="stats-view" tabindex="-1"><span class="ui-icon" data-icon="chart" aria-hidden="true"></span>Stats</button>
+    <button class="tab-btn" id="tab-export" role="tab" aria-selected="false" aria-controls="export-view" data-target="export-view" tabindex="-1"><span class="ui-icon" data-icon="download" aria-hidden="true"></span>Export</button>
     <button class="tab-btn" id="tab-settings" role="tab" aria-selected="false" aria-controls="settings-view" data-target="settings-view" tabindex="-1"><span class="ui-icon" data-icon="settings" aria-hidden="true"></span>Settings</button>
+    </div>
   </nav>
+  <button class="tab-btn mobile-only more-tabs" type="button" id="moreTabs" aria-expanded="false" aria-controls="extraTabs"><span class="ui-icon" data-icon="more" aria-hidden="true"></span>More</button>
+  </div>
 
   <main class="content-area">
     <p id="startupNotice" class="matte-panel startup-notice" role="alert" hidden>
       Punchly couldn’t finish loading. <a href="./">Reload Punchly</a> or <a href="mailto:arvindne555@gmail.com?subject=Punchly%20loading%20issue">report a loading issue</a>.
     </p>
-    <section id="today-view" class="tab-pane active" role="tabpanel" aria-labelledby="tab-today">
+    <section id="punch-view" class="tab-pane active" role="tabpanel" aria-labelledby="tab-punch">
+      <div class="matte-panel guided-punch">
+        <div class="section-heading">
+          <div><p class="eyebrow" id="guidedDate"></p><h2>Punch in and out</h2></div>
+        </div>
+        <p class="guided-status" id="guidedStatus" role="status"></p>
+        <ol class="guided-steps" id="guidedSteps" aria-label="Punches for this shift"></ol>
+        <div class="button-row guided-actions">
+          <button id="guidedNext" class="btn-primary" type="button" hidden></button>
+          <button id="guidedSkipLunch" class="btn-secondary" type="button" hidden>Punch out without lunch</button>
+          <button id="guidedEdit" class="btn-text" type="button">Edit in Today</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="today-view" class="tab-pane" role="tabpanel" aria-labelledby="tab-today" hidden>
       <div class="section-heading"><div><p class="eyebrow" id="todayDate"></p><h2 id="todayHeading" tabindex="-1">Today's shift</h2></div></div>
       <div class="today-layout">
         <div class="calculation-panel" id="shiftSummary">
@@ -72,6 +98,8 @@
                 <option value="half">Half day</option>
                 <option value="leave">Leave</option>
                 <option value="holiday">Holiday</option>
+                <option value="sat1" hidden disabled>1st Saturday</option>
+                <option value="sat3" hidden disabled>3rd Saturday</option>
               </select>
             </label>
           </div>
@@ -146,9 +174,10 @@
         <div class="calendar-weekdays" aria-hidden="true"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
         <div class="calendar-grid" id="calendarDays" aria-labelledby="calendarMonth"></div>
         <ul class="attendance-legend" aria-label="Attendance key">
-          <li data-attendance="completed">Completed</li><li data-attendance="absent">Absent</li>
+          <li data-attendance="completed">Completed</li><li data-attendance="no-punch">No punch</li>
           <li data-attendance="leave">Leave</li><li data-attendance="holiday">Holiday</li>
-          <li data-attendance="weekend">Weekend</li>
+          <li data-attendance="sat1">1st Saturday</li><li data-attendance="sat3">3rd Saturday</li>
+          <li data-attendance="half">Half day</li>
         </ul>
         <div class="calendar-selection" aria-live="polite">
           <p id="calendarSelection"></p>
@@ -162,22 +191,14 @@
     <section id="history-view" class="tab-pane" role="tabpanel" aria-labelledby="tab-history" hidden>
       <div class="card matte-panel">
         <div class="history-controls">
-          <h2>History &amp; analytics</h2>
+          <h2>History</h2>
           <label class="inline-field" for="timeRangeFilter">Date range<select id="timeRangeFilter" class="matte-input"><option value="weekly">This week</option><option value="monthly">This month</option><option value="yearly">This year</option><option value="all">All time</option></select></label>
           <label class="inline-field history-search" for="historySearch">Search records<input type="search" id="historySearch" class="matte-input" placeholder="Date or notes"></label>
-          <button id="historyOptionsToggle" class="btn-text mobile-only" type="button" aria-expanded="false" aria-controls="historyExports historySummary chartExportArea">Analytics &amp; exports</button>
-          <div class="export-group compact-hide" id="historyExports">
-            <button id="exportExcel" class="btn-secondary icon-button" type="button"><span class="ui-icon" data-icon="download" aria-hidden="true"></span>Export Excel</button>
-            <button id="exportCSV" class="btn-secondary icon-button" type="button"><span class="ui-icon" data-icon="download" aria-hidden="true"></span>Export filtered CSV</button>
-            <button id="exportChartPNG" class="btn-secondary" type="button">Export chart PNG</button>
-            <button id="printHistory" class="btn-secondary" type="button">Print / save PDF</button>
-          </div>
-        </div>
-        <div class="summary-grid" id="historySummary" aria-live="polite"><article class="summary-card"><span>Daily hours</span><strong id="summaryHours">0h 0m</strong></article><article class="summary-card"><span>Average per day</span><strong id="summaryAverage">0h 0m</strong></article><article class="summary-card"><span>Overtime vs target</span><strong id="summaryOvertime">0h 0m</strong></article><article class="summary-card"><span>Targets met</span><strong id="summaryTargets">0 / 0</strong></article><article class="summary-card" data-attendance="leave"><span>Leave days taken</span><strong id="summaryLeave">0</strong></article><article class="summary-card" data-attendance="holiday"><span>Holidays taken</span><strong id="summaryHolidays">0</strong></article></div>
-        <div class="chart-container compact-hide" id="chartExportArea">
-          <div class="chart-legend"><span class="chart-key">Daily hours</span><span class="chart-key trend-key">7-day average</span></div>
-          <canvas id="analyticsChart" role="img" aria-label="Daily hours and 7-day average" aria-describedby="chartNote"></canvas>
-          <p id="chartNote" class="help-text"></p>
+          <label class="inline-field" for="historyFilter">Record type<select id="historyFilter" class="matte-input">
+            <option value="all">All records</option><option value="leave">Leave</option><option value="holiday">Holidays</option>
+            <option value="incomplete">Incomplete shifts</option><option value="overtime">Overtime</option>
+            <option value="over-lunch">Over lunch limit</option><option value="no-punch">Unpunched dates</option>
+          </select></label>
         </div>
         <div class="table-container">
           <table id="historyTable" class="minimal-table" role="table" aria-label="Saved records">
@@ -186,6 +207,39 @@
           </table>
         </div>
         <p id="emptyHistory" class="empty-state" hidden>No records in this date range yet.</p>
+      </div>
+    </section>
+
+    <section id="stats-view" class="tab-pane" role="tabpanel" aria-labelledby="tab-stats" hidden>
+      <div class="matte-panel">
+        <div class="history-controls">
+          <h2>Statistics</h2>
+          <label class="inline-field" for="statsRange">Date range<select id="statsRange" class="matte-input"><option value="weekly">This week</option><option value="monthly">This month</option><option value="yearly">This year</option><option value="all">All time</option></select></label>
+          <label class="inline-field" for="statsView">View<select id="statsView" class="matte-input"><option value="bar">Bar graph</option><option value="line">Line graph</option><option value="pie">Attendance pie chart</option><option value="log">Classic log</option></select></label>
+        </div>
+        <div class="summary-grid" id="historySummary" aria-live="polite"><article class="summary-card"><span>Daily hours</span><strong id="summaryHours">0h 0m</strong></article><article class="summary-card"><span>Average per day</span><strong id="summaryAverage">0h 0m</strong></article><article class="summary-card"><span>Overtime vs target</span><strong id="summaryOvertime">0h 0m</strong></article><article class="summary-card"><span>Targets met</span><strong id="summaryTargets">0 / 0</strong></article><article class="summary-card" data-attendance="leave"><span>Leave days taken</span><strong id="summaryLeave">0</strong></article><article class="summary-card" data-attendance="holiday"><span>Holidays taken</span><strong id="summaryHolidays">0</strong></article></div>
+        <div class="chart-container" id="chartExportArea">
+          <canvas id="analyticsChart" role="img" aria-describedby="chartNote chartLegend"></canvas>
+          <ul class="chart-legend" id="chartLegend"></ul>
+          <p id="chartNote" class="help-text"></p>
+        </div>
+        <div class="table-container" id="statsLog" hidden>
+          <table class="minimal-table" aria-label="Attendance and worked time"><thead><tr><th scope="col">Date</th><th scope="col">Attendance</th><th scope="col">Worked</th></tr></thead><tbody id="statsLogRows"></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <section id="export-view" class="tab-pane" role="tabpanel" aria-labelledby="tab-export" hidden>
+      <div class="matte-panel">
+        <div class="section-heading"><h2>Export records</h2></div>
+        <label class="field export-range" for="exportRange">Date range<select id="exportRange" class="matte-input"><option value="history">History search and filters</option><option value="weekly">This week</option><option value="monthly">This month</option><option value="yearly">This year</option><option value="all">All time</option></select></label>
+        <p id="exportCount" class="help-text" aria-live="polite"></p>
+        <div class="export-group export-actions">
+          <button id="exportPDF" class="btn-secondary" type="button">Download PDF</button>
+          <button id="exportChartPNG" class="btn-secondary" type="button">Download PNG chart</button>
+          <button id="exportExcel" class="btn-secondary" type="button">Download Excel</button>
+          <button id="exportCSV" class="btn-secondary" type="button">Download CSV</button>
+        </div>
       </div>
     </section>
 
@@ -340,14 +394,15 @@
       }, 0);
     });
   </script>
-  <script src="js/shift.js?v=8"></script>
-  <script src="js/storage.js?v=8"></script>
-  <script src="js/charts.js?v=8"></script>
-  <script src="js/export.js?v=8"></script>
-  <script src="js/settings.js?v=8"></script>
-  <script src="js/reminders.js?v=8"></script>
-  <script src="js/attendance.js?v=8"></script>
-  <script src="js/mini-timer.js?v=8"></script>
-  <script src="js/app.js?v=8"></script>
+  <script src="js/shift.js?v=10"></script>
+  <script src="js/storage.js?v=10"></script>
+  <script src="js/charts.js?v=10"></script>
+  <script src="js/export.js?v=10"></script>
+  <script src="js/settings.js?v=10"></script>
+  <script src="js/reminders.js?v=10"></script>
+  <script src="js/attendance.js?v=10"></script>
+  <script src="js/mini-timer.js?v=10"></script>
+  <script src="js/guided-punch.js?v=10"></script>
+  <script src="js/app.js?v=10"></script>
 </body>
 </html>

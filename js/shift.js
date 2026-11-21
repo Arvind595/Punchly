@@ -6,7 +6,9 @@ const Shift = (() => {
     ['full', 'Full day'],
     ['half', 'Half day'],
     ['leave', 'Leave'],
-    ['holiday', 'Holiday']
+    ['holiday', 'Holiday'],
+    ['sat1', '1st Saturday'],
+    ['sat3', '3rd Saturday']
   ]);
 
   function normalizeMode(mode) {
@@ -19,6 +21,32 @@ const Shift = (() => {
 
   function label(mode) {
     return labels.get(normalizeMode(mode));
+  }
+
+  function saturdayMode(date) {
+    if (!date || new Date(date + 'T12:00:00').getDay() !== 6) return null;
+    const day = Number(date.slice(8));
+    return day <= 7 ? 'sat1' : day >= 15 && day <= 21 ? 'sat3' : null;
+  }
+
+  function isSaturday(mode) {
+    return mode === 'sat1' || mode === 'sat3';
+  }
+
+  function hasPunches(punches) {
+    return fields.some(field => parseTime(punches?.[field]) !== null);
+  }
+
+  function isHoliday(mode, punches) {
+    return isDayOff(mode) || (isSaturday(mode) && !hasPunches(punches));
+  }
+
+  function saturdayNotes(value, date, worked) {
+    const mode = saturdayMode(date);
+    if (!mode) return String(value || '');
+    const marker = label(mode) + ' worked';
+    const notes = String(value || '').split('\n').filter(line => line.trim() !== marker).join('\n').trimEnd();
+    return worked ? [notes, marker].filter(Boolean).join('\n') : notes;
   }
 
   function parseTime(value) {
@@ -34,7 +62,7 @@ const Shift = (() => {
   }
 
   function measure({ mode, punches, baseTarget, lunchLimit, now }) {
-    const target = isDayOff(mode) ? 0 : mode === 'half' ? Math.ceil(baseTarget / 2) : baseTarget;
+    const target = isHoliday(mode, punches) ? 0 : mode === 'half' ? Math.ceil(baseTarget / 2) : baseTarget;
     const result = {
       target, total: 0, extra: 0, lunch: null, lunchOpen: false, started: false, complete: false,
       targetOut: null, endDayOffset: 0, estimatedLunch: false, error: ''
@@ -97,7 +125,7 @@ const Shift = (() => {
       result.targetOut = projectedReturn + target - firstSegment;
       result.estimatedLunch = lunchReturn === null;
     } else {
-      const planLunch = mode === 'full' && lunchOut === null && end === null && lunchLimit > 0 && result.total < target;
+      const planLunch = mode !== 'half' && lunchOut === null && end === null && lunchLimit > 0 && result.total < target;
       result.targetOut = start + target + (planLunch ? lunchLimit : 0);
       result.estimatedLunch = planLunch;
     }
@@ -105,11 +133,13 @@ const Shift = (() => {
   }
 
   function recordStatus(record) {
+    if (record.entryStatus) return record.entryStatus;
     if (record.kind === 'weekly') return 'Saved report';
     if (isDayOff(record.mode)) return label(record.mode);
+    if (isSaturday(record.mode) && !hasPunches(record.punches) && !record.in && !record.out) return label(record.mode) + ' holiday';
     if (record.targetMet) return 'Target met';
     return record.out ? 'Below target' : 'In progress';
   }
 
-  return { fields, label, normalizeMode, isDayOff, parseTime, punchesForMode, measure, recordStatus };
+  return { fields, label, normalizeMode, isDayOff, isSaturday, saturdayMode, saturdayNotes, hasPunches, isHoliday, parseTime, punchesForMode, measure, recordStatus };
 })();

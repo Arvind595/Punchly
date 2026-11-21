@@ -12,7 +12,7 @@
     return `"${text.replace(/"/g, '""')}"`;
   }
   function visibleRecords() {
-    const records = window.getVisibleHistory?.() || [];
+    const records = window.getExportRecords?.() ?? window.getVisibleHistory?.() ?? [];
     if (!records.length) window.showPunchlyToast?.('There are no records in this date range to export.');
     return records;
   }
@@ -70,10 +70,116 @@
     } catch (error) { window.showPunchlyToast?.('The Excel file could not be created.'); }
   };
   window.exportChartPNG = () => {
-    const canvas = document.getElementById('analyticsChart');
+    const records = visibleRecords();
+    if (!records.length) return;
     try {
+      const canvas = Charts.exportChart(records, window.getExportChartKind?.() || 'bar');
       const link = document.createElement('a'); link.download = 'Punchly_filtered_chart.png'; link.href = canvas.toDataURL('image/png'); link.click();
     } catch (error) { window.showPunchlyToast?.('The chart image could not be created.'); }
+  };
+
+  function pdfBlob(images, width, height) {
+    const encoder = new TextEncoder();
+    const parts = [];
+    const offsets = [0];
+    let length = 0;
+    function write(part) {
+      const bytes = typeof part === 'string' ? encoder.encode(part) : part;
+      parts.push(bytes);
+      length += bytes.length;
+    }
+    function object(id, ...contents) {
+      offsets[id] = length;
+      write(`${id} 0 obj\n`);
+      contents.forEach(write);
+      write('\nendobj\n');
+    }
+    write('%PDF-1.4\n');
+    object(1, '<< /Type /Catalog /Pages 2 0 R >>');
+    const pages = images.map((_, i) => 3 + i * 3);
+    object(2, `<< /Type /Pages /Count ${pages.length} /Kids [${pages.map(id => `${id} 0 R`).join(' ')}] >>`);
+    for (const [index, jpeg] of images.entries()) {
+      const page = pages[index];
+      const drawing = 'q 595 0 0 842 0 0 cm /Im0 Do Q\n';
+      object(page, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im0 ${page + 2} 0 R >> >> /Contents ${page + 1} 0 R >>`);
+      object(page + 1, `<< /Length ${drawing.length} >>\nstream\n${drawing}endstream`);
+      object(page + 2, `<< /Type /XObject /Subtype /Image /Width ${width} /Height ${height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\nstream\n`, jpeg, '\nendstream');
+    }
+    const xref = length;
+    write(`xref\n0 ${offsets.length}\n0000000000 65535 f \n`);
+    offsets.slice(1).forEach(offset => write(`${String(offset).padStart(10, '0')} 00000 n \n`));
+    write(`trailer\n<< /Size ${offsets.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+    return new Blob(parts, { type: 'application/pdf' });
+  }
+
+  function pdfTimesheet(records) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1000;
+    canvas.height = 1415;
+    const ctx = canvas.getContext('2d');
+    const margin = 48;
+    const lineWidth = canvas.width - margin * 2;
+    const pages = [];
+    let y;
+    function startPage() {
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#26243d'; ctx.font = 'bold 36px sans-serif';
+      ctx.fillText('Punchly timesheet', margin, 75);
+      ctx.font = '19px sans-serif';
+      ctx.fillText(`Page ${pages.length + 1}  ·  ${records.length} ${records.length === 1 ? 'record' : 'records'}`, margin, 108);
+      y = 154;
+    }
+    function finishPage() {
+      const bytes = atob(canvas.toDataURL('image/jpeg', .88).split(',')[1]);
+      pages.push(Uint8Array.from(bytes, char => char.charCodeAt(0)));
+    }
+    function ensureRoom(height) {
+      if (y + height < canvas.height - 42) return;
+      finishPage();
+      startPage();
+    }
+    function line(text, bold = false) {
+      ensureRoom(28);
+      ctx.fillStyle = bold ? '#26243d' : '#46465b';
+      ctx.font = bold ? 'bold 21px sans-serif' : '19px sans-serif';
+      ctx.fillText(text, margin, y, lineWidth);
+      y += 28;
+    }
+    function notes(text) {
+      ctx.font = '19px sans-serif';
+      for (const paragraph of String(text).split(/\r?\n/)) {
+        let row = '';
+        for (const word of paragraph.split(/\s+/)) {
+          const next = row ? `${row} ${word}` : word;
+          if (row && ctx.measureText(next).width > lineWidth) { line(row); row = word; }
+          else row = next;
+        }
+        if (row) line(row);
+      }
+    }
+    startPage();
+    const duration = minutes => `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+    for (const record of records) {
+      ensureRoom(88);
+      const [, type, title, total, status, start, lunchOut, lunchReturn, end] = recordRows([record])[0];
+      line(`${record.date}  ·  ${title || (type === 'Weekly' ? 'Weekly report' : Shift.label(record.mode))}  ·  ${status}`, true);
+      const punches = [start && `In ${start}`, lunchOut && `Lunch out ${lunchOut}`, lunchReturn && `Lunch return ${lunchReturn}`, end && `Out ${end}`].filter(Boolean);
+      line([`Worked ${duration(Math.max(0, total))}`, ...punches].join('  ·  '));
+      for (const row of record.schedule || []) {
+        if (row.from || row.to) line(`${row.day}: ${row.from || '—'} to ${row.to || '—'}${row.break || row.breakDeduction ? ` · Break ${row.break || row.breakDeduction}` : ''}`);
+      }
+      if (record.notes) notes(record.notes);
+      y += 18;
+    }
+    finishPage();
+    return pdfBlob(pages, canvas.width, canvas.height);
+  }
+
+  window.exportVisiblePDF = () => {
+    const records = visibleRecords();
+    if (!records.length) return;
+    try { download(pdfTimesheet(records), 'Punchly_timesheet.pdf', 'application/pdf'); }
+    catch (error) { window.showPunchlyToast?.('The PDF could not be created.'); }
   };
   window.downloadBackup = () => download(JSON.stringify(Storage.exportBackup(), null, 2), 'Punchly_backup.json', 'application/json');
   function chooseRestoreMode(backup) {

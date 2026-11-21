@@ -1,8 +1,8 @@
-const RELEASE = 8;
+const RELEASE = 10;
 const CACHE_NAME = `punchly-static-v${RELEASE}`;
 const APP_ASSETS = [
   ...['css/style.css', 'manifest.webmanifest', 'js/shift.js', 'js/storage.js',
-    'js/charts.js', 'js/export.js', 'js/settings.js', 'js/reminders.js', 'js/attendance.js', 'js/mini-timer.js', 'js/app.js']
+    'js/charts.js', 'js/export.js', 'js/settings.js', 'js/reminders.js', 'js/attendance.js', 'js/mini-timer.js', 'js/guided-punch.js', 'js/app.js']
     .map(path => `./${path}?v=${RELEASE}`),
   './assets/logo.svg', './assets/icon-192.png', './assets/icon-512.png',
   './assets/fonts/inter-regular.woff', './assets/fonts/inter-bold.woff',
