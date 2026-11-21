@@ -278,7 +278,7 @@ textarea { resize: vertical; }
 .empty-state { padding: 1rem; text-align: center; color: var(--text-secondary); }
 
 .settings-layout h3 { margin-bottom: .25rem; }
-.settings-layout > section, .settings-layout form, .settings-layout .field { min-width: 0; }
+.settings-layout > .settings-fold, .settings-layout form, .settings-layout .field { min-width: 0; }
 .settings-layout .matte-input { display: block; max-width: 100%; }
 .settings-layout form { margin-top: .85rem; }
 .settings-layout form > .btn-primary { margin-top: .75rem; }
@@ -356,7 +356,7 @@ dialog {
 dialog::backdrop { background: rgb(16 12 24 / 62%); }
 dialog p { margin-top: .65rem; }
 dialog .button-row { margin-top: 1rem; }
-.compact-only { display: none; }
+.compact-only, .mobile-only { display: none; }
 [data-compact="true"] .compact-hide,
 [data-compact="true"] #today-view[data-day-off="false"] #todayStatus,
 [data-compact="true"] #lunchStatus,
@@ -369,7 +369,7 @@ dialog .button-row { margin-top: 1rem; }
 [data-compact="true"] .calculation-panel { padding-block: .95rem; }
 .print-only { display: none; }
 
-@media screen and (max-width: 900px) {
+@media screen and (max-width: 900px), screen and (max-width: 1024px) and (hover: none) and (pointer: coarse) {
   .schedule-table, .schedule-table tbody, .schedule-table tfoot { display: block; }
   .schedule-table thead, #historyTable thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .schedule-table tbody { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; }
@@ -393,7 +393,7 @@ dialog .button-row { margin-top: 1rem; }
   .punch-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
-@media screen and (max-width: 680px) {
+@media screen and (max-width: 680px), screen and (max-width: 1024px) and (hover: none) and (pointer: coarse) {
   .today-layout, .settings-layout, .schedule-table tbody { grid-template-columns: minmax(0, 1fr); }
   .tab-nav {
     position: fixed; z-index: 10; inset: auto 0 0;
@@ -442,6 +442,98 @@ dialog .button-row { margin-top: 1rem; }
 @media screen and (max-width: 350px) {
   .punch-group { grid-template-columns: minmax(0, 1fr); }
 }
+@media screen {
+  [data-layout="mobile"] .mobile-only { display: inline-flex; align-items: center; }
+  [data-layout="mobile"] .content-area { padding-top: .8rem; }
+  [data-layout="mobile"] .today-layout { gap: .65rem; }
+  [data-layout="mobile"] #today-view .section-heading { margin-bottom: .65rem; }
+  [data-layout="mobile"] #shiftSummary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: .25rem .75rem;
+    padding: .75rem .9rem .35rem;
+  }
+  [data-layout="mobile"] #shiftSummary.mobile-expanded { grid-template-columns: minmax(0, 1fr); }
+  [data-layout="mobile"] #shiftSummary .shift-end .value { font-size: clamp(1.35rem, 5vw, 2rem); }
+  [data-layout="mobile"] #shiftSummary:not(.mobile-expanded) .shift-stats { display: block; margin: 0; }
+  [data-layout="mobile"] #shiftSummary:not(.mobile-expanded) .shift-stats .calc-result { padding: 0; background: transparent; }
+  [data-layout="mobile"] #shiftSummary:not(.mobile-expanded) .shift-stats .value { font-size: 1.35rem; }
+  [data-layout="mobile"] #shiftSummary:not(.mobile-expanded) .extra-work {
+    display: flex; align-items: baseline; flex-wrap: wrap; gap: .15rem .4rem;
+    margin-top: .25rem; box-shadow: none;
+  }
+  [data-layout="mobile"] #shiftSummary:not(.mobile-expanded) .extra-work .value { font-size: .88rem; }
+  [data-layout="mobile"] #today-view[data-has-extra="false"] #shiftSummary:not(.mobile-expanded) .extra-work,
+  [data-layout="mobile"] #shiftSummary:not(.mobile-expanded) .mobile-summary-detail,
+  [data-layout="mobile"] #shiftSummary:not(.mobile-expanded) .progress-container,
+  [data-layout="mobile"] #shiftSummary:not(.mobile-expanded) #targetOutHint,
+  [data-layout="mobile"] #today-view[data-day-off="false"] #shiftSummary:not(.mobile-expanded) #todayStatus,
+  [data-layout="mobile"] #shiftSummary:not(.mobile-expanded) #lunchStatus:not(.lunch-over-limit),
+  [data-layout="mobile"] #today-view[data-day-off="true"] #mobileSummaryToggle,
+  [data-layout="mobile"][data-compact="true"] #mobileSummaryToggle { display: none; }
+  [data-layout="mobile"] #shiftSummary > .status-line,
+  [data-layout="mobile"] #shiftSummary > .summary-toggle { grid-column: 1 / -1; }
+  [data-layout="mobile"] #shiftSummary .summary-toggle {
+    justify-self: start; min-height: 44px; gap: .4rem; padding: 0;
+    border: 0; background: transparent; color: inherit; font-size: .8rem; font-weight: 650;
+  }
+  [data-layout="mobile"] #shiftSummary .summary-toggle:focus-visible { outline-color: currentColor; }
+  [data-layout="mobile"] .summary-toggle::after,
+  [data-layout="mobile"] .week-day-toggle::after { content: '+'; font-weight: 400; }
+  [data-layout="mobile"] .summary-toggle[aria-expanded="true"]::after,
+  [data-layout="mobile"] .week-day-toggle[aria-expanded="true"]::after { content: '−'; }
+
+  [data-layout="mobile"] .punch-card { padding: .6rem .85rem .85rem; }
+  [data-layout="mobile"] .punch-card-heading,
+  [data-layout="mobile"] #today-view:not(.show-shift-details) .compact-detail,
+  [data-layout="mobile"] #today-view:not(.show-shift-details) #clearDayBtn { display: none; }
+  [data-layout="mobile"] #today-view[data-day-off="true"] #dayNotesField { display: grid; }
+  [data-layout="mobile"] #compactDetails { display: inline-flex; align-items: center; padding-inline: 0; }
+  [data-layout="mobile"] .punch-grid { grid-template-columns: minmax(0, 1fr); gap: 0; margin: 0 0 .85rem; }
+  [data-layout="mobile"] .punch-group {
+    display: grid; grid-template-columns: minmax(4.6rem, .75fr) minmax(0, 1.65fr);
+    align-items: center; gap: .4rem; padding: .35rem 0;
+    border: 0; border-top: 1px solid var(--border-color); border-radius: 0; background: transparent;
+  }
+  [data-layout="mobile"] .punch-group label { margin: 0; }
+  [data-layout="mobile"] .punch-group .btn-now { min-width: 44px; }
+
+  [data-layout="mobile"] .schedule-table tbody { gap: .4rem; }
+  [data-layout="mobile"] .schedule-table tbody tr:not(.week-day-expanded) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: .5rem;
+    padding-block: .1rem;
+  }
+  [data-layout="mobile"] .schedule-table tbody tr:not(.week-day-expanded) td:not(.week-row-total),
+  [data-layout="mobile"] .week-day-title { display: none; }
+  [data-layout="mobile"] .week-day-toggle {
+    justify-content: space-between; gap: .5rem; width: 100%; min-height: 44px; padding: 0;
+    border: 0; background: transparent; color: var(--text-primary); text-align: left; font-weight: 650;
+  }
+  [data-layout="mobile"] .week-row-total { font-variant-numeric: tabular-nums; }
+  [data-layout="mobile"] .schedule-table tr:not(.week-day-expanded) .week-row-total { grid-area: 1 / 2; }
+  [data-layout="mobile"] #printWeekly,
+  [data-layout="mobile"] #weekly-view:not(.mobile-expanded) :is(#weeklyTools, #weeklyReportFields, #printWeeklyMobile),
+  [data-layout="mobile"] #history-view:not(.mobile-expanded) :is(#historyExports, #historySummary, #chartExportArea),
+  [data-layout="mobile"][data-compact="true"] #printWeeklyMobile { display: none; }
+  [data-layout="mobile"] #printWeeklyMobile { margin-bottom: .65rem; }
+  [data-layout="mobile"] :is(#weeklyOptionsToggle, #historyOptionsToggle) { padding-inline: 0; }
+
+  [data-layout="mobile"] .settings-layout { gap: .5rem; }
+  [data-layout="mobile"] .settings-fold { padding: 0 .85rem; border-radius: 12px; box-shadow: none; }
+  [data-layout="mobile"] .settings-fold[open] { padding-bottom: .85rem; }
+  [data-layout="mobile"] .settings-fold > summary {
+    display: flex; justify-content: space-between; gap: .6rem; min-height: 48px;
+    list-style: none; cursor: pointer; font-weight: 700;
+  }
+  [data-layout="mobile"] .settings-fold > summary::-webkit-details-marker { display: none; }
+  [data-layout="mobile"] .settings-fold > summary::after { content: '+'; color: var(--accent-color); font-size: 1.1rem; font-weight: 450; }
+  [data-layout="mobile"] .settings-fold[open] > summary::after { content: '−'; }
+  [data-layout="mobile"] .settings-fold[open] > summary { margin-bottom: .5rem; border-bottom: 1px solid var(--border-color); }
+  [data-layout="mobile"] .settings-fold > h3,
+  [data-layout="mobile"] .settings-fold .profile-heading h3 { display: none; }
+}
 @media (prefers-reduced-motion: reduce) {
   .progress-bar, .toast { transition: none; }
 }
@@ -449,7 +541,7 @@ dialog .button-row { margin-top: 1rem; }
   :root, [data-color-mode="dark"] { color-scheme: light; --surface-color: white; --text-primary: black; --text-secondary: #333; --border-color: #bbb; }
   body { background: white; color: black; }
   .app-header, .tab-nav, .weekly-tools, .report-fields, .button-row, .toast, .reminder-banner,
-  .export-group, .history-controls .inline-field, .section-heading button, #weekly-view .section-heading,
+  .export-group, .mobile-only, .history-controls .inline-field, .section-heading button, #weekly-view .section-heading,
   .schedule-table, #weeklyExpectation, #weeklyValidation, .chart-container, .action-cell,
   #historyTable th:last-child, #settings-view { display: none !important; }
   .content-area, .matte-panel { padding: 0; border: 0; box-shadow: none; }

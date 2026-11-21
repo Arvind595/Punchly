@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f7f7ff">
-  <meta name="punchly-release" content="5">
+  <meta name="punchly-release" content="6">
   <meta name="description" content="A private, browser-based time tracker and weekly time-card calculator.">
   <title>Punchly | Time Tracker</title>
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-192.png">
-  <link rel="manifest" href="manifest.webmanifest?v=5">
-  <link rel="stylesheet" href="css/style.css?v=5">
+  <link rel="manifest" href="manifest.webmanifest?v=6">
+  <link rel="stylesheet" href="css/style.css?v=6">
 </head>
 <body>
   <header class="app-header">
@@ -40,26 +40,27 @@
     <section id="today-view" class="tab-pane active" role="tabpanel" aria-labelledby="tab-today">
       <div class="section-heading"><div><p class="eyebrow" id="todayDate"></p><h2 id="todayHeading">Today's shift</h2></div></div>
       <div class="today-layout">
-        <div class="calculation-panel" aria-live="polite">
+        <div class="calculation-panel" id="shiftSummary">
           <div class="calc-result shift-end">
             <span id="targetOutLabel" class="label">Target out time</span>
-            <span id="targetOutDisplay" class="value">--:--</span>
+            <span id="targetOutDisplay" class="value" aria-live="polite">--:--</span>
             <span id="targetOutHint" class="label" hidden></span>
           </div>
           <div id="workSummary" class="compact-hide">
             <div class="shift-stats">
-              <div class="calc-result"><span class="label">Net work target</span><span id="netTargetDisplay" class="value">8h 20m</span></div>
+              <div class="calc-result mobile-summary-detail"><span class="label">Net work target</span><span id="netTargetDisplay" class="value">8h 20m</span></div>
               <div class="calc-result"><span class="label">Worked</span><span id="totalWorkedDisplay" class="value">0h 0m</span></div>
-              <div class="calc-result"><span class="label">Remaining</span><span id="remainingDisplay" class="value">8h 20m</span></div>
+              <div class="calc-result mobile-summary-detail"><span class="label">Remaining</span><span id="remainingDisplay" class="value">8h 20m</span></div>
               <div class="calc-result extra-work"><span class="label">Extra worked</span><span id="extraWorkedDisplay" class="value">0h 0m</span></div>
             </div>
             <div class="progress-container" role="progressbar" aria-label="Daily target progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="shiftProgressBar" class="progress-bar"></div></div>
           </div>
-          <p id="todayStatus" class="status-line">Add your first punch to get started.</p>
-          <p id="lunchStatus" class="status-line lunch-status" hidden></p>
+          <p id="todayStatus" class="status-line" aria-live="polite">Add your first punch to get started.</p>
+          <p id="lunchStatus" class="status-line lunch-status" hidden aria-live="polite"></p>
+          <button class="mobile-only summary-toggle" type="button" id="mobileSummaryToggle" aria-expanded="false" aria-controls="workSummary todayStatus lunchStatus targetOutHint">Shift summary</button>
         </div>
-        <div class="card matte-panel">
-          <h3>Shift details</h3>
+        <div class="card matte-panel punch-card">
+          <h3 class="punch-card-heading">Shift details</h3>
           <button id="compactDetails" class="btn-text compact-only" type="button" aria-expanded="false" aria-controls="shiftMeta shiftTargetDetails dayNotesField">Show shift details</button>
           <div id="shiftMeta" class="settings-row compact-detail">
             <label class="field" for="workDate">Shift date
@@ -108,11 +109,13 @@
           </table>
         </div>
         <p id="weeklyExpectation" class="weekly-expectation"></p>
-        <div class="button-row weekly-tools"><button id="copyFirstRow" class="btn-secondary" type="button">Copy Monday down</button><button id="clearWeekly" class="btn-secondary" type="button">Clear week</button><label class="inline-field" for="roundTimeSelect">Round each day <select id="roundTimeSelect" class="matte-input"><option value="none">No rounding</option><option value="5">5 minutes</option><option value="15">15 minutes</option><option value="30">30 minutes</option></select></label></div>
-        <div class="report-fields">
+        <button id="weeklyOptionsToggle" class="btn-text mobile-only" type="button" aria-expanded="false" aria-controls="weeklyTools weeklyReportFields printWeeklyMobile">Report options</button>
+        <div class="button-row weekly-tools" id="weeklyTools"><button id="copyFirstRow" class="btn-secondary" type="button">Copy Monday down</button><button id="clearWeekly" class="btn-secondary" type="button">Clear week</button><label class="inline-field" for="roundTimeSelect">Round each day <select id="roundTimeSelect" class="matte-input"><option value="none">No rounding</option><option value="5">5 minutes</option><option value="15">15 minutes</option><option value="30">30 minutes</option></select></label></div>
+        <div class="report-fields" id="weeklyReportFields">
           <label for="reportHeaderInput">Report title<input id="reportHeaderInput" class="matte-input" type="text" placeholder="e.g. Employee time card" maxlength="100"></label>
           <label for="reportNotesInput">Notes<textarea id="reportNotesInput" class="matte-input" rows="3" placeholder="Optional notes" maxlength="1000"></textarea></label>
         </div>
+        <button id="printWeeklyMobile" class="btn-secondary mobile-only compact-hide" type="button">Print report</button>
         <p id="weeklyValidation" class="message error" role="alert" hidden></p>
         <div class="button-row"><button id="saveWeeklyBtn" class="btn-primary" type="button">Save weekly report</button></div>
         <div id="weeklyPrintReport" class="print-only"></div>
@@ -124,14 +127,15 @@
         <div class="history-controls">
           <h2>History &amp; analytics</h2>
           <label class="inline-field" for="timeRangeFilter">Date range<select id="timeRangeFilter" class="matte-input"><option value="weekly">This week</option><option value="monthly">This month</option><option value="yearly">This year</option><option value="all">All time</option></select></label>
-          <div class="export-group compact-hide">
+          <button id="historyOptionsToggle" class="btn-text mobile-only" type="button" aria-expanded="false" aria-controls="historyExports historySummary chartExportArea">Analytics &amp; exports</button>
+          <div class="export-group compact-hide" id="historyExports">
             <button id="exportExcel" class="btn-secondary icon-button" type="button"><span class="ui-icon" data-icon="download" aria-hidden="true"></span>Export Excel</button>
             <button id="exportCSV" class="btn-secondary icon-button" type="button"><span class="ui-icon" data-icon="download" aria-hidden="true"></span>Export filtered CSV</button>
             <button id="exportChartPNG" class="btn-secondary" type="button">Export chart PNG</button>
             <button id="printHistory" class="btn-secondary" type="button">Print / save PDF</button>
           </div>
         </div>
-        <div class="summary-grid" aria-live="polite"><article class="summary-card"><span>Daily hours</span><strong id="summaryHours">0h 0m</strong></article><article class="summary-card"><span>Average per day</span><strong id="summaryAverage">0h 0m</strong></article><article class="summary-card"><span>Overtime vs target</span><strong id="summaryOvertime">0h 0m</strong></article><article class="summary-card"><span>Targets met</span><strong id="summaryTargets">0 / 0</strong></article></div>
+        <div class="summary-grid" id="historySummary" aria-live="polite"><article class="summary-card"><span>Daily hours</span><strong id="summaryHours">0h 0m</strong></article><article class="summary-card"><span>Average per day</span><strong id="summaryAverage">0h 0m</strong></article><article class="summary-card"><span>Overtime vs target</span><strong id="summaryOvertime">0h 0m</strong></article><article class="summary-card"><span>Targets met</span><strong id="summaryTargets">0 / 0</strong></article></div>
         <div class="chart-container compact-hide" id="chartExportArea">
           <div class="chart-legend"><span class="chart-key">Daily hours</span><span class="chart-key trend-key">7-day average</span></div>
           <canvas id="analyticsChart" role="img" aria-label="Daily hours and 7-day average" aria-describedby="chartNote"></canvas>
@@ -150,7 +154,8 @@
     <section id="settings-view" class="tab-pane" role="tabpanel" aria-labelledby="tab-settings" hidden>
       <div class="section-heading"><h2>Settings</h2></div>
       <div class="settings-layout">
-        <section class="matte-panel appearance-panel" aria-labelledby="appearanceHeading">
+        <details class="matte-panel appearance-panel settings-fold" open>
+          <summary class="mobile-only">Appearance</summary>
           <h3 id="appearanceHeading"><span class="ui-icon" data-icon="theme" aria-hidden="true"></span> Appearance</h3>
           <fieldset class="settings-group">
             <legend>Theme</legend>
@@ -158,9 +163,10 @@
           </fieldset>
           <label class="field font-field" for="fontSelect">App font<select class="matte-input" id="fontSelect"></select></label>
           <label class="toggle-field" for="compactMode"><input type="checkbox" id="compactMode"> Compact mode</label>
-        </section>
+        </details>
 
-        <section class="matte-panel" aria-labelledby="profileHeading">
+        <details class="matte-panel settings-fold" open>
+          <summary class="mobile-only">Profile</summary>
           <div class="profile-heading"><span class="avatar avatar-large" id="profileInitials" aria-hidden="true">P</span><div><h3 id="profileHeading" tabindex="-1">Profile</h3><p class="help-text">Your profile is stored in this browser.</p></div></div>
           <form id="profileForm">
             <label class="field" for="profileName">Display name<input id="profileName" class="matte-input" autocomplete="nickname" maxlength="48" placeholder="Your name"></label>
@@ -170,9 +176,10 @@
             </fieldset>
             <button class="btn-primary" type="submit">Save profile</button>
           </form>
-        </section>
+        </details>
 
-        <section class="matte-panel tracking-panel" aria-labelledby="trackingHeading">
+        <details class="matte-panel tracking-panel settings-fold" open>
+          <summary class="mobile-only">Tracking defaults</summary>
           <h3 id="trackingHeading"><span class="ui-icon" data-icon="clock" aria-hidden="true"></span> Tracking defaults</h3>
           <p class="help-text">These defaults apply to new shifts and weekly drafts.</p>
           <form id="trackingForm">
@@ -189,9 +196,10 @@
             </fieldset>
             <button class="btn-primary" type="submit">Save preferences</button>
           </form>
-        </section>
+        </details>
 
-        <section class="matte-panel" aria-labelledby="remindersHeading">
+        <details class="matte-panel settings-fold" open>
+          <summary class="mobile-only">Reminders</summary>
           <h3 id="remindersHeading"><span class="ui-icon" data-icon="bell" aria-hidden="true"></span> Reminders</h3>
           <p class="help-text">Keep Punchly open to receive reminders. Blank times turn off that punch reminder.</p>
           <form id="remindersForm">
@@ -209,9 +217,10 @@
             </div>
             <p class="help-text" id="notificationStatus" role="status"></p>
           </form>
-        </section>
+        </details>
 
-        <section class="matte-panel" aria-labelledby="dataHeading">
+        <details class="matte-panel settings-fold" open>
+          <summary class="mobile-only">Data &amp; backups</summary>
           <h3 id="dataHeading"><span class="ui-icon" data-icon="backup" aria-hidden="true"></span> Data &amp; backups</h3>
           <p class="help-text">Download a JSON backup of your records, drafts, and preferences, or import one from another device.</p>
           <div class="button-row">
@@ -219,8 +228,9 @@
             <button id="backupImportBtn" class="btn-secondary icon-button" type="button"><span class="ui-icon" data-icon="upload" aria-hidden="true"></span>Import backup</button>
             <input id="backupImport" type="file" accept="application/json,.json" hidden>
           </div>
-        </section>
-        <section class="matte-panel" aria-labelledby="toolsHeading">
+        </details>
+        <details class="matte-panel settings-fold" open>
+          <summary class="mobile-only">Install &amp; shortcuts</summary>
           <h3 id="toolsHeading"><span class="ui-icon" data-icon="keyboard" aria-hidden="true"></span> Install &amp; shortcuts</h3>
           <p class="help-text" id="installNote">Use your browser’s Install or Add to Home Screen menu.</p>
           <button class="btn-secondary" id="installApp" type="button" hidden>Install Punchly</button>
@@ -230,8 +240,9 @@
             <dt>Lunch return</dt><dd><kbd>Alt + 3</kbd></dd>
             <dt>Evening out</dt><dd><kbd>Alt + 4</kbd></dd>
           </dl>
-        </section>
-        <section class="matte-panel support-panel" aria-labelledby="supportHeading">
+        </details>
+        <details class="matte-panel support-panel settings-fold" open>
+          <summary class="mobile-only">Developer &amp; Support</summary>
           <h3 id="supportHeading">Developer &amp; Support</h3>
           <dl class="developer-contact">
             <dt>Developer</dt>
@@ -245,7 +256,7 @@
             <a class="btn-secondary support-action" href="mailto:arvindne555@gmail.com?subject=Punchly%20bug%20report">Report an issue</a>
             <a class="btn-secondary support-action" href="mailto:arvindne555@gmail.com?subject=Punchly%20feature%20request">Request a feature</a>
           </div>
-        </section>
+        </details>
       </div>
     </section>
   </main>
@@ -279,12 +290,12 @@
       }, 0);
     });
   </script>
-  <script src="js/shift.js?v=5"></script>
-  <script src="js/storage.js?v=5"></script>
-  <script src="js/charts.js?v=5"></script>
-  <script src="js/export.js?v=5"></script>
-  <script src="js/settings.js?v=5"></script>
-  <script src="js/reminders.js?v=5"></script>
-  <script src="js/app.js?v=5"></script>
+  <script src="js/shift.js?v=6"></script>
+  <script src="js/storage.js?v=6"></script>
+  <script src="js/charts.js?v=6"></script>
+  <script src="js/export.js?v=6"></script>
+  <script src="js/settings.js?v=6"></script>
+  <script src="js/reminders.js?v=6"></script>
+  <script src="js/app.js?v=6"></script>
 </body>
 </html>

@@ -10,6 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const localClock = document.getElementById('localClock');
   const todayView = document.getElementById('today-view');
   const compactDetails = document.getElementById('compactDetails');
+  const handheld = window.matchMedia('(max-width: 680px), (max-width: 1024px) and (hover: none) and (pointer: coarse)');
+  const settingsFolds = [...document.querySelectorAll('.settings-fold')];
   const clockFormatters = Object.fromEntries(['24', '12'].map(format => [
     format, new Intl.DateTimeFormat(undefined, {
       hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: format === '12' ? 'h12' : 'h23'
@@ -21,7 +23,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let weeklyMinutes = 0;
   let editingWeeklyId = null;
   let hasShiftTarget = false;
+  let expandedWeekDay = null;
 
+  connectClientLayout();
   const preferences = Preferences.connect(settings, { notify: toast, onChange: applyPreferences });
   const reminders = Reminders.connect(settings);
   historyRange.value = settings.historyRange;
@@ -64,8 +68,41 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('openSettings').addEventListener('click', () => {
     activateTab(document.getElementById('tab-settings'));
-    document.getElementById('profileHeading').focus();
+    const heading = document.getElementById('profileHeading');
+    const profile = heading.closest('details');
+    profile.open = true;
+    (handheld.matches ? profile.querySelector('summary') : heading).focus();
   });
+
+  function connectClientLayout() {
+    function syncLayout() {
+      const mobile = handheld.matches;
+      document.documentElement.dataset.layout = mobile ? 'mobile' : 'desktop';
+      settingsFolds.forEach(panel => { panel.open = !mobile; });
+    }
+    syncLayout();
+    if (handheld.addEventListener) handheld.addEventListener('change', syncLayout);
+    else if (handheld.addListener) handheld.addListener(syncLayout);
+
+    settingsFolds.forEach(panel => panel.addEventListener('toggle', () => {
+      if (!handheld.matches || !panel.open) return;
+      settingsFolds.forEach(other => { if (other !== panel) other.open = false; });
+    }));
+
+    for (const [buttonId, containerId] of [
+      ['mobileSummaryToggle', 'shiftSummary'],
+      ['weeklyOptionsToggle', 'weekly-view'],
+      ['historyOptionsToggle', 'history-view']
+    ]) {
+      const button = document.getElementById(buttonId);
+      const container = document.getElementById(containerId);
+      button.addEventListener('click', () => {
+        const expanded = container.classList.toggle('mobile-expanded');
+        button.setAttribute('aria-expanded', String(expanded));
+        if (expanded && containerId === 'history-view') updateHistory();
+      });
+    }
+  }
 
   function applyPreferences(section) {
     if (section === 'tracking') {
@@ -155,6 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('printHistory').addEventListener('click', () => window.print());
   document.getElementById('printWeekly').addEventListener('click', printWeeklyReport);
+  document.getElementById('printWeeklyMobile').addEventListener('click', printWeeklyReport);
   document.getElementById('copyFirstRow').addEventListener('click', () => {
     weekRows.slice(1).forEach((row, index) => Object.assign(row, { from: weekRows[0].from, to: weekRows[0].to, break: weekRows[0].break, workday: row.workday }));
     renderWeek(); toast('Monday times copied to the remaining days.');
@@ -225,7 +263,28 @@ document.addEventListener('DOMContentLoaded', () => {
       workdayText.setAttribute('aria-hidden', 'true');
       workdayLabel.append(checkbox, workdayText);
       workCell.append(workdayLabel); tr.append(workCell);
-      const dayCell = document.createElement('th'); dayCell.scope = 'row'; dayCell.textContent = row.day; tr.append(dayCell);
+      const dayCell = document.createElement('th');
+      dayCell.scope = 'row';
+      const dayTitle = document.createElement('span');
+      dayTitle.className = 'week-day-title';
+      dayTitle.textContent = row.day;
+      const dayToggle = document.createElement('button');
+      dayToggle.type = 'button';
+      dayToggle.className = 'mobile-only week-day-toggle';
+      dayToggle.textContent = row.day;
+      dayToggle.setAttribute('aria-expanded', String(expandedWeekDay === index));
+      tr.classList.toggle('week-day-expanded', expandedWeekDay === index);
+      dayToggle.addEventListener('click', () => {
+        expandedWeekDay = expandedWeekDay === index ? null : index;
+        [...body.rows].forEach((dayRow, rowIndex) => {
+          const open = rowIndex === expandedWeekDay;
+          dayRow.classList.toggle('week-day-expanded', open);
+          dayRow.querySelector('.week-day-toggle').setAttribute('aria-expanded', String(open));
+        });
+        if (expandedWeekDay === index) dayToggle.scrollIntoView({ block: 'nearest' });
+      });
+      dayCell.append(dayTitle, dayToggle);
+      tr.append(dayCell);
       [['from', 'From'], ['to', 'To'], ['break', 'Break'], ['target', 'Daily target']].forEach(([field, label]) => {
         const cell = document.createElement('td');
         const input = document.createElement('input');
@@ -243,9 +302,15 @@ document.addEventListener('DOMContentLoaded', () => {
         tr.append(cell);
       });
       const amount = rowMinutes(row); if (amount === null && (row.from || row.to || row.break)) invalid = true; else { row.calculatedMinutes = amount || 0; total += row.calculatedMinutes; }
-      const worked = document.createElement('td'); worked.textContent = formatDuration(row.calculatedMinutes || 0); tr.append(worked);
+      const worked = document.createElement('td');
+      worked.className = 'week-row-total';
+      worked.textContent = formatDuration(row.calculatedMinutes || 0);
+      tr.append(worked);
       const action = document.createElement('td'); const clear = document.createElement('button'); clear.type = 'button'; clear.className = 'btn-text'; clear.textContent = 'Clear'; clear.setAttribute('aria-label', `Clear ${row.day}`); clear.addEventListener('click', () => { row.from = ''; row.to = ''; row.break = ''; renderWeek(); }); action.append(clear); tr.append(action);
       Array.from(tr.cells).forEach(cell => cell.setAttribute('role', cell.tagName === 'TH' ? 'rowheader' : 'cell'));
+      const fields = Array.from(tr.cells).filter(cell => cell !== dayCell && cell !== worked);
+      fields.forEach((cell, fieldIndex) => { cell.id = `weekly-day-${index}-field-${fieldIndex}`; });
+      dayToggle.setAttribute('aria-controls', fields.map(cell => cell.id).join(' '));
       body.append(tr);
     });
     weeklyMinutes = total; document.getElementById('weeklyTotal').textContent = formatDuration(total);
@@ -435,6 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('clearDayBtn').hidden = dayOff;
 
     const result = measureDay(now);
+    todayView.dataset.hasExtra = String(result.extra > 0);
     const validation = document.getElementById('todayValidation');
     const problem = result.error || (!dayOff && result.target <= 0 ? 'Set a work target greater than zero.' : '');
     validation.hidden = !problem;
