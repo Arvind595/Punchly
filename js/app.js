@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const manualPunchSounds = new Map();
   const workDate = document.getElementById('workDate');
   const shiftMode = document.getElementById('shiftMode');
+  const firstPunchPane = document.getElementById('firstPunchDialog');
+  const firstPunchMode = document.getElementById('firstPunchMode');
+  const firstPunchSubmit = document.getElementById('firstPunchSubmit');
   const shiftTarget = document.getElementById('targetShift');
   const dayNotes = document.getElementById('dayNotes');
   const historyRange = document.getElementById('timeRangeFilter');
@@ -16,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const exportRange = document.getElementById('exportRange');
   const todayView = document.getElementById('today-view');
   const compactDetails = document.getElementById('compactDetails');
+  const compactDetailsLabel = document.getElementById('compactDetailsLabel');
   const tabs = [...document.querySelectorAll('.tab-nav [role="tab"]')];
   const tabDock = document.getElementById('tabDock');
   const moreTabs = document.getElementById('moreTabs');
@@ -27,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let lastDayLogs = '';
   let hasShiftTarget = false;
   let miniTimer;
+  let pendingFirstPunch;
 
   const version = document.querySelector('meta[name="punchly-release"]').content;
   document.getElementById('appVersion').textContent = `v${version}`;
@@ -37,6 +42,13 @@ document.addEventListener('DOMContentLoaded', () => {
   connectClientLayout();
   const initialUpdate = AppTools.connectUpdates(version, localDateKey, toast);
   AppTools.connectHelp(version);
+  const dayTypeDialog = AppTools.modal('firstPunchDialog', () => {
+    if (firstPunchPane.hasAttribute('open')) return;
+    pendingFirstPunch = null;
+    if (document.activeElement === document.body && !document.getElementById('punch-view').hidden) {
+      document.getElementById('guidedEdit').focus();
+    }
+  });
   const preferences = Preferences.connect(settings, { notify: toast, onChange: applyPreferences });
   startup.profileReady(settings.displayName);
   AppTools.connectReset({
@@ -54,7 +66,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   miniTimer = MiniTimer.connect({ desktop: () => !handheld.matches, snapshot: timerSnapshot });
   const guidedPunch = GuidedPunch.connect({
-    getShift: guidedShift, recordPunch: recordGuidedPunch, save: saveGuidedShift, edit: openDailyLog,
+    getShift: guidedShift,
+    recordPunch(date, field, now) {
+      if (field !== 'morningIn' || !requestFirstPunch(date, now)) recordGuidedPunch(date, field, now);
+    },
+    save: saveGuidedShift, edit: openDailyLog,
     formatDate, displayTime: displayClock, formatDuration
   });
   connectMobileHaptics();
@@ -229,6 +245,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   function punchNow(field) {
     const now = new Date();
+    if (field === 'morningIn' && requestFirstPunch(selectedDay(), now)) return;
+    if (Shift.isDayOff(shiftMode.value) || (shiftMode.value === 'half' && (field === 'lunchOut' || field === 'lunchReturn'))) {
+      toast('This punch is unavailable for the selected day type.', 'blocked');
+      return;
+    }
     const input = document.getElementById(field);
     const previous = input.value;
     input.value = formatClock(now.getHours() * 60 + now.getMinutes());
@@ -261,20 +282,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     activateTab(document.getElementById('tab-today'), true, false, false);
     const field = dayFields[Number(digit) - 1];
-    if (Shift.isDayOff(shiftMode.value) || (shiftMode.value === 'half' && (field === 'lunchOut' || field === 'lunchReturn'))) {
-      toast('This punch is unavailable for the selected day type.', 'blocked');
-      return;
-    }
     punchNow(field);
   });
   compactDetails.addEventListener('click', () => {
     const expanded = todayView.classList.toggle('show-shift-details');
     compactDetails.setAttribute('aria-expanded', String(expanded));
-    compactDetails.textContent = expanded ? 'Hide shift details' : 'Show shift details';
+    compactDetailsLabel.textContent = expanded ? 'Hide shift details' : 'Show shift details';
   });
   dayInputs.forEach(input => {
     input.addEventListener('input', () => {
       const now = new Date();
+      if (input.id === 'morningIn' && readPunchShift(selectedDay(), now).firstPunch) {
+        manualPunchSounds.delete(input);
+        return;
+      }
       const saved = updateDayDraft(now);
       if (Shift.parseTime(input.value) !== null) {
         manualPunchSounds.set(input, { value: input.value, valid: saved && !measureDay(now).error });
@@ -282,6 +303,8 @@ document.addEventListener('DOMContentLoaded', () => {
       else manualPunchSounds.delete(input);
     });
     input.addEventListener('change', () => {
+      if (input.id === 'morningIn' && Shift.parseTime(input.value) !== null &&
+          requestFirstPunch(selectedDay(), new Date(), input.value)) return;
       const pending = manualPunchSounds.get(input);
       if (pending?.value === input.value) {
         if (pending.valid) UiSounds.punch(Shift.dayPeriod(new Date()));
@@ -289,6 +312,26 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       manualPunchSounds.delete(input);
     });
+  });
+  firstPunchMode.addEventListener('change', updateFirstPunchAction);
+  document.getElementById('firstPunchForm').addEventListener('submit', event => {
+    event.preventDefault();
+    if (!pendingFirstPunch) return;
+    const { date, enteredTime } = pendingFirstPunch;
+    const mode = firstPunchMode.value;
+    pendingFirstPunch = null;
+    dayTypeDialog.close();
+    const now = new Date();
+    if (!readPunchShift(date, now).firstPunch) {
+      refreshTracking();
+      toast('The shift has changed. Review today’s punches and try again.', 'blocked');
+      return;
+    }
+    if (Shift.isHoliday(mode, {})) {
+      selectPunchDate(date);
+      shiftMode.value = mode;
+      saveDay(now);
+    } else recordGuidedPunch(date, 'morningIn', now, mode, enteredTime);
   });
   workDate.addEventListener('change', () => {
     const today = localDateKey(new Date());
@@ -354,16 +397,24 @@ document.addEventListener('DOMContentLoaded', () => {
   function connectInstall() {
     const buttons = ['installApp', 'setupInstall'].map(id => document.getElementById(id));
     const notes = ['installNote', 'setupInstallNote'].map(id => document.getElementById(id));
-    const canInstall = location.protocol !== 'file:' && window.isSecureContext && 'serviceWorker' in navigator;
+    const needsHostedApp = location.protocol === 'file:' || !window.isSecureContext;
+    const hostedApp = 'https://arvind595.github.io/Punchly/';
     let installPrompt;
+    let prompting = false;
+    let showInstallHint = false;
     let installed = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
     function refreshInstall() {
-      buttons.forEach(button => { button.hidden = installed || !installPrompt; });
-      let message = 'Use your browser’s Install or Add to Home Screen menu.';
+      buttons.forEach(button => {
+        button.disabled = installed || prompting;
+        if (needsHostedApp) button.setAttribute('aria-label', 'Install Punchly (opens the web app in a new tab)');
+      });
+      let message = '';
       if (installed) message = 'Punchly is installed.';
-      else if (!canInstall) message = 'Open Punchly over HTTPS or localhost to install it for offline use.';
-      else if (installPrompt) message = 'Install Punchly to open it from your home screen and use it offline.';
-      notes.forEach(note => { note.textContent = message; });
+      else if (showInstallHint && !installPrompt) message = 'In your browser menu, choose Install app or Add to Home Screen.';
+      notes.forEach(note => {
+        note.hidden = !message;
+        note.textContent = message;
+      });
     }
     window.addEventListener('beforeinstallprompt', event => {
       event.preventDefault();
@@ -371,11 +422,27 @@ document.addEventListener('DOMContentLoaded', () => {
       refreshInstall();
     });
     buttons.forEach(button => button.addEventListener('click', async () => {
-      if (!installPrompt) return;
+      if (installed || prompting) return;
+      if (needsHostedApp) {
+        window.open(hostedApp, '_blank', 'noopener');
+        return;
+      }
+      if (!installPrompt) {
+        showInstallHint = true;
+        refreshInstall();
+        return;
+      }
       const prompt = installPrompt;
       installPrompt = null;
+      prompting = true;
+      showInstallHint = false;
       refreshInstall();
-      try { await prompt.prompt(); } catch (error) { /* The browser menu remains available. */ }
+      try { await prompt.prompt(); }
+      catch (error) { showInstallHint = true; }
+      finally {
+        prompting = false;
+        refreshInstall();
+      }
     }));
     window.addEventListener('appinstalled', () => {
       installed = true;
@@ -423,22 +490,22 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!document.getElementById('punch-view').hidden) guidedPunch.refresh(now);
   }
 
+  function readPunchShift(date, now) {
+    const record = Storage.getHistory().find(row => row.kind === 'daily' && row.date === date);
+    const draft = Storage.getDraft(date) || (!record && legacyDraftOn(date, Storage.getToday()));
+    const input = { ...logInput(date, record, draft), lunchLimit: settings.lunchLimit };
+    const elapsed = nowMinutesForDay(now, date);
+    const result = Shift.measure({ ...input, now: elapsed });
+    const saved = Boolean(record && (!draft || matchingDraft(record, draft)));
+    const firstPunch = date === localDateKey(now) && !Shift.hasPunches(input.punches) &&
+      (!saved || !Shift.isHoliday(input.mode, input.punches));
+    return { ...input, date, result, saved, elapsed, firstPunch, audit: draft?.audit ?? record?.audit };
+  }
+
   function guidedShift(now) {
-    function readShift(date) {
-      const record = Storage.getHistory().find(row => row.kind === 'daily' && row.date === date);
-      const draft = Storage.getDraft(date) || (!record && legacyDraftOn(date, Storage.getToday()));
-      const input = {
-        ...logInput(date, record, draft),
-        lunchLimit: settings.lunchLimit
-      };
-      const elapsed = nowMinutesForDay(now, date);
-      const result = Shift.measure({ ...input, now: elapsed });
-      const saved = Boolean(record && (!draft || matchingDraft(record, draft)));
-      return { ...input, date, result, saved, elapsed, audit: draft?.audit ?? record?.audit };
-    }
-    const current = readShift(localDateKey(now));
+    const current = readPunchShift(localDateKey(now), now);
     if (Shift.hasPunches(current.punches)) return current;
-    const previous = readShift(yesterdayKey(now));
+    const previous = readPunchShift(yesterdayKey(now), now);
     const start = Shift.parseTime(previous.punches.morningIn);
     if (start !== null && previous.elapsed !== null && previous.elapsed - start < 1440 &&
         !previous.result.complete && previous.result.targetOut >= 1440) return { ...previous, overnight: true };
@@ -451,8 +518,32 @@ document.addEventListener('DOMContentLoaded', () => {
     restoreToday();
   }
 
-  function recordGuidedPunch(date, field, now) {
+  function updateFirstPunchAction() {
+    firstPunchSubmit.textContent = Shift.isHoliday(firstPunchMode.value, {}) ? 'Save day' : 'Punch in';
+  }
+
+  function requestFirstPunch(date, now, enteredTime) {
+    if (firstPunchPane.hasAttribute('open')) return true;
+    if (date !== localDateKey(now)) return false;
+    const shift = readPunchShift(date, now);
+    if (!shift.firstPunch) return false;
+    const saturday = Shift.saturdayMode(date);
+    for (const option of firstPunchMode.options) {
+      if (Shift.isSaturday(option.value)) option.disabled = option.hidden = option.value !== saturday;
+    }
+    firstPunchMode.value = Shift.isSaturday(shift.mode) && shift.mode !== saturday ? 'full' : shift.mode;
+    document.getElementById('firstPunchDate').textContent = [formatDate(date), Shift.nationalHoliday(date)].filter(Boolean).join(' · ');
+    if (enteredTime) restoreToday();
+    pendingFirstPunch = { date, enteredTime };
+    updateFirstPunchAction();
+    dayTypeDialog.open();
+    firstPunchMode.focus();
+    return true;
+  }
+
+  function recordGuidedPunch(date, field, now, mode, enteredTime) {
     selectPunchDate(date);
+    if (mode) shiftMode.value = mode;
     const input = document.getElementById(field);
     if (input.value || Shift.isDayOff(shiftMode.value)) return;
     const elapsed = nowMinutesForDay(now, date);
@@ -467,7 +558,7 @@ document.addEventListener('DOMContentLoaded', () => {
       toast('The current time is earlier than your previous punch. Check the times in Today.', 'error');
       return;
     }
-    input.value = formatClock(now.getHours() * 60 + now.getMinutes());
+    input.value = enteredTime || formatClock(now.getHours() * 60 + now.getMinutes());
     const result = measureDay(now);
     if (result.error) {
       input.value = '';

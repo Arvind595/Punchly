@@ -12,7 +12,7 @@ const Storage = (() => {
     font: 'manrope',
     avatar: avatarOptions[0][0],
     profilePhoto: '',
-    compactMode: false,
+    compactMode: true,
     mobileHaptics: true,
     punchAudio: true,
     soundVolume: 70,
@@ -97,7 +97,7 @@ const Storage = (() => {
     if (!avatarOptions.some(([id]) => id === settings.avatar)) settings.avatar = defaults.avatar;
     if (typeof settings.profilePhoto !== 'string' || settings.profilePhoto.length > 200000 ||
         !/^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/i.test(settings.profilePhoto)) settings.profilePhoto = '';
-    settings.compactMode = settings.compactMode === true;
+    if (typeof settings.compactMode !== 'boolean') settings.compactMode = defaults.compactMode;
     settings.mobileHaptics = settings.mobileHaptics !== false;
     settings.punchAudio = settings.punchAudio !== false;
     if (!Number.isInteger(settings.soundVolume) || settings.soundVolume < 0 || settings.soundVolume > 100) {

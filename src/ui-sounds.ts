@@ -1,5 +1,6 @@
 import {
   createUISFX,
+  getCue,
   type CueName,
   type PlayingSFX,
   type PlayOptions,
@@ -15,6 +16,7 @@ type DayPeriod = 'morning' | 'afternoon' | 'evening' | 'night'
 type Feedback = (cue: CueName, options?: PlayOptions) => PlayingSFX | null
 
 const pack = 'zen'
+const cueGain = 1.5
 const punchRates: Record<DayPeriod, number> = {
   morning: 1.08,
   afternoon: 1,
@@ -123,7 +125,11 @@ function ready() {
 export const play: Feedback = (cue, options) => {
   if (!ready()) return null
   try {
-    return player?.play(cue, options) ?? null
+    const volume = Math.min(
+      1,
+      (options?.volume ?? getCue(cue).defaultVolume) * cueGain,
+    )
+    return player?.play(cue, { ...options, volume }) ?? null
   } catch {
     return null
   }

@@ -31,11 +31,13 @@ const Setup = (() => {
   function connect(settings, onDone) {
     const setupDialog = document.getElementById('setupDialog');
     const form = document.getElementById('setupForm');
+    const skipConfirmation = document.getElementById('setupSkipPane');
+    const keepSetup = document.getElementById('keepSetup');
+    const confirmSetupSkip = document.getElementById('confirmSetupSkip');
     const steps = [...form.querySelectorAll('[data-setup-step]')];
     const heading = document.getElementById('setupHeading');
     const welcomeHeading = heading.textContent;
     const welcome = document.getElementById('setupWelcome');
-    const logo = document.getElementById('setupLogo');
     const position = document.getElementById('setupPosition');
     const back = document.getElementById('setupBack');
     const next = document.getElementById('setupContinue');
@@ -47,7 +49,7 @@ const Setup = (() => {
     let finished = false;
     let restoring = false;
 
-    const dialog = AppTools.modal('setupDialog', skipSetup, false);
+    const dialog = AppTools.modal('setupDialog', null, false);
     for (const [name, choices] of Preferences.themeGroups) {
       const group = document.createElement('optgroup');
       group.label = name;
@@ -63,16 +65,20 @@ const Setup = (() => {
     }
 
     function showStep() {
+      skipConfirmation.hidden = true;
+      form.hidden = false;
+      setupDialog.removeAttribute('aria-describedby');
       for (const [number, step] of steps.entries()) {
         step.hidden = step.disabled = number !== index;
       }
       const isWelcome = index === -1;
-      welcome.hidden = logo.hidden = !isWelcome;
+      welcome.hidden = !isWelcome;
       position.hidden = isWelcome;
       position.textContent = isWelcome ? '' : `Step ${index + 1} of ${steps.length}`;
       heading.textContent = isWelcome ? welcomeHeading : steps[index].dataset.setupStep;
       back.hidden = isWelcome;
-      next.textContent = isWelcome ? 'Get started' : index === steps.length - 1 ? 'Finish setup' : 'Continue';
+      next.textContent = isWelcome ? 'Get started' : index === 0 ? 'Continue setup' :
+        index === steps.length - 1 ? 'Finish setup' : 'Continue';
       setupDialog.scrollTop = 0;
       heading.focus();
     }
@@ -88,13 +94,36 @@ const Setup = (() => {
         chosen.displayName = Storage.profileDetails({ displayName: name }).displayName;
       }
       onDone(chosen, Storage.finishSetup(chosen), respond);
-      if (setupDialog.open) dialog.close();
+      dialog.close();
     }
 
-    function skipSetup() {
+    function showSkipConfirmation() {
+      if (restoring || finished) return;
+      form.hidden = position.hidden = true;
+      heading.textContent = 'Skip setup?';
+      setupDialog.setAttribute('aria-describedby', 'setupSkipDescription');
+      skipConfirmation.hidden = false;
+      keepSetup.focus();
+      UiSounds.play('open');
+    }
+
+    function resumeSetup() {
+      if (finished) return;
+      showStep();
+      skip.focus();
+      UiSounds.play('close');
+    }
+
+    function dismissSetup() {
+      if (skipConfirmation.hidden) showSkipConfirmation();
+      else resumeSetup();
+    }
+
+    keepSetup.addEventListener('click', resumeSetup);
+    confirmSetupSkip.addEventListener('click', () => {
+      keepSetup.disabled = confirmSetupSkip.disabled = true;
       finish({ displayName: form.elements.displayName.value.trim() || settings.displayName });
-    }
-
+    });
     restore.addEventListener('click', () => input.click());
     input.addEventListener('change', async () => {
       if (!input.files?.length) return;
@@ -112,16 +141,22 @@ const Setup = (() => {
     });
     setupDialog.addEventListener('cancel', event => {
       event.preventDefault();
-      skipSetup();
+      dismissSetup();
     });
-    skip.addEventListener('click', skipSetup);
+    setupDialog.addEventListener('keydown', event => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      dismissSetup();
+    }, true);
+    skip.addEventListener('click', showSkipConfirmation);
     back.addEventListener('click', () => {
       index--;
       showStep();
     });
     form.addEventListener('submit', event => {
       event.preventDefault();
-      if (restoring || finished) return;
+      if (restoring || finished || !skipConfirmation.hidden) return;
       if (index < steps.length - 1) {
         index++;
         showStep();

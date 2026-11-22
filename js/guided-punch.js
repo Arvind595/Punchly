@@ -6,8 +6,13 @@ const GuidedPunch = (() => {
     ['eveningOut', 'Evening out', 'Punch out now', 'logout']
   ];
 
+  function isDayOff(shift) {
+    return Shift.isDayOff(shift.mode) || (shift.saved && Shift.isHoliday(shift.mode, shift.punches));
+  }
+
   function nextAction(shift) {
-    if (Shift.isDayOff(shift.mode) || shift.result.error) return null;
+    if (shift.firstPunch) return 'morningIn';
+    if (isDayOff(shift) || shift.result.error) return null;
     if (shift.result.complete) return shift.saved ? null : 'save';
     if (!shift.punches.morningIn) return 'morningIn';
     if (shift.mode === 'half') return 'eveningOut';
@@ -100,8 +105,6 @@ const GuidedPunch = (() => {
     const dial = byId('guidedDial');
     const scenery = byId('guidedScenery');
     const timeline = byId('guidedTimeline');
-    const timelineKey = byId('guidedTimelineKey');
-    const estimateKey = byId('guidedEstimateKey');
     const done = byId('guidedDialDone');
     const metrics = byId('guidedMetrics');
     const skipLunch = byId('guidedSkipLunch');
@@ -114,13 +117,14 @@ const GuidedPunch = (() => {
       const next = nextAction(shift);
       displayed = { date: shift.date, next };
       byId('guidedDate').textContent = formatDate(shift.date);
-      const off = Shift.isDayOff(shift.mode);
+      const off = isDayOff(shift);
       const noLunch = shift.result.complete && !shift.punches.lunchOut;
       const isHalf = shift.mode === 'half';
       const rows = off ? [] : steps.filter(([field]) => !(isHalf || noLunch) || !field.startsWith('lunch'));
       const nationalHoliday = Shift.nationalHoliday(shift.date);
       const holiday = shift.mode === 'holiday' ? nationalHoliday : null;
       const line = shift.result.error ? `Review your punches in Today. ${shift.result.error}` :
+        off && shift.firstPunch ? `${holiday || Shift.label(shift.mode)} · Choose today’s day type to continue.` :
         off ? `${holiday || Shift.label(shift.mode)} · No punches scheduled.` :
         shift.saved && shift.result.complete ? `Shift saved · ${formatDuration(shift.result.total)} worked.` :
         next === 'save' ? 'All punches are captured. Save the shift to add it to History.' :
@@ -139,7 +143,7 @@ const GuidedPunch = (() => {
           actionIcon.dataset.icon = icon;
           Icons.draw(actionIcon, icon);
         }
-        actionLabel.textContent = step?.[2] || 'Save shift';
+        actionLabel.textContent = off && shift.firstPunch ? 'Set day type' : step?.[2] || 'Save shift';
       }
       done.hidden = Boolean(next);
       done.textContent = off ? Shift.label(shift.mode) : shift.result.error ? 'Review punches' : 'Shift complete';
@@ -147,8 +151,6 @@ const GuidedPunch = (() => {
       const plan = planShift(shift);
       const target = shift.result.complete ? null : shift.result.targetOut;
       paintTimeline(timeline, plan, recorded, target);
-      timelineKey.hidden = !plan;
-      estimateKey.hidden = target === null;
       const values = shift.result.started ? [
         `${formatDuration(shift.result.total)} worked`,
         target !== null && `Est. checkout ${timelineTime(target, displayTime)}`

@@ -1,5 +1,6 @@
 {
   "name": "punchly",
+  "license": "Apache-2.0",
   "private": true,
   "scripts": {
     "build": "esbuild src/ui-sounds.ts --bundle --minify --target=es2020 --format=iife --global-name=UiSounds --outfile=vendor/punchly-sounds.js",

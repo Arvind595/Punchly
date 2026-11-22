@@ -358,14 +358,6 @@ textarea { resize: vertical; }
   filter: drop-shadow(1px 0 var(--surface-color)) drop-shadow(-1px 0 var(--surface-color));
 }
 .punch-tick[data-kind="estimate"] { stroke: var(--text-primary); stroke-width: 2.4; stroke-dasharray: 3 2; }
-.punch-timeline-key {
-  list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: .25rem .65rem;
-  color: var(--text-secondary); font-size: .74rem;
-}
-.punch-timeline-key li { display: inline-flex; align-items: center; gap: .25rem; }
-.punch-key-mark { width: .75rem; border-top: 2px solid currentColor; }
-.punch-key-mark[data-kind="planned"] { border-top-style: dotted; }
-.punch-key-mark[data-kind="estimate"] { border-top-style: dashed; color: var(--text-primary); }
 .punch-dial[data-period="afternoon"] { --dial-start: #966120; --dial-end: #66370f; }
 .punch-dial[data-period="evening"] { --dial-start: #9e4e5d; --dial-end: #542850; }
 .punch-dial[data-period="night"] { --dial-start: #304d92; --dial-end: #211b53; }
@@ -513,7 +505,9 @@ textarea { resize: vertical; }
 #exportProfileForm { margin-top: .8rem; }
 #setupForm fieldset { min-width: 0; margin: .75rem 0 0; padding: 0; border: 0; }
 #setupForm fieldset > .btn-secondary, #setupForm .profile-fields { margin-top: .65rem; }
-.setup-logo { display: block; border-radius: 13px; margin-bottom: .8rem; }
+.setup-brand { display: flex; align-items: center; gap: .6rem; margin-bottom: .8rem; font-size: 1.25rem; }
+.setup-brand img { border-radius: 12px; }
+.install-note, #setupSkipDescription, #firstPunchForm { margin-top: .65rem; }
 .setup-welcome > p { margin-top: .65rem; color: var(--text-secondary); }
 .privacy-note {
   display: grid; gap: .45rem; margin: .85rem 0; padding: .75rem .85rem;
@@ -556,6 +550,8 @@ kbd { padding: .12rem .35rem; border: 1px solid var(--border-color); border-radi
 .release-notes h4 { margin: .75rem 0 .25rem; color: var(--text-primary); font-size: .94rem; }
 .release-notes ul { margin: 0; padding-inline-start: 1.2rem; }
 .release-notes li + li { margin-top: .25rem; }
+.older-releases, .about-license { margin-top: .65rem; }
+.older-releases a, .about-license a { color: var(--accent-color); text-underline-offset: .2em; }
 .startup-notice { margin-bottom: 1rem; }
 .settings-group { min-width: 0; border: 0; padding: 0; margin: .75rem 0 0; }
 .settings-group legend { padding: 0; margin-bottom: .5rem; font-size: .88rem; font-weight: 650; }
@@ -633,11 +629,12 @@ dialog.app-dialog[open] { position: fixed; inset: 0; margin: auto; max-height: 9
 .checkbox-label { display: flex; gap: .55rem; align-items: center; padding-block: .4rem; }
 #reportMessage { resize: vertical; }
 .compact-only, .mobile-only { display: none; }
+#compactDetails { gap: .35rem; }
+#compactDetails .ui-icon { transform: rotate(90deg); }
+#compactDetails[aria-expanded="true"] .ui-icon { transform: rotate(-90deg); }
 [data-compact="true"] .compact-hide,
-[data-compact="true"] .punch-scenery,
 [data-compact="true"] .guided-plan-time,
 [data-compact="true"] .guided-punch-time time,
-[data-compact="true"] #guidedTimelineKey,
 [data-compact="true"] #shiftSummary .progress-container,
 [data-compact="true"] #shiftSummary .mobile-summary-detail,
 [data-compact="true"] #today-view[data-has-extra="false"] #shiftSummary .extra-work,

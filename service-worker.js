@@ -1,11 +1,11 @@
-const RELEASE = 23;
+const RELEASE = 25;
 const CACHE_NAME = `punchly-static-v${RELEASE}`;
 const APP_ASSETS = [
   ...['css/style.css', 'manifest.webmanifest', 'vendor/punchly-sounds.js', 'js/shift.js', 'js/icons.js', 'js/audit.js', 'js/storage.js',
     'js/charts.js', 'js/export.js', 'js/settings.js', 'js/reminders.js', 'js/attendance.js', 'js/mini-timer.js', 'js/guided-punch.js',
     'js/app-tools.js', 'js/setup.js', 'js/app.js']
     .map(path => `./${path}?v=${RELEASE}`),
-  './assets/logo.svg', './assets/icon-192.png', './assets/icon-512.png',
+  './LICENSE', './assets/logo.svg', './assets/icon-192.png', './assets/icon-512.png',
   './assets/punch-countryside.jpg', './assets/punch-holiday.jpg',
   './assets/avatar-fox.svg', './assets/avatar-whale.svg', './assets/avatar-fern.svg',
   './assets/avatar-coffee.svg', './assets/avatar-orbit.svg',

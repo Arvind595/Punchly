@@ -1,85 +1,72 @@
 # Punchly
 
-Punchly is a browser-based time tracker and weekly time-card calculator. It uses no account or backend; your records remain in the browser's local storage unless you export a backup.
+Punchly is a private time tracker for daily punches, weekly hours, and monthly attendance. It runs in your browser with no account.
 
-## Features
-
-- Punch opens first and guides you through one punch at a time. Each punch is saved locally, so reloading or returning later resumes the next step. The final punch saves the shift to History.
-- Countryside Punch backgrounds follow local time and switch to a festive illustration on holidays. The mobile navigation bar follows the selected theme. See **Settings → What’s New** for recent changes.
-- A Today view that shows net work, the target clock-out time, and extra time as it accrues. Pick today or an earlier date for the start of a shift. An overnight clock-out can fall on the next day.
-- Full day shifts deduct the entire recorded lunch break. The lunch limit defaults to 45 minutes and drives the pre-lunch estimate and over-limit indicator.
-- Half day shifts use a start and end punch and half the full day target, rounded up to the next minute if needed. Leave and holidays can be saved with notes without adding work hours.
-- Weekly time cards show daily shifts since Monday, including drafts. Edit an existing entry or log a new shift from the time card.
-- Daily punches and drafts are stored locally. Previously saved weekly reports are available in History and exports.
-- India’s national holidays recur automatically each year. Republic Day is January 26, Independence Day is August 15, and Gandhi Jayanti is October 2. The app adds the holiday name to the day’s notes. [Government of India holiday calendar](https://www.iirs.gov.in/holidaycalender/)
-- The attendance calendar distinguishes completed shifts, unpunched dates, leave, holidays, half days, and each regular Saturday holiday. The first and third Saturdays are holidays unless you enter punches. Working either date adds a note to the shift automatically.
-- History supports date or notes search plus filters for leave, holidays, incomplete shifts, overtime, long lunches, and unpunched dates. Statistics offers bars, lines, an attendance pie chart, and a classic log.
-- The Export tab downloads PDF timesheets, PNG charts, Excel, and CSV on mobile and desktop. Excel uses sortable date cells. JSON backup and restore are available in Settings.
-- Settings with AMOLED Black, thirteen app fonts, five illustrated profile avatars, tracking defaults, and Compact mode. New profiles start with a 12-hour clock, the light theme, Manrope, and Monday through Saturday as workdays.
-- Reminders for individual punches and the work target while Punchly is open. Device alerts need permission and a browser that supports them.
-- Mobile bottom navigation, touch-friendly forms, keyboard-accessible tabs, and offline PWA support when served from localhost or HTTPS. Press Alt + 1 through Alt + 4 to enter the four punches.
-- Mobile tap feedback is enabled by default on supported devices and can be disabled in Appearance. The desktop mini timer stays above other windows when Document Picture-in-Picture is supported, and floats inside Punchly otherwise.
-- Automatic import of weekly records saved by the former `Punchly.html` app.
+[Open Punchly](https://arvind595.github.io/Punchly/) · [What’s new](CHANGELOG.md) · [Apache License 2.0](LICENSE)
 
 ## How to use
 
+### Set up Punchly
+
+- Choose **Get started** on the welcome screen. The eight steps cover offline installation, importing a `.json` backup, clock format, theme, profile, daily work target, lunch limit, and notification permissions.
+- Choose **Install Punchly** to open your browser’s install prompt or see the browser menu instructions. From a local HTML file, the button opens the hosted app in a new tab. You can continue setup in the browser and install later from **Settings → Install & shortcuts**.
+- Confirm **Skip setup** to keep the defaults or your imported preferences. You can configure the app manually in **Settings**. If you leave the display name blank, Punchly uses the available device model or a general device label.
+
 ### Record a shift
 
-1. Open **Punch** and tap the center of the dial to record the next step. The button color follows the device’s local time, and its icon shows the next punch action. The ring moves clockwise from morning in. Dotted outer ticks mark the planned punches, solid ticks mark the recorded punches, and the dashed inner tick shows estimated checkout. The plan starts at your first punch and places the configured lunch break halfway through the work target. The checkout estimate adjusts as you record your break.
-2. Each punch saves immediately to this browser. Open Punchly again to continue where you left off. The last punch saves the shift to **History**. Use **Punch out without lunch** if you skipped your break.
-3. Use **Today** to enter or correct a time, edit a note, change the work target, set **Half day**, or mark **Leave** or **Holiday**. Choose **Save** to finish editing. For overnight work, use the start date and enter the clock-out time as it appears the next morning. Punch resumes an unfinished shift expected to cross midnight.
-4. Open **Change log** in **History** to see when changes were recorded. A punch value is the shift time you enter. The log records the actual date and time you entered or edited that value. Records created before v11 show timestamps for changes made since the upgrade.
+1. Open **Punch** and tap the dial. Before the day’s first punch, choose **Full day** or **Half day** and confirm to punch in. Choose **Leave**, **Holiday**, or a scheduled Saturday holiday to save the day without a punch.
+2. Return to the dial for each remaining punch. Full days use morning in, lunch out, lunch return, and evening out. Use **Punch out without lunch** if you skipped your break. Half days use two punches and half the daily work target. Each punch saves locally, and the final punch saves the shift to **History**.
+3. Open **Today** to enter or correct punches, change the day type, or edit notes. The work target excludes lunch. The lunch limit defaults to 45 minutes and drives the checkout estimate and long-break warning. For overnight work, use the shift’s start date. Punch can resume an unfinished overnight shift.
+4. On desktop, **Alt + 1** through **Alt + 4** enter punches. The desktop mini timer shows elapsed work and estimated checkout. A separate always-on-top window is available in browsers that support Document Picture-in-Picture.
 
-### Review and export
+### Review attendance and export
 
-- **Week** shows shifts since Monday. Use **Edit** on an existing entry or **Log** on an empty day.
-- **Dates** shows a monthly calendar. Tap the month heading, choose a year, then choose a month. Browse years by decade or use **Jump to year** inside the picker. **This month** returns to the current calendar. Future dates show scheduled holidays, and you can reserve, update, or cancel leave on a future date. Reserved leave is included in backups and counts toward attendance when the date arrives. The first and third Saturdays show as scheduled holidays until you log work. If you worked on a national holiday, choose **Full day** or **Half day** in **Today** before entering punches. The holiday name stays in the notes.
-- **History** can search dates and notes or filter for leave, holidays, incomplete shifts, overtime, long lunches, and missing punches. **Stats** has bar, line, pie, and log views.
-- In **Export**, choose a range or use the current History filters. The export prompt lets you review the profile name, employee ID, email, role, and department included in PDF, Excel, CSV, and PNG reports and full JSON backups. Edits in the prompt apply to that file. Reports also include the app version and export timestamp. PDF displays the change log, Excel includes a separate **Change log** sheet, and CSV includes punch-recording timestamps and a JSON change-log column. The PNG chart stores the structured change log in an embedded `Punchly Export` text field. Machine-readable timestamps are in UTC.
+- **Week** shows shifts and drafts from Monday. Use **Edit** on an entry or **Log** on an empty date.
+- **Dates** shows a monthly attendance calendar. Tap the month heading, choose a year, and then choose a month. You can look ahead at holidays and reserve, update, or cancel future leave. Punchly marks the first and third Saturdays, plus Republic Day, Independence Day, and Gandhi Jayanti. Working on a scheduled Saturday adds a note automatically.
+- **History** can search dates and notes and filter leave, holidays, incomplete shifts, overtime, long lunches, and unpunched dates. Expand a record’s **Change log** to see when punches or other details were entered or edited. **Stats** offers bars, lines, an attendance pie chart, and a classic log.
+- **Export** offers PDF timesheets, PNG charts, Excel, and CSV. Reports include the export time, app version, and profile details you review before downloading. Excel uses native date cells and a separate **Change log** sheet.
 
-### Customize and get help
+### Customize Punchly
 
-- On first launch, Punchly explains local storage and backups before offering to import a backup and walking through the clock format, theme, profile, daily target, lunch limit, offline installation, and notification permission. Choose **Skip setup** to use the defaults or the preferences you’ve already restored. If you leave the display name blank, Punchly uses the device model when the browser provides it, or a general device label.
-- **Settings → Appearance** groups themes into light and dark palettes. Champagne and Lavender are light themes, and Forest is a dark theme. **Match device** follows the system appearance.
-- **Settings → Appearance** controls in-app audio, its volume (70% by default), and quiet typing sounds (off by default). Confirmed punches use a short chime that changes pitch with the time of day. The sounds also confirm key actions such as saves and exports. Audio starts after a browser gesture and works offline.
-- Open **Settings → Profile** to set a name, employee ID, work email, role, and department. Pick an illustrated avatar or choose a local photo. Adjust zoom and position, then choose **Use photo** to save a square crop displayed as a circle.
-- **Delete profile** in **Settings → Profile** removes your name, employee details, and picture while keeping shift records and tracking preferences. **Reset Punchly** under **Settings → Data & backups** erases local punches, drafts, reports, profile, and preferences. Both actions offer a backup before confirmation. To restore everything later, import that backup with **Replace**.
-- **Settings → Data & backups → Export settings** downloads a JSON file containing your preferences and cropped photo, without the shift history. Use **Import backup** to apply that settings file on another device. Use **Export backup** for a complete copy of your records, drafts, and preferences.
-- The launch screen loads the profile saved in this browser and shows the update check. A slow update check continues in the background. Punchly checks again when you come back on a new day or tap the refresh icon beside your profile. **Offline** means the server could not be reached. Your cached Punchly app and saved punches remain available offline after the first successful online visit.
-- Tap **?** in the header for a short guide. **Settings → Developer & Support** includes the repository link and buttons to report an issue or request a feature. You can preview and include browser version, viewport, and device model where available. The email draft is yours to review and send.
+- **Appearance** includes light and dark themes, thirteen fonts, Compact mode, mobile haptics, and in-app sound. New setups start in Compact mode with the Punch artwork visible. Use **Show shift details** in Today to expand the form. Audio defaults to 70%, and typing sounds are optional.
+- **Profile** stores your display name, employee ID, employee email, role, department, and avatar or cropped local photo.
+- **Tracking defaults** controls the daily target, lunch limit, workdays, clock format, and default date range. **Reminders** can prompt you to punch or tell you when you meet the target while Punchly is open. Device alerts require browser permission.
+- Open **?** for help or use **Settings → Developer & Support** to report an issue or request a feature. Device details are optional in the email draft.
 
-## Run locally
+## Data and backups
 
-The UISFX browser bundle is checked in. For PWA/offline support, serve the folder over localhost:
+Punchly stores records and settings in this browser. They stay on this device unless you export and transfer a backup. Clearing browser data can remove them.
 
-```bash
+- **Settings → Data & backups → Export backup** saves records, drafts, change logs, and preferences in a `.json` file. Export backups regularly.
+- **Export settings** saves your preferences and profile without shift records. **Import backup** reads either kind of Punchly file. For a full backup, **Merge** adds entries and **Replace** restores the backup’s data and preferences.
+- **Delete profile** removes saved profile details and its picture. **Reset Punchly** clears the app’s local data. Both actions offer a backup before confirmation.
+
+## Run and build
+
+Serve the repository root for PWA and offline support.
+
+```sh
 python -m http.server 8000
 ```
 
-Then open <http://localhost:8000>. Opening `index.html` directly also runs the app, but service-worker installation is unavailable from a `file:` URL.
+Open [localhost:8000](http://localhost:8000), or open `index.html` directly for a browser-only session. The PWA requires HTTPS or localhost and one successful online visit to cache its files.
 
-With Node.js 24 or later, use `npm ci` to install dependencies, then run `npm run typecheck`, `npm test`, and `npm run build`. The build refreshes `vendor/punchly-sounds.js` when the sound service changes. Use `npm run format` to format the sound source and tests.
+The browser bundle is checked in so GitHub Pages can serve the repository root directly. To change or verify the sound bundle, use Node.js 24 or later.
 
-## Data and privacy
+```sh
+npm ci
+npm run format
+npm run typecheck
+npm test
+npm run build
+```
 
-Punches, settings, weekly drafts, and history are stored in this browser profile. Clearing site data removes them. Open **Settings → Data & backups** to export a portable JSON file. When restoring, choose **Merge** to add new records and drafts or **Replace** to restore the backup's records, drafts, and preferences. Browser storage is not synced between devices.
-
-The change log and cropped profile photo are stored locally and travel with the corresponding backups. Review reports before sharing them, as a change log can include earlier versions of notes. Device details are only added to an email draft when you opt in.
-
-When opening the app on the same browser origin, records from the previous weekly calculator's `timecard_calculator_history_v1` storage key are imported into History automatically.
-
-## Deployment
-
-Publish the repository root on GitHub Pages or another static host. `index.html` is the entry point. Serve `service-worker.js` from the same directory and allow the web manifest for offline support. To install, use **Settings → Install & shortcuts** or your browser's Install or Add to Home Screen menu. Open the app online once so it can cache its files.
-
-When releasing changes to the app shell, update the release marker and asset query versions in `index.html` together with `RELEASE` in `service-worker.js`. Include new scripts in the service worker's asset list. Online navigation checks for fresh HTML, and the offline cache keeps a complete copy of a single release.
+When releasing updates, change the release marker and asset query versions in `index.html` and `RELEASE` in `service-worker.js` together. Add new offline dependencies to the service worker’s asset list.
 
 ## License
 
-GNU General Public License v3.0; see [LICENSE](LICENSE).
+Punchly is distributed under the [Apache License 2.0](LICENSE).
 
-Bundled [Inter](assets/fonts/Inter-OFL.txt) and [Manrope](assets/fonts/Manrope-OFL.txt) fonts use the SIL Open Font License. [SheetJS Community Edition](vendor/SheetJS-LICENSE.txt) is distributed under Apache 2.0. Selecting [Satoshi](https://www.fontshare.com/fonts/satoshi) loads it from Fontshare. Inter and system fonts provide a fallback when Satoshi is unavailable.
-
-[Playpen Sans](assets/fonts/PlaypenSans-OFL.txt), [Nunito](assets/fonts/Nunito-OFL.txt), and [Comic Neue](assets/fonts/ComicNeue-OFL.txt) are bundled in WOFF format under the SIL Open Font License.
-
-Rounded [Material Symbols](https://fonts.google.com/icons) by Google are bundled under the [Apache 2.0 license](assets/Material-Symbols-LICENSE.txt). Profile avatars are original Punchly illustrations.
+- [SheetJS Community Edition](vendor/SheetJS-LICENSE.txt) and [Google Material Symbols](assets/Material-Symbols-LICENSE.txt) use Apache 2.0.
+- The UISFX runtime uses the [MIT license](vendor/UISFX-LICENSE.txt), and the sound library is [CC0](vendor/UISFX-LICENSE-AUDIO.txt).
+- [Inter](assets/fonts/Inter-OFL.txt), [Manrope](assets/fonts/Manrope-OFL.txt), [Playpen Sans](assets/fonts/PlaypenSans-OFL.txt), [Nunito](assets/fonts/Nunito-OFL.txt), and [Comic Neue](assets/fonts/ComicNeue-OFL.txt) use the SIL Open Font License. [Satoshi](https://www.fontshare.com/fonts/satoshi) loads from Fontshare when selected.

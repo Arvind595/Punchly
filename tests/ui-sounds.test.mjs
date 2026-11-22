@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { runInNewContext } from 'node:vm'
 import { buildSync } from 'esbuild'
-import { createRecipe, renderRecipe } from 'uisfx'
+import { createRecipe, getCue, renderRecipe } from 'uisfx'
 
 const bundle = buildSync({
   entryPoints: ['src/ui-sounds.ts'],
@@ -98,7 +98,9 @@ function browser(initialState = 'running') {
       let end
       const output = {
         playbackRate: { value: 1 },
-        connect() {},
+        connect(level) {
+          output.level = level
+        },
         disconnect() {},
         addEventListener(type, handler) {
           end = handler
@@ -118,7 +120,9 @@ function browser(initialState = 'running') {
     }
     createGain() {
       return {
-        connect() {},
+        connect(destination) {
+          this.destination = destination
+        },
         disconnect() {},
         gain: {
           value: 1,
@@ -157,6 +161,20 @@ function browser(initialState = 'running') {
 }
 
 const waitStatus = { getClientRects: () => [true] }
+
+test('boosts individual cues while honoring the stored master volume', () => {
+  const b = browser()
+  b.ui.connect({ ...defaults, soundVolume: 35 })
+  b.document.emit('click')
+  b.ui.play('success')
+  assert.equal(
+    b.heard[0].level.gain.value,
+    getCue('success').defaultVolume * 1.5,
+  )
+  assert.equal(b.heard[0].level.destination.gain.value, 0.35)
+  b.ui.play('checkpoint', { volume: 0.8 })
+  assert.equal(b.heard[1].level.gain.value, 1)
+})
 
 test('does not instantiate or play on the server, at startup, or for synthetic gestures', () => {
   const server = {}
