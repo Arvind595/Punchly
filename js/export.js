@@ -1,5 +1,8 @@
 (() => {
-  const header = ['Date', 'Type', 'Title', 'Total minutes', 'Status', 'Morning in', 'Lunch out', 'Lunch return', 'Evening out', 'Notes', 'Schedule', 'Day type', 'Work target (minutes)', 'Lunch (minutes)', 'Extra worked (minutes)'];
+  const punchFields = Shift.fields;
+  const header = ['Date', 'Type', 'Title', 'Total minutes', 'Status', 'Morning in', 'Lunch out', 'Lunch return', 'Evening out', 'Notes', 'Schedule', 'Day type', 'Work target (minutes)', 'Lunch (minutes)', 'Extra worked (minutes)',
+    ...punchFields.map(field => Audit.labels[field] + ' recorded (UTC)'), 'First logged (UTC)', 'Last changed (UTC)'];
+  const metaLabels = ['Profile name', 'Punchly version', 'Exported at (UTC)', 'Export time zone'];
   let sheetJs;
   function download(content, filename, type) {
     const url = URL.createObjectURL(new Blob([content], { type }));
@@ -16,6 +19,21 @@
     if (!records.length) window.showPunchlyToast?.('There are no records in this date range to export.');
     return records;
   }
+  function metadata() {
+    const profileName = Storage.getSettings().displayName || 'Unnamed profile';
+    const appVersion = document.querySelector('meta[name="punchly-release"]').content;
+    const exportedAt = new Date().toISOString();
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Local time';
+    return { profileName, appVersion, exportedAt, timeZone };
+  }
+  function metaValues(meta) {
+    return [meta.profileName, `v${meta.appVersion}`, meta.exportedAt, meta.timeZone];
+  }
+  function stamp(meta) {
+    return `${meta.profileName} · Punchly v${meta.appVersion} · ${Audit.format(meta.exportedAt)} (${meta.timeZone})`;
+  }
+  window.punchlyExportStamp = () => stamp(metadata());
+
   function recordRows(records) {
     return records.map(record => [
       record.date, record.kind === 'weekly' ? 'Weekly' : 'Daily', record.title || '', record.totalMinutes || 0,
@@ -24,12 +42,19 @@
       record.notes || '', record.schedule ? JSON.stringify(record.schedule) : '',
       record.kind === 'daily' ? Shift.label(record.mode) : '',
       record.kind === 'daily' ? record.targetMinutes : '',
-      record.lunchMinutes ?? '', record.extraMinutes ?? ''
+      record.lunchMinutes ?? '', record.extraMinutes ?? '',
+      ...punchFields.map(field => Audit.punchedAt(record.audit, field, record.punches?.[field])),
+      record.audit?.createdAt || '', record.audit?.updatedAt || ''
     ]);
   }
   window.exportVisibleCSV = () => {
     const records = visibleRecords();
-    if (records.length) download([header, ...recordRows(records)].map(row => row.map(csvCell).join(',')).join('\r\n'), 'Punchly_filtered_history.csv', 'text/csv;charset=utf-8');
+    if (!records.length) return;
+    const meta = metaValues(metadata());
+    const rows = recordRows(records).map((row, index) => [...row,
+      records[index].audit ? JSON.stringify(records[index].audit.events) : '', ...meta]);
+    download([[...header, 'Change log (JSON)', ...metaLabels], ...rows]
+      .map(row => row.map(csvCell).join(',')).join('\r\n'), 'Punchly_filtered_history.csv', 'text/csv;charset=utf-8');
   };
   function loadSheetJs() {
     if (window.XLSX) return Promise.resolve(window.XLSX);
@@ -54,6 +79,7 @@
   window.exportVisibleExcel = async () => {
     const records = visibleRecords();
     if (!records.length) return;
+    const meta = metadata();
     try {
       const xlsx = await loadSheetJs();
       const rows = recordRows(records);
@@ -66,15 +92,57 @@
       sheet['!cols'] = header.map(label => ({ wch: Math.max(14, label.length + 2) }));
       const workbook = xlsx.utils.book_new();
       xlsx.utils.book_append_sheet(workbook, sheet, 'Timesheet');
+      const log = [['Shift date', 'Record type', 'Record title', 'Recorded at (UTC)', 'Field', 'Previous value', 'New value']];
+      for (const record of records) {
+        for (const event of record.audit?.events || []) {
+          for (const change of event.changes) {
+            log.push([excelDate(record.date), record.kind, record.title || '', event.at,
+              Audit.labels[change.field], change.from, change.to]);
+          }
+        }
+      }
+      const auditSheet = xlsx.utils.aoa_to_sheet(log);
+      log.slice(1).forEach(([date], index) => {
+        if (typeof date === 'number') auditSheet[`A${index + 2}`].z = 'yyyy-mm-dd';
+      });
+      auditSheet['!autofilter'] = { ref: auditSheet['!ref'] };
+      auditSheet['!cols'] = [14, 14, 24, 26, 20, 40, 40].map(wch => ({ wch }));
+      xlsx.utils.book_append_sheet(workbook, auditSheet, 'Change log');
+      const info = xlsx.utils.aoa_to_sheet(metaLabels.map((label, index) => [label, metaValues(meta)[index]]));
+      info['!cols'] = [{ wch: 24 }, { wch: 48 }];
+      xlsx.utils.book_append_sheet(workbook, info, 'Export details');
       xlsx.writeFile(workbook, 'Punchly_history.xlsx');
     } catch (error) { window.showPunchlyToast?.('The Excel file could not be created.'); }
   };
+  function pngWithMetadata(canvas, data) {
+    const png = Uint8Array.from(atob(canvas.toDataURL('image/png').split(',')[1]), char => char.charCodeAt(0));
+    const encoder = new TextEncoder();
+    const keyword = encoder.encode('Punchly Export');
+    const value = encoder.encode(JSON.stringify(data));
+    // An uncompressed iTXt chunk stores UTF-8 metadata without changing the chart pixels.
+    const chunk = new Uint8Array(12 + keyword.length + 5 + value.length);
+    const numbers = new DataView(chunk.buffer);
+    numbers.setUint32(0, chunk.length - 12);
+    chunk.set(encoder.encode('iTXt'), 4);
+    chunk.set(keyword, 8);
+    chunk.set(value, 8 + keyword.length + 5);
+    let crc = 0xffffffff;
+    for (const byte of chunk.subarray(4, chunk.length - 4)) {
+      crc ^= byte;
+      for (let bit = 0; bit < 8; bit++) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
+    }
+    numbers.setUint32(chunk.length - 4, crc ^ 0xffffffff);
+    return new Blob([png.subarray(0, png.length - 12), chunk, png.subarray(png.length - 12)], { type: 'image/png' });
+  }
+
   window.exportChartPNG = () => {
     const records = visibleRecords();
     if (!records.length) return;
     try {
-      const canvas = Charts.exportChart(records, window.getExportChartKind?.() || 'bar');
-      const link = document.createElement('a'); link.download = 'Punchly_filtered_chart.png'; link.href = canvas.toDataURL('image/png'); link.click();
+      const meta = metadata();
+      const canvas = Charts.exportChart(records, window.getExportChartKind?.() || 'bar', stamp(meta));
+      const changeLog = records.filter(record => record.audit).map(({ date, kind, title, audit }) => ({ date, kind, title, audit }));
+      download(pngWithMetadata(canvas, { ...meta, changeLog }), 'Punchly_filtered_chart.png', 'image/png');
     } catch (error) { window.showPunchlyToast?.('The chart image could not be created.'); }
   };
 
@@ -112,7 +180,7 @@
     return new Blob(parts, { type: 'application/pdf' });
   }
 
-  function pdfTimesheet(records) {
+  function pdfTimesheet(records, meta) {
     const canvas = document.createElement('canvas');
     canvas.width = 1000;
     canvas.height = 1415;
@@ -127,7 +195,8 @@
       ctx.fillText('Punchly timesheet', margin, 75);
       ctx.font = '19px sans-serif';
       ctx.fillText(`Page ${pages.length + 1}  ·  ${records.length} ${records.length === 1 ? 'record' : 'records'}`, margin, 108);
-      y = 154;
+      ctx.fillText(stamp(meta), margin, 138, lineWidth);
+      y = 182;
     }
     function finishPage() {
       const bytes = atob(canvas.toDataURL('image/jpeg', .88).split(',')[1]);
@@ -169,6 +238,12 @@
         if (row.from || row.to) line(`${row.day}: ${row.from || '—'} to ${row.to || '—'}${row.break || row.breakDeduction ? ` · Break ${row.break || row.breakDeduction}` : ''}`);
       }
       if (record.notes) notes(record.notes);
+      if (record.audit?.events.length) {
+        line('Change log', true);
+        for (const event of record.audit.events) {
+          notes(`${Audit.format(event.at)} · ${event.changes.map(Audit.describe).join(' · ')}`);
+        }
+      }
       y += 18;
     }
     finishPage();
@@ -178,10 +253,13 @@
   window.exportVisiblePDF = () => {
     const records = visibleRecords();
     if (!records.length) return;
-    try { download(pdfTimesheet(records), 'Punchly_timesheet.pdf', 'application/pdf'); }
+    try { download(pdfTimesheet(records, metadata()), 'Punchly_timesheet.pdf', 'application/pdf'); }
     catch (error) { window.showPunchlyToast?.('The PDF could not be created.'); }
   };
-  window.downloadBackup = () => download(JSON.stringify(Storage.exportBackup(), null, 2), 'Punchly_backup.json', 'application/json');
+  window.downloadBackup = () => download(JSON.stringify({ ...Storage.exportBackup(), ...metadata() }, null, 2), 'Punchly_backup.json', 'application/json');
+  window.downloadPunchlySettings = () => download(JSON.stringify({
+    format: 'punchly-settings', version: 1, ...metadata(), settings: Storage.getSettings()
+  }, null, 2), 'Punchly_settings.json', 'application/json');
   function chooseRestoreMode(backup) {
     const dialog = document.getElementById('restoreDialog');
     const count = backup.history.length;
@@ -209,6 +287,13 @@
     const file = input.files?.[0]; if (!file) return;
     try {
       const backup = JSON.parse(await readBackupFile(file));
+      if (backup?.format === 'punchly-settings') {
+        if (!confirm('Apply these Punchly preferences? Your punches and time reports will be kept.')) return;
+        Storage.importSettings(backup);
+        window.dispatchEvent(new CustomEvent('punchly:settings-imported'));
+        window.showPunchlyToast?.('Settings imported.');
+        return;
+      }
       Storage.validateBackup(backup);
       const mode = await chooseRestoreMode(backup);
       if (mode !== 'merge' && mode !== 'replace') return;

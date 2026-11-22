@@ -1,10 +1,13 @@
-const RELEASE = 10;
+const RELEASE = 12;
 const CACHE_NAME = `punchly-static-v${RELEASE}`;
 const APP_ASSETS = [
-  ...['css/style.css', 'manifest.webmanifest', 'js/shift.js', 'js/storage.js',
-    'js/charts.js', 'js/export.js', 'js/settings.js', 'js/reminders.js', 'js/attendance.js', 'js/mini-timer.js', 'js/guided-punch.js', 'js/app.js']
+  ...['css/style.css', 'manifest.webmanifest', 'js/shift.js', 'js/icons.js', 'js/audit.js', 'js/storage.js',
+    'js/charts.js', 'js/export.js', 'js/settings.js', 'js/reminders.js', 'js/attendance.js', 'js/mini-timer.js', 'js/guided-punch.js',
+    'js/app-tools.js', 'js/app.js']
     .map(path => `./${path}?v=${RELEASE}`),
   './assets/logo.svg', './assets/icon-192.png', './assets/icon-512.png',
+  './assets/avatar-fox.svg', './assets/avatar-whale.svg', './assets/avatar-fern.svg',
+  './assets/avatar-coffee.svg', './assets/avatar-orbit.svg',
   './assets/fonts/inter-regular.woff', './assets/fonts/inter-bold.woff',
   './assets/fonts/manrope-regular.woff', './assets/fonts/manrope-bold.woff',
   './vendor/xlsx-0.20.3.mini.js'

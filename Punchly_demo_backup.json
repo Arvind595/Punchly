@@ -1,0 +1,862 @@
+{
+  "format": "punchly-backup",
+  "version": 1,
+  "exportedAt": "2026-11-21T17:30:27.570Z",
+  "settings": {
+    "targetShift": "08:20",
+    "font": "manrope",
+    "avatar": "initials",
+    "compactMode": false,
+    "mobileHaptics": true,
+    "reminderIn": "",
+    "reminderLunchOut": "",
+    "reminderLunchReturn": "",
+    "reminderOut": "",
+    "reminderTarget": false,
+    "lunchLimit": 45,
+    "theme": "light",
+    "workdays": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "rounding": "none",
+    "clockFormat": "24",
+    "historyRange": "weekly",
+    "displayName": ""
+  },
+  "today": null,
+  "drafts": {
+    "2026-11-13": {
+      "morningIn": "09:00",
+      "lunchOut": "13:00",
+      "lunchReturn": "",
+      "eveningOut": "",
+      "targetShift": "08:20",
+      "mode": "full",
+      "notes": "Demo: Lunch out recorded. Lunch return is missing."
+    },
+    "2026-11-21": {
+      "morningIn": "09:05",
+      "lunchOut": "",
+      "lunchReturn": "",
+      "eveningOut": "",
+      "targetShift": "08:20",
+      "mode": "sat3",
+      "notes": "Demo: Morning punch captured. Open Punch to continue with lunch out.\n3rd Saturday worked"
+    }
+  },
+  "week": {
+    "rows": [
+      {
+        "day": "Monday",
+        "from": "09:00",
+        "to": "18:05",
+        "break": "45",
+        "target": "08:20",
+        "workday": true
+      },
+      {
+        "day": "Tuesday",
+        "from": "09:10",
+        "to": "18:55",
+        "break": "65",
+        "target": "08:20",
+        "workday": true
+      },
+      {
+        "day": "Wednesday",
+        "from": "",
+        "to": "",
+        "break": "",
+        "target": "08:20",
+        "workday": false
+      },
+      {
+        "day": "Thursday",
+        "from": "08:45",
+        "to": "12:55",
+        "break": "",
+        "target": "04:10",
+        "workday": true
+      },
+      {
+        "day": "Friday",
+        "from": "21:50",
+        "to": "07:10",
+        "break": "35",
+        "target": "08:20",
+        "workday": true
+      },
+      {
+        "day": "Saturday",
+        "from": "",
+        "to": "",
+        "break": "",
+        "target": "08:20",
+        "workday": false
+      },
+      {
+        "day": "Sunday",
+        "from": "",
+        "to": "",
+        "break": "",
+        "target": "08:20",
+        "workday": false
+      }
+    ],
+    "title": "Demo weekly draft",
+    "notes": "Sample calculator entries for the week of 2026-11-16.",
+    "rounding": "none"
+  },
+  "history": [
+    {
+      "id": "daily-2026-10-17",
+      "kind": "daily",
+      "date": "2026-10-17",
+      "mode": "sat3",
+      "punches": {
+        "morningIn": "09:00",
+        "lunchOut": "13:00",
+        "lunchReturn": "13:40",
+        "eveningOut": "18:05"
+      },
+      "in": "09:00",
+      "out": "18:05",
+      "notes": "Demo: Server migration and verification.\n3rd Saturday worked",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 505,
+      "extraMinutes": 5,
+      "lunchMinutes": 40,
+      "lunchLimitMinutes": 45,
+      "targetMet": true
+    },
+    {
+      "id": "daily-2026-10-19",
+      "kind": "daily",
+      "date": "2026-10-19",
+      "mode": "full",
+      "punches": {
+        "morningIn": "09:00",
+        "lunchOut": "13:00",
+        "lunchReturn": "13:45",
+        "eveningOut": "18:05"
+      },
+      "in": "09:00",
+      "out": "18:05",
+      "notes": "Demo: Regular shift. Daily target met exactly.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 500,
+      "extraMinutes": 0,
+      "lunchMinutes": 45,
+      "lunchLimitMinutes": 45,
+      "targetMet": true
+    },
+    {
+      "id": "daily-2026-10-20",
+      "kind": "daily",
+      "date": "2026-10-20",
+      "mode": "full",
+      "punches": {
+        "morningIn": "08:45",
+        "lunchOut": "12:45",
+        "lunchReturn": "13:25",
+        "eveningOut": "18:15"
+      },
+      "in": "08:45",
+      "out": "18:15",
+      "notes": "Demo: Overtime for release preparation.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 530,
+      "extraMinutes": 30,
+      "lunchMinutes": 40,
+      "lunchLimitMinutes": 45,
+      "targetMet": true
+    },
+    {
+      "id": "daily-2026-10-21",
+      "kind": "daily",
+      "date": "2026-10-21",
+      "mode": "half",
+      "punches": {
+        "morningIn": "08:50",
+        "eveningOut": "13:00"
+      },
+      "in": "08:50",
+      "out": "13:00",
+      "notes": "Demo: Morning-only half day.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 250,
+      "totalMinutes": 250,
+      "extraMinutes": 0,
+      "lunchMinutes": null,
+      "lunchLimitMinutes": 45,
+      "targetMet": true
+    },
+    {
+      "id": "daily-2026-10-22",
+      "kind": "daily",
+      "date": "2026-10-22",
+      "mode": "holiday",
+      "punches": {},
+      "in": "",
+      "out": "",
+      "notes": "Demo: Company holiday. Office closed.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 0,
+      "totalMinutes": 0,
+      "extraMinutes": 0,
+      "lunchMinutes": null,
+      "lunchLimitMinutes": 45,
+      "targetMet": false
+    },
+    {
+      "id": "daily-2026-10-24",
+      "kind": "daily",
+      "date": "2026-10-24",
+      "mode": "full",
+      "punches": {
+        "morningIn": "08:55",
+        "lunchOut": "12:50",
+        "lunchReturn": "13:30",
+        "eveningOut": "18:00"
+      },
+      "in": "08:55",
+      "out": "18:00",
+      "notes": "Demo: Regular Saturday coverage.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 505,
+      "extraMinutes": 5,
+      "lunchMinutes": 40,
+      "lunchLimitMinutes": 45,
+      "targetMet": true
+    },
+    {
+      "id": "daily-2026-10-26",
+      "kind": "daily",
+      "date": "2026-10-26",
+      "mode": "full",
+      "punches": {
+        "morningIn": "09:05",
+        "lunchOut": "13:10",
+        "lunchReturn": "13:55",
+        "eveningOut": "18:10"
+      },
+      "in": "09:05",
+      "out": "18:10",
+      "notes": "Demo: Customer support rotation.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 500,
+      "extraMinutes": 0,
+      "lunchMinutes": 45,
+      "lunchLimitMinutes": 45,
+      "targetMet": true
+    },
+    {
+      "id": "daily-2026-10-27",
+      "kind": "daily",
+      "date": "2026-10-27",
+      "mode": "leave",
+      "punches": {},
+      "in": "",
+      "out": "",
+      "notes": "Demo: Planned personal leave.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 0,
+      "totalMinutes": 0,
+      "extraMinutes": 0,
+      "lunchMinutes": null,
+      "lunchLimitMinutes": 45,
+      "targetMet": false
+    },
+    {
+      "id": "daily-2026-10-28",
+      "kind": "daily",
+      "date": "2026-10-28",
+      "mode": "full",
+      "punches": {
+        "morningIn": "09:00",
+        "lunchOut": "13:00",
+        "lunchReturn": "14:05",
+        "eveningOut": "18:25"
+      },
+      "in": "09:00",
+      "out": "18:25",
+      "notes": "Demo: Long lunch break for an appointment.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 500,
+      "extraMinutes": 0,
+      "lunchMinutes": 65,
+      "lunchLimitMinutes": 45,
+      "targetMet": true
+    },
+    {
+      "id": "daily-2026-10-29",
+      "kind": "daily",
+      "date": "2026-10-29",
+      "mode": "full",
+      "punches": {
+        "morningIn": "09:12",
+        "lunchOut": "13:05",
+        "lunchReturn": "13:50",
+        "eveningOut": ""
+      },
+      "in": "09:12",
+      "out": "",
+      "notes": "Demo: Incomplete shift. Evening punch missing.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 233,
+      "extraMinutes": 0,
+      "lunchMinutes": 45,
+      "lunchLimitMinutes": 45,
+      "targetMet": false
+    },
+    {
+      "id": "daily-2026-10-30",
+      "kind": "daily",
+      "date": "2026-10-30",
+      "mode": "full",
+      "punches": {
+        "morningIn": "20:45",
+        "lunchOut": "00:30",
+        "lunchReturn": "01:10",
+        "eveningOut": "06:00"
+      },
+      "in": "20:45",
+      "out": "06:00",
+      "notes": "Demo: Overnight maintenance with lunch after midnight.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 515,
+      "extraMinutes": 15,
+      "lunchMinutes": 40,
+      "lunchLimitMinutes": 45,
+      "targetMet": true
+    },
+    {
+      "id": "daily-2026-10-31",
+      "kind": "daily",
+      "date": "2026-10-31",
+      "mode": "full",
+      "punches": {
+        "morningIn": "09:00",
+        "lunchOut": "13:00",
+        "lunchReturn": "13:45",
+        "eveningOut": "18:05"
+      },
+      "in": "09:00",
+      "out": "18:05",
+      "notes": "Demo: Month-end inventory.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 500,
+      "extraMinutes": 0,
+      "lunchMinutes": 45,
+      "lunchLimitMinutes": 45,
+      "targetMet": true
+    },
+    {
+      "id": "daily-2026-11-02",
+      "kind": "daily",
+      "date": "2026-11-02",
+      "mode": "full",
+      "punches": {
+        "morningIn": "08:58",
+        "lunchOut": "13:00",
+        "lunchReturn": "13:44",
+        "eveningOut": "18:02"
+      },
+      "in": "08:58",
+      "out": "18:02",
+      "notes": "Demo: Regular shift.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 500,
+      "extraMinutes": 0,
+      "lunchMinutes": 44,
+      "lunchLimitMinutes": 45,
+      "targetMet": true
+    },
+    {
+      "id": "daily-2026-11-03",
+      "kind": "daily",
+      "date": "2026-11-03",
+      "mode": "full",
+      "punches": {
+        "morningIn": "08:55",
+        "lunchOut": "13:05",
+        "lunchReturn": "13:50",
+        "eveningOut": "18:45"
+      },
+      "in": "08:55",
+      "out": "18:45",
+      "notes": "Demo: Overtime for month-end reconciliation.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 545,
+      "extraMinutes": 45,
+      "lunchMinutes": 45,
+      "lunchLimitMinutes": 45,
+      "targetMet": true
+    },
+    {
+      "id": "daily-2026-11-04",
+      "kind": "daily",
+      "date": "2026-11-04",
+      "mode": "holiday",
+      "punches": {},
+      "in": "",
+      "out": "",
+      "notes": "Demo: Company foundation day.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 0,
+      "totalMinutes": 0,
+      "extraMinutes": 0,
+      "lunchMinutes": null,
+      "lunchLimitMinutes": 45,
+      "targetMet": false
+    },
+    {
+      "id": "daily-2026-11-06",
+      "kind": "daily",
+      "date": "2026-11-06",
+      "mode": "full",
+      "punches": {
+        "morningIn": "09:12",
+        "lunchOut": "13:00",
+        "lunchReturn": "13:40",
+        "eveningOut": "17:15"
+      },
+      "in": "09:12",
+      "out": "17:15",
+      "notes": "Demo: Left early and finished below target.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 443,
+      "extraMinutes": 0,
+      "lunchMinutes": 40,
+      "lunchLimitMinutes": 45,
+      "targetMet": false
+    },
+    {
+      "id": "daily-2026-11-09",
+      "kind": "daily",
+      "date": "2026-11-09",
+      "mode": "full",
+      "punches": {
+        "morningIn": "09:00",
+        "lunchOut": "12:55",
+        "lunchReturn": "13:35",
+        "eveningOut": "18:00"
+      },
+      "in": "09:00",
+      "out": "18:00",
+      "notes": "Demo: Regular shift after the scheduled Saturday holiday.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 500,
+      "extraMinutes": 0,
+      "lunchMinutes": 40,
+      "lunchLimitMinutes": 45,
+      "targetMet": true
+    },
+    {
+      "id": "daily-2026-11-10",
+      "kind": "daily",
+      "date": "2026-11-10",
+      "mode": "half",
+      "punches": {
+        "morningIn": "09:05",
+        "eveningOut": "13:15"
+      },
+      "in": "09:05",
+      "out": "13:15",
+      "notes": "Demo: Morning-only half day for training.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 250,
+      "totalMinutes": 250,
+      "extraMinutes": 0,
+      "lunchMinutes": null,
+      "lunchLimitMinutes": 45,
+      "targetMet": true
+    },
+    {
+      "id": "daily-2026-11-11",
+      "kind": "daily",
+      "date": "2026-11-11",
+      "mode": "leave",
+      "punches": {},
+      "in": "",
+      "out": "",
+      "notes": "Demo: Approved annual leave.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 0,
+      "totalMinutes": 0,
+      "extraMinutes": 0,
+      "lunchMinutes": null,
+      "lunchLimitMinutes": 45,
+      "targetMet": false
+    },
+    {
+      "id": "daily-2026-11-12",
+      "kind": "daily",
+      "date": "2026-11-12",
+      "mode": "full",
+      "punches": {
+        "morningIn": "09:00",
+        "lunchOut": "13:00",
+        "lunchReturn": "13:35",
+        "eveningOut": "18:12"
+      },
+      "in": "09:00",
+      "out": "18:12",
+      "notes": "Demo: Short lunch and overtime.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 517,
+      "extraMinutes": 17,
+      "lunchMinutes": 35,
+      "lunchLimitMinutes": 45,
+      "targetMet": true
+    },
+    {
+      "id": "daily-2026-11-14",
+      "kind": "daily",
+      "date": "2026-11-14",
+      "mode": "full",
+      "punches": {
+        "morningIn": "08:00",
+        "lunchOut": "",
+        "lunchReturn": "",
+        "eveningOut": "16:20"
+      },
+      "in": "08:00",
+      "out": "16:20",
+      "notes": "Demo: Saturday support coverage without a recorded lunch.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 500,
+      "extraMinutes": 0,
+      "lunchMinutes": null,
+      "lunchLimitMinutes": 45,
+      "targetMet": true
+    },
+    {
+      "id": "daily-2026-11-16",
+      "kind": "daily",
+      "date": "2026-11-16",
+      "mode": "full",
+      "punches": {
+        "morningIn": "09:00",
+        "lunchOut": "13:05",
+        "lunchReturn": "13:50",
+        "eveningOut": "18:05"
+      },
+      "in": "09:00",
+      "out": "18:05",
+      "notes": "Demo: Regular shift.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 500,
+      "extraMinutes": 0,
+      "lunchMinutes": 45,
+      "lunchLimitMinutes": 45,
+      "targetMet": true
+    },
+    {
+      "id": "daily-2026-11-17",
+      "kind": "daily",
+      "date": "2026-11-17",
+      "mode": "full",
+      "punches": {
+        "morningIn": "09:10",
+        "lunchOut": "13:10",
+        "lunchReturn": "14:15",
+        "eveningOut": "18:55"
+      },
+      "in": "09:10",
+      "out": "18:55",
+      "notes": "Demo: Extended lunch with 20 minutes of overtime.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 520,
+      "extraMinutes": 20,
+      "lunchMinutes": 65,
+      "lunchLimitMinutes": 45,
+      "targetMet": true
+    },
+    {
+      "id": "daily-2026-11-18",
+      "kind": "daily",
+      "date": "2026-11-18",
+      "mode": "leave",
+      "punches": {},
+      "in": "",
+      "out": "",
+      "notes": "Demo: Approved personal leave.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 0,
+      "totalMinutes": 0,
+      "extraMinutes": 0,
+      "lunchMinutes": null,
+      "lunchLimitMinutes": 45,
+      "targetMet": false
+    },
+    {
+      "id": "daily-2026-11-19",
+      "kind": "daily",
+      "date": "2026-11-19",
+      "mode": "half",
+      "punches": {
+        "morningIn": "08:45",
+        "eveningOut": "12:55"
+      },
+      "in": "08:45",
+      "out": "12:55",
+      "notes": "Demo: Morning-only half day for training.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 250,
+      "totalMinutes": 250,
+      "extraMinutes": 0,
+      "lunchMinutes": null,
+      "lunchLimitMinutes": 45,
+      "targetMet": true
+    },
+    {
+      "id": "daily-2026-11-20",
+      "kind": "daily",
+      "date": "2026-11-20",
+      "mode": "full",
+      "punches": {
+        "morningIn": "21:50",
+        "lunchOut": "02:00",
+        "lunchReturn": "02:35",
+        "eveningOut": "07:10"
+      },
+      "in": "21:50",
+      "out": "07:10",
+      "notes": "Demo: Overnight handover and monitoring.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 525,
+      "extraMinutes": 25,
+      "lunchMinutes": 35,
+      "lunchLimitMinutes": 45,
+      "targetMet": true
+    },
+    {
+      "id": "weekly-demo-2026-10-19",
+      "kind": "weekly",
+      "date": "2026-10-24",
+      "title": "Demo weekly timesheet - 2026-10-19",
+      "notes": "Sample weekly report for export testing.",
+      "totalMinutes": 1785,
+      "schedule": [
+        {
+          "day": "Monday",
+          "from": "09:00",
+          "to": "18:05",
+          "break": "45",
+          "target": "08:20",
+          "workday": true
+        },
+        {
+          "day": "Tuesday",
+          "from": "08:45",
+          "to": "18:15",
+          "break": "40",
+          "target": "08:20",
+          "workday": true
+        },
+        {
+          "day": "Wednesday",
+          "from": "08:50",
+          "to": "13:00",
+          "break": "",
+          "target": "04:10",
+          "workday": true
+        },
+        {
+          "day": "Thursday",
+          "from": "",
+          "to": "",
+          "break": "",
+          "target": "08:20",
+          "workday": false
+        },
+        {
+          "day": "Friday",
+          "from": "",
+          "to": "",
+          "break": "",
+          "target": "08:20",
+          "workday": true
+        },
+        {
+          "day": "Saturday",
+          "from": "08:55",
+          "to": "18:00",
+          "break": "40",
+          "target": "08:20",
+          "workday": true
+        },
+        {
+          "day": "Sunday",
+          "from": "",
+          "to": "",
+          "break": "",
+          "target": "08:20",
+          "workday": false
+        }
+      ],
+      "rounding": "none",
+      "targetMinutes": 500
+    },
+    {
+      "id": "weekly-demo-2026-10-26",
+      "kind": "weekly",
+      "date": "2026-10-31",
+      "title": "Demo weekly timesheet - 2026-10-26",
+      "notes": "Sample weekly report for export testing.",
+      "totalMinutes": 2015,
+      "schedule": [
+        {
+          "day": "Monday",
+          "from": "09:05",
+          "to": "18:10",
+          "break": "45",
+          "target": "08:20",
+          "workday": true
+        },
+        {
+          "day": "Tuesday",
+          "from": "",
+          "to": "",
+          "break": "",
+          "target": "08:20",
+          "workday": false
+        },
+        {
+          "day": "Wednesday",
+          "from": "09:00",
+          "to": "18:25",
+          "break": "65",
+          "target": "08:20",
+          "workday": true
+        },
+        {
+          "day": "Thursday",
+          "from": "",
+          "to": "",
+          "break": "",
+          "target": "08:20",
+          "workday": true
+        },
+        {
+          "day": "Friday",
+          "from": "20:45",
+          "to": "06:00",
+          "break": "40",
+          "target": "08:20",
+          "workday": true
+        },
+        {
+          "day": "Saturday",
+          "from": "09:00",
+          "to": "18:05",
+          "break": "45",
+          "target": "08:20",
+          "workday": true
+        },
+        {
+          "day": "Sunday",
+          "from": "",
+          "to": "",
+          "break": "",
+          "target": "08:20",
+          "workday": false
+        }
+      ],
+      "rounding": "none",
+      "targetMinutes": 500
+    },
+    {
+      "id": "weekly-demo-2026-11-09",
+      "kind": "weekly",
+      "date": "2026-11-14",
+      "title": "Demo weekly timesheet - 2026-11-09",
+      "notes": "Sample weekly report for export testing.",
+      "totalMinutes": 1767,
+      "schedule": [
+        {
+          "day": "Monday",
+          "from": "09:00",
+          "to": "18:00",
+          "break": "40",
+          "target": "08:20",
+          "workday": true
+        },
+        {
+          "day": "Tuesday",
+          "from": "09:05",
+          "to": "13:15",
+          "break": "",
+          "target": "04:10",
+          "workday": true
+        },
+        {
+          "day": "Wednesday",
+          "from": "",
+          "to": "",
+          "break": "",
+          "target": "08:20",
+          "workday": false
+        },
+        {
+          "day": "Thursday",
+          "from": "09:00",
+          "to": "18:12",
+          "break": "35",
+          "target": "08:20",
+          "workday": true
+        },
+        {
+          "day": "Friday",
+          "from": "",
+          "to": "",
+          "break": "",
+          "target": "08:20",
+          "workday": true
+        },
+        {
+          "day": "Saturday",
+          "from": "08:00",
+          "to": "16:20",
+          "break": "",
+          "target": "08:20",
+          "workday": true
+        },
+        {
+          "day": "Sunday",
+          "from": "",
+          "to": "",
+          "break": "",
+          "target": "08:20",
+          "workday": false
+        }
+      ],
+      "rounding": "none",
+      "targetMinutes": 500
+    }
+  ]
+}

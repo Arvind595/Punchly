@@ -25,7 +25,6 @@ const Preferences = (() => {
     ['georgia', 'Georgia', 'Georgia, "Times New Roman", serif'],
     ['courier', 'Courier New', '"Courier New", Courier, monospace']
   ];
-  const avatars = [['initials', 'Initials'], ['sun', 'Sun'], ['moon', 'Moon'], ['bolt', 'Bolt'], ['leaf', 'Leaf']];
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
   const byId = id => document.getElementById(id);
@@ -55,16 +54,24 @@ const Preferences = (() => {
     document.querySelector('meta[name="theme-color"]').content = background;
   }
 
-  function applyProfile(name, avatar) {
+  function drawAvatar(node, avatar, initials, photo) {
+    node.textContent = '';
+    if (!photo && avatar === 'initials') {
+      node.textContent = initials;
+      return;
+    }
+    const image = document.createElement('img');
+    image.src = photo || `assets/avatar-${avatar}.svg`;
+    image.alt = '';
+    image.width = image.height = 48;
+    node.append(image);
+  }
+
+  function applyProfile(name, avatar, photo) {
     const displayName = typeof name === 'string' ? name.trim() : '';
     const initials = displayName.split(/\s+/).filter(Boolean).slice(0, 2)
       .map(word => Array.from(word)[0].toLocaleUpperCase()).join('') || 'P';
-    ['headerInitials', 'profileInitials'].forEach(id => {
-      const node = byId(id);
-      node.classList.toggle('ui-icon', avatar !== 'initials');
-      node.dataset.icon = avatar;
-      node.textContent = avatar === 'initials' ? initials : '';
-    });
+    ['headerInitials', 'profileInitials'].forEach(id => drawAvatar(byId(id), avatar, initials, photo));
     byId('headerProfileName').textContent = displayName || 'Profile';
   }
 
@@ -79,7 +86,7 @@ const Preferences = (() => {
       option.style.fontFamily = stack;
       byId('fontSelect').append(option);
     }
-    for (const [id, name] of avatars) {
+    for (const [id, name] of Storage.avatarOptions) {
       const label = document.createElement('label');
       label.className = 'avatar-option';
       const input = document.createElement('input');
@@ -89,11 +96,14 @@ const Preferences = (() => {
       input.setAttribute('aria-label', name);
       label.title = name;
       const preview = document.createElement('span');
-      preview.className = id === 'initials' ? 'avatar' : 'avatar ui-icon';
-      preview.dataset.icon = id;
-      preview.textContent = id === 'initials' ? 'Aa' : '';
+      preview.className = 'avatar';
+      drawAvatar(preview, id, 'Aa');
       preview.setAttribute('aria-hidden', 'true');
-      label.append(input, preview);
+      const caption = document.createElement('span');
+      caption.className = 'avatar-caption';
+      caption.textContent = name;
+      caption.setAttribute('aria-hidden', 'true');
+      label.append(input, preview, caption);
       avatarOptions.append(label);
     }
     for (const theme of themes) {
@@ -136,7 +146,8 @@ const Preferences = (() => {
 
     function refresh() {
       applyAppearance(settings);
-      applyProfile(settings.displayName, settings.avatar);
+      applyProfile(settings.displayName, settings.avatar, settings.profilePhoto);
+      byId('profilePhotoRemove').hidden = !settings.profilePhoto;
       byId('profileName').value = settings.displayName;
       byId('fontSelect').value = settings.font;
       byId('compactMode').checked = settings.compactMode;
@@ -194,14 +205,22 @@ const Preferences = (() => {
         reminderTarget: byId('reminderTarget').checked
       }, 'reminders', 'Reminders saved.');
     });
-    byId('profileForm').addEventListener('submit', event => {
-      event.preventDefault();
+    function saveProfile(photo, message) {
       save({
         displayName: byId('profileName').value.trim(),
-        avatar: avatarInputs.find(input => input.checked).value
-      }, 'profile', 'Profile saved.');
-      applyProfile(settings.displayName, settings.avatar);
+        avatar: avatarInputs.find(input => input.checked).value,
+        profilePhoto: photo
+      }, 'profile', message);
+      applyProfile(settings.displayName, settings.avatar, settings.profilePhoto);
+      byId('profilePhotoRemove').hidden = !settings.profilePhoto;
+    }
+    byId('profileForm').addEventListener('submit', event => {
+      event.preventDefault();
+      const sameIcon = avatarInputs.find(input => input.checked).value === settings.avatar;
+      saveProfile(sameIcon ? settings.profilePhoto : '', 'Profile saved.');
     });
+    byId('profilePhotoRemove').addEventListener('click', () => saveProfile('', 'Profile photo removed.'));
+    AppTools.connectPhoto(photo => saveProfile(photo, 'Profile photo saved.'), notify);
     byId('trackingForm').addEventListener('submit', event => {
       event.preventDefault();
       save({

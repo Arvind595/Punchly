@@ -1,0 +1,279 @@
+const AppTools = (() => {
+  const byId = id => document.getElementById(id);
+
+  function modal(id) {
+    const dialog = byId(id);
+    let previous;
+    function close() {
+      if (dialog.close) dialog.close();
+      else {
+        dialog.removeAttribute('open');
+        previous?.focus();
+      }
+    }
+    dialog.querySelector('[data-close]').addEventListener('click', close);
+    dialog.addEventListener('close', () => previous?.focus());
+    dialog.addEventListener('keydown', event => {
+      if (!dialog.showModal && event.key === 'Escape') close();
+    });
+    return {
+      close,
+      open() {
+        previous = document.activeElement;
+        if (dialog.showModal) dialog.showModal();
+        else {
+          dialog.setAttribute('open', '');
+          dialog.querySelector('button, input, a')?.focus();
+        }
+      }
+    };
+  }
+
+  function connectUpdates(version, dateKey, notify) {
+    const status = byId('connectionStatus');
+    const button = byId('refreshPage');
+    const localFile = location.protocol === 'file:';
+    const registration = 'serviceWorker' in navigator && window.isSecureContext && !localFile ?
+      navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' }).catch(() => null) :
+      Promise.resolve(null);
+    let checkedDay;
+    let pending;
+    let request;
+    let triedRelease;
+
+    function display(state) {
+      status.dataset.state = state;
+      status.textContent = { checking: 'Checking connection…', online: 'Connected', offline: 'Not connected' }[state];
+    }
+
+    async function check(manual = false) {
+      if (pending) return;
+      if (!navigator.onLine) {
+        display('offline');
+        if (manual) notify('Not connected. You can still use Punchly offline.');
+        return;
+      }
+      if (localFile) {
+        display('online');
+        if (manual) location.reload();
+        return;
+      }
+      pending = true;
+      button.setAttribute('aria-busy', 'true');
+      const day = dateKey(new Date());
+      request = new AbortController();
+      const timeout = setTimeout(() => request.abort(), 5000);
+      try {
+        const response = await fetch('index.html', { cache: 'no-store', signal: request.signal });
+        if (!response.ok) throw new Error('Punchly could not reach the app.');
+        const html = await response.text();
+        const next = /<meta name="punchly-release" content="(\d+)">/.exec(html)?.[1];
+        if (!next) throw new Error('The response was not Punchly.');
+        display('online');
+        const daily = day !== checkedDay;
+        const newer = Number(next) > Number(version) && triedRelease !== next;
+        const editing = Boolean(document.querySelector('dialog[open]'));
+        if (!newer || !editing) checkedDay = day;
+        if (manual || daily) {
+          registration.then(worker => worker?.update()).catch(() => {});
+        }
+        if (manual || (daily && newer && !editing && !hasReloaded(next))) {
+          triedRelease = next;
+          if (newer) {
+            try { sessionStorage.setItem(`punchly-update-${version}`, next); } catch (error) { /* optional */ }
+          }
+          location.reload();
+        }
+      } catch (error) {
+        display('offline');
+        if (manual) notify('Not connected. Punchly could not reach its update server.');
+      } finally {
+        clearTimeout(timeout);
+        request = null;
+        pending = false;
+        button.removeAttribute('aria-busy');
+      }
+    }
+
+    function hasReloaded(next) {
+      try { return sessionStorage.getItem(`punchly-update-${version}`) === next; }
+      catch (error) { return false; }
+    }
+
+    function onReturn() {
+      if (!document.hidden && (checkedDay !== dateKey(new Date()) || status.dataset.state !== 'online')) check();
+    }
+    button.addEventListener('click', () => check(true));
+    window.addEventListener('online', () => check());
+    window.addEventListener('offline', () => {
+      request?.abort();
+      display('offline');
+    });
+    document.addEventListener('visibilitychange', onReturn);
+    window.addEventListener('pageshow', onReturn);
+    window.addEventListener('focus', onReturn);
+    setInterval(() => { if (!document.hidden) check(); }, 60000);
+    display('checking');
+    check();
+  }
+
+  function connectHelp(version) {
+    const help = modal('helpDialog');
+    byId('openHelp').addEventListener('click', help.open);
+    byId('settingsHelp').addEventListener('click', help.open);
+    const support = modal('supportDialog');
+    const heading = byId('reportHeading');
+    const message = byId('reportMessage');
+    const include = byId('reportDiagnostics');
+    const preview = byId('reportPreview');
+    const email = byId('openReportEmail');
+    let subject;
+    let device = '';
+    let selection = 0;
+
+    function updateEmail() {
+      const body = [message.value.trim(), include.checked && device].filter(Boolean).join('\n\n');
+      email.href = `mailto:arvindne555@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    }
+
+    document.querySelectorAll('[data-support]').forEach(button => button.addEventListener('click', () => {
+      selection++;
+      const issue = button.dataset.support === 'issue';
+      subject = issue ? 'Punchly bug report' : 'Punchly feature request';
+      heading.textContent = issue ? 'Report an issue' : 'Request a feature';
+      message.placeholder = issue ? 'What happened? How can it be reproduced?' : 'What would you like to do in Punchly?';
+      message.value = '';
+      device = '';
+      include.checked = false;
+      preview.hidden = true;
+      updateEmail();
+      support.open();
+    }));
+    message.addEventListener('input', updateEmail);
+    include.addEventListener('change', async () => {
+      const current = ++selection;
+      preview.hidden = !include.checked;
+      if (!include.checked) { updateEmail(); return; }
+      const userAgent = navigator.userAgentData;
+      const lines = [
+        `Punchly v${version} · ${document.documentElement.dataset.layout} layout`,
+        `Browser: ${navigator.userAgent}`,
+        `Viewport: ${innerWidth} × ${innerHeight} CSS pixels, DPR ${devicePixelRatio}`,
+        `Screen: ${screen.width} × ${screen.height} CSS pixels`,
+        `Language: ${navigator.language}`,
+        `Standalone: ${matchMedia('(display-mode: standalone)').matches || navigator.standalone === true}`,
+        `Connection: ${byId('connectionStatus').textContent}`
+      ];
+      if (userAgent?.platform) lines.push(`Platform: ${userAgent.platform}`);
+      device = lines.join('\n');
+      preview.textContent = device;
+      updateEmail();
+      try {
+        const details = await userAgent?.getHighEntropyValues?.(['model', 'platformVersion']);
+        if (current !== selection || !include.checked || !details) return;
+        if (details.model) lines.push(`Device model: ${details.model}`);
+        if (details.platformVersion) lines.push(`OS version: ${details.platformVersion}`);
+        device = lines.join('\n');
+        preview.textContent = device;
+        updateEmail();
+      } catch (error) { /* optional browser hints */ }
+    });
+  }
+
+  function connectPhoto(onCrop, notify) {
+    const crop = modal('photoDialog');
+    const fileInput = byId('profilePhotoFile');
+    const canvas = byId('photoCrop');
+    const zoom = byId('photoZoom');
+    const x = byId('photoX');
+    const y = byId('photoY');
+    const size = canvas.width;
+    let image;
+
+    function render() {
+      const context = canvas.getContext('2d');
+      const side = Math.min(image.naturalWidth, image.naturalHeight) * 100 / Number(zoom.value);
+      x.disabled = image.naturalWidth === side;
+      y.disabled = image.naturalHeight === side;
+      const left = (image.naturalWidth - side) * Number(x.value) / 100;
+      const top = (image.naturalHeight - side) * Number(y.value) / 100;
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, size, size);
+      context.drawImage(image, left, top, side, side, 0, 0, size, size);
+    }
+
+    byId('profilePhotoChoose').addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      fileInput.value = '';
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      const next = new Image();
+      next.onload = () => {
+        URL.revokeObjectURL(url);
+        image = next;
+        zoom.value = '100';
+        x.value = y.value = '50';
+        render();
+        crop.open();
+      };
+      next.onerror = () => {
+        URL.revokeObjectURL(url);
+        notify('Choose a JPEG, PNG, or WebP image that this browser can open.');
+      };
+      next.src = url;
+    });
+    [zoom, x, y].forEach(input => input.addEventListener('input', render));
+    byId('applyPhoto').addEventListener('click', () => {
+      onCrop(canvas.toDataURL('image/jpeg', .86));
+      crop.close();
+    });
+  }
+
+  function connectReset({ onProfileDeleted, onReset }) {
+    const confirmDialog = modal('resetDialog');
+    const status = byId('resetStatus');
+    const confirm = byId('confirmReset');
+    let resetAll;
+
+    function open(all) {
+      resetAll = all;
+      const action = all ? 'Reset Punchly' : 'Delete profile';
+      byId('resetHeading').textContent = action + '?';
+      byId('resetDescription').textContent = all ?
+        'This erases your profile, preferences, punches, drafts, reports, and change logs from this browser.' :
+        'This removes your display name and profile picture from this browser. Your punches, reports, and other preferences are kept.';
+      byId('resetActionLabel').textContent = action;
+      Icons.draw(byId('resetActionIcon'), all ? 'delete_forever' : 'person_remove');
+      status.hidden = true;
+      confirm.disabled = false;
+      confirmDialog.open();
+    }
+
+    byId('deleteProfile').addEventListener('click', () => open(false));
+    byId('resetApp').addEventListener('click', () => open(true));
+    byId('resetBackup').addEventListener('click', () => {
+      try {
+        window.downloadBackup();
+        status.textContent = 'Check that the backup is in your downloads before continuing.';
+      } catch (error) {
+        status.textContent = 'The backup could not be downloaded.';
+      }
+      status.hidden = false;
+    });
+    confirm.addEventListener('click', () => {
+      confirm.disabled = true;
+      if (!(resetAll ? Storage.reset() : Storage.deleteProfile())) {
+        status.textContent = 'Browser storage is unavailable. The changes could not be saved.';
+        status.hidden = false;
+        confirm.disabled = false;
+        return;
+      }
+      confirmDialog.close();
+      if (resetAll) onReset();
+      else onProfileDeleted();
+    });
+  }
+
+  return { connectUpdates, connectHelp, connectPhoto, connectReset };
+})();

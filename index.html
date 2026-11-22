@@ -4,44 +4,46 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f7f7ff">
-  <meta name="punchly-release" content="10">
+  <meta name="punchly-release" content="12">
   <meta name="description" content="A private, browser-based time tracker and weekly time-card calculator.">
   <title>Punchly | Time Tracker</title>
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-192.png">
-  <link rel="manifest" href="manifest.webmanifest?v=10">
-  <link rel="stylesheet" href="css/style.css?v=10">
+  <link rel="manifest" href="manifest.webmanifest?v=12">
+  <link rel="stylesheet" href="css/style.css?v=12">
 </head>
 <body>
   <header class="app-header">
     <div class="brand-toolbar">
       <a class="brand" href="#punch-view" aria-label="Punchly home">
-        <span class="brand-mark" aria-hidden="true">◷</span><h1>Punchly <small id="appVersion" class="app-version"></small></h1>
+        <span class="brand-mark"><span class="ui-icon" data-icon="schedule" aria-hidden="true"></span></span><h1>Punchly <small id="appVersion" class="app-version"></small></h1>
       </a>
-      <button id="refreshPage" class="btn-text refresh-page" type="button" aria-label="Refresh Punchly" title="Refresh page"><span aria-hidden="true">↻</span></button>
     </div>
     <div class="header-actions">
-      <button class="btn-secondary desktop-only" type="button" id="miniTimerToggle" aria-pressed="false">Mini timer</button>
+      <button class="btn-secondary icon-button desktop-only" type="button" id="miniTimerToggle" aria-pressed="false"><span class="ui-icon" data-icon="timer" aria-hidden="true"></span>Mini timer</button>
+      <button id="openHelp" class="btn-text header-icon" type="button" aria-label="Help and how to use Punchly" title="Help"><span class="ui-icon" data-icon="help" aria-hidden="true"></span></button>
+      <button id="refreshPage" class="btn-text header-icon" type="button" aria-label="Check for updates and refresh" title="Check for updates and refresh"><span class="ui-icon" data-icon="refresh" aria-hidden="true"></span></button>
       <button class="profile-button" id="openSettings" type="button" aria-label="Open profile settings">
         <span id="headerInitials" class="avatar" aria-hidden="true">P</span><span id="headerProfileName">Profile</span>
       </button>
     </div>
+    <p id="connectionStatus" class="connection-status" role="status"></p>
   </header>
 
   <div class="tab-dock" id="tabDock">
   <nav class="tab-nav" aria-label="Main navigation" role="tablist">
-    <button class="tab-btn active" id="tab-punch" role="tab" aria-selected="true" aria-controls="punch-view" data-target="punch-view"><span class="ui-icon" data-icon="clock" aria-hidden="true"></span>Punch</button>
-    <button class="tab-btn" id="tab-today" role="tab" aria-selected="false" aria-controls="today-view" data-target="today-view" tabindex="-1"><span class="ui-icon" data-icon="list" aria-hidden="true"></span>Today</button>
-    <button class="tab-btn" id="tab-weekly" role="tab" aria-selected="false" aria-controls="weekly-view" data-target="weekly-view" tabindex="-1"><span class="ui-icon" data-icon="calendar" aria-hidden="true"></span>Week</button>
-    <button class="tab-btn" id="tab-calendar" role="tab" aria-label="Attendance calendar" aria-selected="false" aria-controls="calendar-view" data-target="calendar-view" tabindex="-1"><span class="ui-icon" data-icon="calendar" aria-hidden="true"></span>Dates</button>
+    <button class="tab-btn active" id="tab-punch" role="tab" aria-selected="true" aria-controls="punch-view" data-target="punch-view"><span class="ui-icon" data-icon="schedule" aria-hidden="true"></span>Punch</button>
+    <button class="tab-btn" id="tab-today" role="tab" aria-selected="false" aria-controls="today-view" data-target="today-view" tabindex="-1"><span class="ui-icon" data-icon="today" aria-hidden="true"></span>Today</button>
+    <button class="tab-btn" id="tab-weekly" role="tab" aria-selected="false" aria-controls="weekly-view" data-target="weekly-view" tabindex="-1"><span class="ui-icon" data-icon="date_range" aria-hidden="true"></span>Week</button>
+    <button class="tab-btn" id="tab-calendar" role="tab" aria-label="Attendance calendar" aria-selected="false" aria-controls="calendar-view" data-target="calendar-view" tabindex="-1"><span class="ui-icon" data-icon="calendar_month" aria-hidden="true"></span>Dates</button>
     <div class="extra-tabs" id="extraTabs" role="presentation">
-    <button class="tab-btn" id="tab-history" role="tab" aria-selected="false" aria-controls="history-view" data-target="history-view" tabindex="-1"><span class="ui-icon" data-icon="list" aria-hidden="true"></span>History</button>
-    <button class="tab-btn" id="tab-stats" role="tab" aria-label="Statistics" aria-selected="false" aria-controls="stats-view" data-target="stats-view" tabindex="-1"><span class="ui-icon" data-icon="chart" aria-hidden="true"></span>Stats</button>
+    <button class="tab-btn" id="tab-history" role="tab" aria-selected="false" aria-controls="history-view" data-target="history-view" tabindex="-1"><span class="ui-icon" data-icon="history" aria-hidden="true"></span>History</button>
+    <button class="tab-btn" id="tab-stats" role="tab" aria-label="Statistics" aria-selected="false" aria-controls="stats-view" data-target="stats-view" tabindex="-1"><span class="ui-icon" data-icon="monitoring" aria-hidden="true"></span>Stats</button>
     <button class="tab-btn" id="tab-export" role="tab" aria-selected="false" aria-controls="export-view" data-target="export-view" tabindex="-1"><span class="ui-icon" data-icon="download" aria-hidden="true"></span>Export</button>
     <button class="tab-btn" id="tab-settings" role="tab" aria-selected="false" aria-controls="settings-view" data-target="settings-view" tabindex="-1"><span class="ui-icon" data-icon="settings" aria-hidden="true"></span>Settings</button>
     </div>
   </nav>
-  <button class="tab-btn mobile-only more-tabs" type="button" id="moreTabs" aria-expanded="false" aria-controls="extraTabs"><span class="ui-icon" data-icon="more" aria-hidden="true"></span>More</button>
+  <button class="tab-btn mobile-only more-tabs" type="button" id="moreTabs" aria-expanded="false" aria-controls="extraTabs"><span class="ui-icon" data-icon="more_horiz" aria-hidden="true"></span>More</button>
   </div>
 
   <main class="content-area">
@@ -53,18 +55,29 @@
         <div class="section-heading">
           <div><p class="eyebrow" id="guidedDate"></p><h2>Punch in and out</h2></div>
         </div>
-        <p class="guided-status" id="guidedStatus" role="status"></p>
-        <ol class="guided-steps" id="guidedSteps" aria-label="Punches for this shift"></ol>
-        <div class="button-row guided-actions">
-          <button id="guidedNext" class="btn-primary" type="button" hidden></button>
-          <button id="guidedSkipLunch" class="btn-secondary" type="button" hidden>Punch out without lunch</button>
-          <button id="guidedEdit" class="btn-text" type="button">Edit in Today</button>
+        <div class="punch-layout">
+          <div class="punch-action">
+            <div class="punch-dial" id="guidedDial">
+              <button id="guidedNext" class="btn-primary" type="button" hidden><span class="punch-cta"><span id="guidedActionIcon" class="ui-icon" aria-hidden="true"></span><span id="guidedActionLabel"></span></span></button>
+              <div id="guidedDialDone" class="punch-dial-done" hidden></div>
+            </div>
+            <p id="guidedMetrics" class="punch-metrics"></p>
+          </div>
+          <div class="punch-detail">
+            <p class="guided-status" id="guidedStatus" role="status"></p>
+            <ol class="guided-steps" id="guidedSteps" aria-label="Punches for this shift"></ol>
+            <div class="button-row guided-actions">
+              <button id="guidedSkipLunch" class="btn-secondary" type="button" hidden>Punch out without lunch</button>
+              <button id="guidedEdit" class="btn-text icon-button" type="button"><span class="ui-icon" data-icon="edit" aria-hidden="true"></span>Edit in Today</button>
+            </div>
+          </div>
         </div>
       </div>
     </section>
 
     <section id="today-view" class="tab-pane" role="tabpanel" aria-labelledby="tab-today" hidden>
       <div class="section-heading"><div><p class="eyebrow" id="todayDate"></p><h2 id="todayHeading" tabindex="-1">Today's shift</h2></div></div>
+      <details id="todayAudit" class="audit-log matte-panel" hidden><summary>Change log</summary></details>
       <div class="today-layout">
         <div class="calculation-panel" id="shiftSummary">
           <div class="calc-result shift-end">
@@ -122,7 +135,7 @@
             <textarea id="dayNotes" class="matte-input" rows="2" maxlength="500" placeholder="Add a note for this date"></textarea>
           </label>
           <p id="todayValidation" class="message error" role="alert" hidden></p>
-          <div class="button-row"><button id="saveDayBtn" class="btn-primary" type="button">Save shift</button><button id="clearDayBtn" class="btn-secondary compact-hide" type="button">Clear punches</button></div>
+          <div class="button-row"><button id="saveDayBtn" class="btn-primary icon-button" type="button"><span class="ui-icon" data-icon="save" aria-hidden="true"></span>Save shift</button><button id="clearDayBtn" class="btn-secondary compact-hide icon-button" type="button"><span class="ui-icon" data-icon="delete" aria-hidden="true"></span>Clear punches</button></div>
         </div>
       </div>
     </section>
@@ -141,7 +154,7 @@
       </details>
       <details class="matte-panel manual-week" id="manualWeek">
         <summary>Manual report</summary>
-        <div class="section-heading"><h3>Manual weekly report</h3><button id="printWeekly" class="btn-secondary" type="button">Print report</button></div>
+        <div class="section-heading"><h3>Manual weekly report</h3><button id="printWeekly" class="btn-secondary icon-button" type="button"><span class="ui-icon" data-icon="print" aria-hidden="true"></span>Print report</button></div>
         <div class="table-container">
           <table class="minimal-table schedule-table" role="table" aria-label="Weekly time entries">
             <thead role="rowgroup"><tr role="row"><th scope="col">Workday</th><th scope="col">Day</th><th scope="col">From</th><th scope="col">To</th><th scope="col">Break</th><th scope="col">Daily target</th><th scope="col">Worked</th><th scope="col">Action</th></tr></thead>
@@ -156,7 +169,7 @@
           <label for="reportHeaderInput">Report title<input id="reportHeaderInput" class="matte-input" type="text" placeholder="e.g. Employee time card" maxlength="100"></label>
           <label for="reportNotesInput">Notes<textarea id="reportNotesInput" class="matte-input" rows="3" placeholder="Optional notes" maxlength="1000"></textarea></label>
         </div>
-        <button id="printWeeklyMobile" class="btn-secondary mobile-only compact-hide" type="button">Print report</button>
+        <button id="printWeeklyMobile" class="btn-secondary mobile-only compact-hide icon-button" type="button"><span class="ui-icon" data-icon="print" aria-hidden="true"></span>Print report</button>
         <p id="weeklyValidation" class="message error" role="alert" hidden></p>
         <div class="button-row"><button id="saveWeeklyBtn" class="btn-primary" type="button">Save weekly report</button></div>
         <div id="weeklyPrintReport" class="print-only"></div>
@@ -167,9 +180,9 @@
       <div class="matte-panel attendance-panel">
         <div class="section-heading"><h2>Attendance calendar</h2></div>
         <div class="calendar-toolbar">
-          <button id="calendarPrevious" class="btn-secondary" type="button" aria-label="Previous month">‹</button>
+          <button id="calendarPrevious" class="btn-secondary" type="button" aria-label="Previous month"><span class="ui-icon" data-icon="chevron_left" aria-hidden="true"></span></button>
           <h3 id="calendarMonth" aria-live="polite"></h3>
-          <button id="calendarNext" class="btn-secondary" type="button" aria-label="Next month">›</button>
+          <button id="calendarNext" class="btn-secondary" type="button" aria-label="Next month"><span class="ui-icon" data-icon="chevron_right" aria-hidden="true"></span></button>
         </div>
         <div class="calendar-weekdays" aria-hidden="true"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
         <div class="calendar-grid" id="calendarDays" aria-labelledby="calendarMonth"></div>
@@ -183,8 +196,9 @@
           <p id="calendarSelection"></p>
           <p id="calendarPunches" class="help-text" hidden></p>
           <p id="calendarNotes" class="help-text log-detail" hidden></p>
+          <details id="calendarAudit" class="audit-log" hidden><summary>Change log</summary></details>
         </div>
-        <button type="button" class="btn-primary" id="calendarEdit">Open shift</button>
+        <button type="button" class="btn-primary icon-button" id="calendarEdit"><span class="ui-icon" data-icon="open_in_new" aria-hidden="true"></span>Open shift</button>
       </div>
     </section>
 
@@ -235,10 +249,10 @@
         <label class="field export-range" for="exportRange">Date range<select id="exportRange" class="matte-input"><option value="history">History search and filters</option><option value="weekly">This week</option><option value="monthly">This month</option><option value="yearly">This year</option><option value="all">All time</option></select></label>
         <p id="exportCount" class="help-text" aria-live="polite"></p>
         <div class="export-group export-actions">
-          <button id="exportPDF" class="btn-secondary" type="button">Download PDF</button>
-          <button id="exportChartPNG" class="btn-secondary" type="button">Download PNG chart</button>
-          <button id="exportExcel" class="btn-secondary" type="button">Download Excel</button>
-          <button id="exportCSV" class="btn-secondary" type="button">Download CSV</button>
+          <button id="exportPDF" class="btn-secondary icon-button" type="button"><span class="ui-icon" data-icon="picture_as_pdf" aria-hidden="true"></span>Download PDF</button>
+          <button id="exportChartPNG" class="btn-secondary icon-button" type="button"><span class="ui-icon" data-icon="image" aria-hidden="true"></span>Download PNG chart</button>
+          <button id="exportExcel" class="btn-secondary icon-button" type="button"><span class="ui-icon" data-icon="table_view" aria-hidden="true"></span>Download Excel</button>
+          <button id="exportCSV" class="btn-secondary icon-button" type="button"><span class="ui-icon" data-icon="description" aria-hidden="true"></span>Download CSV</button>
         </div>
       </div>
     </section>
@@ -248,7 +262,7 @@
       <div class="settings-layout">
         <details class="matte-panel appearance-panel settings-fold" open>
           <summary class="mobile-only">Appearance</summary>
-          <h3 id="appearanceHeading"><span class="ui-icon" data-icon="theme" aria-hidden="true"></span> Appearance</h3>
+          <h3 id="appearanceHeading"><span class="ui-icon" data-icon="palette" aria-hidden="true"></span> Appearance</h3>
           <fieldset class="settings-group">
             <legend>Theme</legend>
             <div id="themeOptions" class="theme-grid"></div>
@@ -267,13 +281,21 @@
               <legend>Profile icon</legend>
               <div id="avatarOptions" class="avatar-options"></div>
             </fieldset>
-            <button class="btn-primary" type="submit">Save profile</button>
+            <div class="button-row profile-photo-actions">
+              <button id="profilePhotoChoose" class="btn-secondary icon-button" type="button"><span class="ui-icon" data-icon="add_a_photo" aria-hidden="true"></span>Choose photo</button>
+              <button id="profilePhotoRemove" class="btn-text icon-button" type="button" hidden><span class="ui-icon" data-icon="close" aria-hidden="true"></span>Remove photo</button>
+              <input id="profilePhotoFile" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+            </div>
+            <div class="button-row">
+              <button class="btn-primary icon-button" type="submit"><span class="ui-icon" data-icon="save" aria-hidden="true"></span>Save profile</button>
+              <button id="deleteProfile" class="btn-text icon-button danger" type="button"><span class="ui-icon" data-icon="person_remove" aria-hidden="true"></span>Delete profile</button>
+            </div>
           </form>
         </details>
 
         <details class="matte-panel tracking-panel settings-fold" open>
           <summary class="mobile-only">Tracking defaults</summary>
-          <h3 id="trackingHeading"><span class="ui-icon" data-icon="clock" aria-hidden="true"></span> Tracking defaults</h3>
+          <h3 id="trackingHeading"><span class="ui-icon" data-icon="schedule" aria-hidden="true"></span> Tracking defaults</h3>
           <p class="help-text">These defaults apply to new shifts and weekly drafts.</p>
           <form id="trackingForm">
             <div class="settings-row">
@@ -293,7 +315,7 @@
 
         <details class="matte-panel settings-fold" open>
           <summary class="mobile-only">Reminders</summary>
-          <h3 id="remindersHeading"><span class="ui-icon" data-icon="bell" aria-hidden="true"></span> Reminders</h3>
+          <h3 id="remindersHeading"><span class="ui-icon" data-icon="notifications" aria-hidden="true"></span> Reminders</h3>
           <p class="help-text">Keep Punchly open to receive reminders. Blank times turn off that punch reminder.</p>
           <form id="remindersForm">
             <div class="settings-row">
@@ -318,15 +340,19 @@
           <p class="help-text">Download a JSON backup of your records, drafts, and preferences, or import one from another device.</p>
           <div class="button-row">
             <button id="backupExport" class="btn-secondary icon-button" type="button"><span class="ui-icon" data-icon="download" aria-hidden="true"></span>Export backup</button>
+            <button id="settingsExport" class="btn-secondary icon-button" type="button"><span class="ui-icon" data-icon="settings" aria-hidden="true"></span>Export settings</button>
             <button id="backupImportBtn" class="btn-secondary icon-button" type="button"><span class="ui-icon" data-icon="upload" aria-hidden="true"></span>Import backup</button>
             <input id="backupImport" type="file" accept="application/json,.json" hidden>
+          </div>
+          <div class="reset-section">
+            <button id="resetApp" class="btn-secondary icon-button danger" type="button"><span class="ui-icon" data-icon="restart_alt" aria-hidden="true"></span>Reset Punchly</button>
           </div>
         </details>
         <details class="matte-panel settings-fold" open>
           <summary class="mobile-only">Install &amp; shortcuts</summary>
           <h3 id="toolsHeading"><span class="ui-icon" data-icon="keyboard" aria-hidden="true"></span> Install &amp; shortcuts</h3>
           <p class="help-text" id="installNote">Use your browser’s Install or Add to Home Screen menu.</p>
-          <button class="btn-secondary" id="installApp" type="button" hidden>Install Punchly</button>
+          <button class="btn-secondary icon-button" id="installApp" type="button" hidden><span class="ui-icon" data-icon="download" aria-hidden="true"></span>Install Punchly</button>
           <dl class="shortcut-list">
             <dt>Morning in</dt><dd><kbd>Alt + 1</kbd></dd>
             <dt>Lunch out</dt><dd><kbd>Alt + 2</kbd></dd>
@@ -334,9 +360,18 @@
             <dt>Evening out</dt><dd><kbd>Alt + 4</kbd></dd>
           </dl>
         </details>
+        <details class="matte-panel settings-fold" open>
+          <summary class="mobile-only">About &amp; help</summary>
+          <h3 id="aboutHeading"><span class="ui-icon" data-icon="info" aria-hidden="true"></span> About Punchly</h3>
+          <p class="help-text">Punchly tracks shifts and attendance in this browser. It can work offline after its first online visit.</p>
+          <div class="button-row">
+            <button class="btn-secondary icon-button" id="settingsHelp" type="button"><span class="ui-icon" data-icon="help" aria-hidden="true"></span>How to use Punchly</button>
+            <a class="btn-text" href="https://github.com/Arvind595/Punchly#how-to-use">Read the GitHub guide</a>
+          </div>
+        </details>
         <details class="matte-panel support-panel settings-fold" open>
           <summary class="mobile-only">Developer &amp; Support</summary>
-          <h3 id="supportHeading">Developer &amp; Support</h3>
+          <h3 id="supportHeading"><span class="ui-icon" data-icon="forward_to_inbox" aria-hidden="true"></span> Developer &amp; Support</h3>
           <dl class="developer-contact">
             <dt>Developer</dt>
             <dd>Aravind</dd>
@@ -346,8 +381,8 @@
             <dd><a href="https://github.com/Arvind595">@Arvind595</a></dd>
           </dl>
           <div class="button-row">
-            <a class="btn-secondary support-action" href="mailto:arvindne555@gmail.com?subject=Punchly%20bug%20report">Report an issue</a>
-            <a class="btn-secondary support-action" href="mailto:arvindne555@gmail.com?subject=Punchly%20feature%20request">Request a feature</a>
+            <button class="btn-secondary support-action icon-button" type="button" data-support="issue"><span class="ui-icon" data-icon="bug_report" aria-hidden="true"></span>Report an issue</button>
+            <button class="btn-secondary support-action icon-button" type="button" data-support="feature"><span class="ui-icon" data-icon="lightbulb" aria-hidden="true"></span>Request a feature</button>
           </div>
         </details>
       </div>
@@ -356,7 +391,7 @@
   <aside id="miniTimer" class="mini-timer" aria-labelledby="miniTimerHeading" hidden>
     <div class="mini-timer-heading">
       <h2 id="miniTimerHeading">Punchly mini timer</h2>
-      <button class="btn-text" id="miniTimerClose" type="button" aria-label="Close mini timer">×</button>
+      <button class="btn-text" id="miniTimerClose" type="button" aria-label="Close mini timer"><span class="ui-icon" data-icon="close" aria-hidden="true"></span></button>
     </div>
     <dl>
       <div><dt>Worked</dt><dd id="miniTimerWorked">0h 0m</dd></div>
@@ -365,9 +400,9 @@
     <p class="help-text" id="miniTimerNote"></p>
   </aside>
   <aside id="reminderBanner" class="reminder-banner" hidden>
-    <span class="ui-icon" data-icon="bell" aria-hidden="true"></span>
+    <span class="ui-icon" data-icon="notifications" aria-hidden="true"></span>
     <p id="reminderMessage" role="status"></p>
-    <button id="dismissReminder" class="btn-text" type="button" aria-label="Dismiss reminder">×</button>
+    <button id="dismissReminder" class="btn-text" type="button" aria-label="Dismiss reminder"><span class="ui-icon" data-icon="close" aria-hidden="true"></span></button>
   </aside>
   <dialog id="restoreDialog" aria-labelledby="restoreHeading">
     <h2 id="restoreHeading">Import Punchly backup</h2>
@@ -379,13 +414,47 @@
       <button class="btn-secondary danger" value="replace">Replace</button>
     </form>
   </dialog>
+  <dialog id="resetDialog" class="app-dialog" aria-labelledby="resetHeading" aria-describedby="resetDescription">
+    <h2 id="resetHeading"></h2>
+    <p id="resetDescription"></p>
+    <p class="help-text">Download a backup if you want to restore your data later.</p>
+    <p id="resetStatus" class="help-text" role="status" hidden></p>
+    <div class="button-row">
+      <button id="resetBackup" class="btn-secondary icon-button" type="button"><span class="ui-icon" data-icon="download" aria-hidden="true"></span>Download backup</button>
+      <button class="btn-text" type="button" data-close autofocus>Cancel</button>
+      <button id="confirmReset" class="btn-primary btn-destructive icon-button" type="button"><span class="ui-icon" id="resetActionIcon" aria-hidden="true"></span><span id="resetActionLabel"></span></button>
+    </div>
+  </dialog>
+  <dialog id="helpDialog" class="app-dialog" aria-labelledby="helpHeading">
+    <h2 id="helpHeading">How to use Punchly</h2>
+    <ol class="help-steps">
+      <li>Open <strong>Punch</strong> and tap the button for your next punch.</li>
+      <li>Use <strong>Today</strong> to correct a time, set a half day, or mark leave.</li>
+      <li>Review recent shifts in <strong>Week</strong> or open a date from <strong>Dates</strong>.</li>
+      <li>Use <strong>Export</strong> for reports and <strong>Settings → Data &amp; backups</strong> to keep a copy.</li>
+    </ol>
+    <div class="button-row"><a class="btn-secondary" href="https://github.com/Arvind595/Punchly#how-to-use">Read the full guide on GitHub</a><button class="btn-text" type="button" data-close>Close</button></div>
+  </dialog>
+  <dialog id="photoDialog" class="app-dialog" aria-labelledby="photoHeading">
+    <h2 id="photoHeading">Crop profile photo</h2>
+    <p class="help-text">Adjust the zoom and position to fit the circle.</p>
+    <canvas id="photoCrop" width="192" height="192" role="img" aria-label="Profile photo crop preview"></canvas>
+    <div class="crop-controls">
+      <label>Zoom<input id="photoZoom" type="range" min="100" max="300" value="100"></label>
+      <label>Horizontal position<input id="photoX" type="range" min="0" max="100" value="50"></label>
+      <label>Vertical position<input id="photoY" type="range" min="0" max="100" value="50"></label>
+    </div>
+    <div class="button-row"><button class="btn-primary" type="button" id="applyPhoto">Use photo</button><button class="btn-text" type="button" data-close>Cancel</button></div>
+  </dialog>
+  <dialog id="supportDialog" class="app-dialog" aria-labelledby="reportHeading">
+    <h2 id="reportHeading"></h2>
+    <label class="field" for="reportMessage">Message<textarea id="reportMessage" class="matte-input" rows="4" maxlength="3000"></textarea></label>
+    <label class="checkbox-label"><input type="checkbox" id="reportDiagnostics"> Include device and browser details</label>
+    <pre id="reportPreview" class="device-details" aria-live="polite" hidden></pre>
+    <div class="button-row"><a class="btn-primary icon-button" id="openReportEmail" href="mailto:arvindne555@gmail.com"><span class="ui-icon" data-icon="forward_to_inbox" aria-hidden="true"></span>Open email draft</a><button class="btn-text" type="button" data-close>Cancel</button></div>
+  </dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script>
-    if ('serviceWorker' in navigator && window.isSecureContext && location.protocol !== 'file:') {
-      navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' }).catch(function (error) {
-        console.warn('Punchly offline support could not be enabled.', error);
-      });
-    }
     document.addEventListener('DOMContentLoaded', function () {
       window.setTimeout(function () {
         if (!document.documentElement.hasAttribute('data-app-ready')) {
@@ -394,15 +463,18 @@
       }, 0);
     });
   </script>
-  <script src="js/shift.js?v=10"></script>
-  <script src="js/storage.js?v=10"></script>
-  <script src="js/charts.js?v=10"></script>
-  <script src="js/export.js?v=10"></script>
-  <script src="js/settings.js?v=10"></script>
-  <script src="js/reminders.js?v=10"></script>
-  <script src="js/attendance.js?v=10"></script>
-  <script src="js/mini-timer.js?v=10"></script>
-  <script src="js/guided-punch.js?v=10"></script>
-  <script src="js/app.js?v=10"></script>
+  <script src="js/shift.js?v=12"></script>
+  <script src="js/icons.js?v=12"></script>
+  <script src="js/audit.js?v=12"></script>
+  <script src="js/storage.js?v=12"></script>
+  <script src="js/charts.js?v=12"></script>
+  <script src="js/export.js?v=12"></script>
+  <script src="js/settings.js?v=12"></script>
+  <script src="js/reminders.js?v=12"></script>
+  <script src="js/attendance.js?v=12"></script>
+  <script src="js/mini-timer.js?v=12"></script>
+  <script src="js/guided-punch.js?v=12"></script>
+  <script src="js/app-tools.js?v=12"></script>
+  <script src="js/app.js?v=12"></script>
 </body>
 </html>

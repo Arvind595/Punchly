@@ -48,6 +48,7 @@ const MiniTimer = (() => {
         .mini-timer-heading, dl { display: flex; justify-content: space-between; align-items: start; gap: 8px; }
         h2 { font-size: 14px; margin: 5px 0; }
         button { border: 0; background: transparent; color: var(--accent-color, #5546cc); font-size: 18px; min-width: 36px; min-height: 32px; cursor: pointer; }
+        .ui-icon svg { width: 1.2em; height: 1.2em; fill: currentColor; vertical-align: middle; }
         dl { margin: 6px 0; }
         dt, p { color: var(--text-secondary, #59596e); font-size: 12px; }
         dd { margin: 2px 0 0; font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; }

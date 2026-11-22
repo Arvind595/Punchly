@@ -147,12 +147,22 @@ const Charts = (() => {
     document.getElementById('chartLegend').replaceChildren(...legend);
   }
 
-  function exportChart(records, kind) {
-    const canvas = document.createElement('canvas');
+  function exportChart(records, kind, details) {
+    const chart = document.createElement('canvas');
     const states = records.filter(row => row.kind === 'daily').map(row => Attendance.stateFor(row.date, row.date, {
       ...row, complete: Boolean(row.out)
     }));
-    draw(canvas, records, records, kind, states, 860, 430, true);
+    draw(chart, records, records, kind, states, 860, 430, true);
+    const canvas = document.createElement('canvas');
+    canvas.width = chart.width;
+    canvas.height = chart.height + 42;
+    const context = canvas.getContext('2d');
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(chart, 0, 0);
+    context.fillStyle = '#46465b';
+    context.font = '15px sans-serif';
+    context.fillText(details, 18, chart.height + 25, canvas.width - 36);
     return canvas;
   }
 

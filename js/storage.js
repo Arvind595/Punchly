@@ -1,9 +1,15 @@
 const Storage = (() => {
   const keys = { TODAY: 'punchly_today_state', DRAFTS: 'punchly_daily_drafts', HISTORY: 'punchly_history', SETTINGS: 'punchly_settings', WEEK: 'punchly_week_state' };
+  const avatarOptions = [['fox', 'Fox'], ['whale', 'Whale'], ['fern', 'Fern'], ['coffee', 'Coffee'], ['orbit', 'Orbit'], ['initials', 'Initials']];
+  const oldAvatars = new Map([['sun', 'fox'], ['moon', 'orbit'], ['bolt', 'coffee'], ['leaf', 'fern']]);
+  const legacyWeekKey = 'timecard_calculator_history_v1';
+  const migrationKey = 'punchly_legacy_weekly_migrated_v1';
+  const resetKey = 'punchly_last_reset';
   const defaults = {
     targetShift: '08:20',
     font: 'manrope',
-    avatar: 'initials',
+    avatar: avatarOptions[0][0],
+    profilePhoto: '',
     compactMode: false,
     mobileHaptics: true,
     reminderIn: '',
@@ -53,8 +59,8 @@ const Storage = (() => {
       return { ...normalized, mode, extraMinutes: Math.max(0, totalMinutes - targetMinutes), targetMet: Boolean(out) && targetMinutes > 0 && totalMinutes >= targetMinutes };
     }) : [];
     // Bring records saved by the original standalone weekly calculator into the main history.
-    const migrationDone = read('punchly_legacy_weekly_migrated_v1', false);
-    const legacyWeekly = migrationDone ? [] : read('timecard_calculator_history_v1', []);
+    const migrationDone = read(migrationKey, false);
+    const legacyWeekly = migrationDone ? [] : read(legacyWeekKey, []);
     if (Array.isArray(legacyWeekly)) legacyWeekly.filter(record => record && typeof record === 'object').forEach((record, index) => {
       const id = record.id || `legacy-week-${index}`;
       if (!history.some(item => item.id === id)) history.push({
@@ -64,7 +70,7 @@ const Storage = (() => {
       });
     });
     if (JSON.stringify(history) !== JSON.stringify(current)) write(keys.HISTORY, history);
-    if (!migrationDone) { try { localStorage.setItem('punchly_legacy_weekly_migrated_v1', 'true'); } catch (error) { /* storage may be disabled */ } }
+    if (!migrationDone) write(migrationKey, true);
     return history;
   }
   function parseDuration(value) {
@@ -81,7 +87,10 @@ const Storage = (() => {
     if (!['24', '12'].includes(settings.clockFormat)) settings.clockFormat = defaults.clockFormat;
     if (!['weekly', 'monthly', 'yearly', 'all'].includes(settings.historyRange)) settings.historyRange = defaults.historyRange;
     if (!['system', 'manrope', 'inter', 'satoshi', 'arial', 'verdana', 'tahoma', 'trebuchet', 'georgia', 'courier'].includes(settings.font)) settings.font = defaults.font;
-    if (!['initials', 'sun', 'moon', 'bolt', 'leaf'].includes(settings.avatar)) settings.avatar = defaults.avatar;
+    settings.avatar = oldAvatars.get(settings.avatar) ?? settings.avatar;
+    if (!avatarOptions.some(([id]) => id === settings.avatar)) settings.avatar = defaults.avatar;
+    if (typeof settings.profilePhoto !== 'string' || settings.profilePhoto.length > 200000 ||
+        !/^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/i.test(settings.profilePhoto)) settings.profilePhoto = '';
     settings.compactMode = settings.compactMode === true;
     settings.mobileHaptics = settings.mobileHaptics !== false;
     settings.reminderTarget = settings.reminderTarget === true;
@@ -114,12 +123,21 @@ const Storage = (() => {
       ['from', 'to', 'break', 'breakDeduction'].every(key => row[key] == null || typeof row[key] === 'string'));
     if (!object(data) || data.format !== 'punchly-backup' || data.version !== 1 || !Array.isArray(data.history) ||
         !data.history.every(record => object(record) && typeof record.id === 'string' && date(record.date) &&
+          (record.audit == null || Audit.valid(record.audit)) &&
           (record.kind === 'daily' || (record.kind === 'weekly' && schedule(record.schedule)))) ||
         (data.settings != null && !object(data.settings)) || (data.today != null && !object(data.today)) ||
         (data.week != null && (!object(data.week) || !schedule(data.week.rows))) ||
-        (data.drafts != null && (!object(data.drafts) || !Object.entries(data.drafts).every(([key, draft]) => date(key) && object(draft))))) {
+        (data.drafts != null && (!object(data.drafts) || !Object.entries(data.drafts).every(([key, draft]) =>
+          date(key) && object(draft) && (draft.audit == null || Audit.valid(draft.audit)))))) {
       throw new Error('This file is not a supported Punchly backup.');
     }
+  }
+
+  function importSettings(data) {
+    if (data?.format !== 'punchly-settings' || data.version !== 1 || !data.settings ||
+        typeof data.settings !== 'object' || Array.isArray(data.settings)) throw new Error('This file is not a supported Punchly settings export.');
+    const settings = Object.fromEntries(Object.entries(defaults).map(([key, value]) => [key, data.settings[key] ?? value]));
+    if (!write(keys.SETTINGS, settings)) throw new Error('The browser could not save these settings.');
   }
 
   function restoreKeys(entries) {
@@ -137,6 +155,22 @@ const Storage = (() => {
         else localStorage.setItem(key, value);
       });
       throw error;
+    }
+  }
+
+  function deleteProfile() {
+    const { displayName, avatar, profilePhoto, ...settings } = getSettings();
+    return write(keys.SETTINGS, settings);
+  }
+
+  function reset() {
+    const entries = [...Object.values(keys), legacyWeekKey, migrationKey, 'punchly_reminder_log'].map(key => [key, null]);
+    try {
+      restoreKeys([...entries, [resetKey, new Date().toISOString()]]);
+      return true;
+    } catch (error) {
+      console.warn('Punchly could not reset browser storage.', error);
+      return false;
     }
   }
 
@@ -168,7 +202,7 @@ const Storage = (() => {
     return added;
   }
   return {
-    keys,
+    keys, resetKey, avatarOptions,
     getToday: () => read(keys.TODAY, null), saveToday: data => write(keys.TODAY, data),
     getDraft(date) { return getDrafts()[date] || null; },
     getDrafts,
@@ -179,6 +213,6 @@ const Storage = (() => {
     saveRecord,
     deleteRecord(id) { return write(keys.HISTORY, normalizeHistory().filter(item => item.id !== id)); },
     exportBackup() { return { format: 'punchly-backup', version: 1, exportedAt: new Date().toISOString(), settings: getSettings(), today: read(keys.TODAY, null), drafts: read(keys.DRAFTS, {}), week: read(keys.WEEK, null), history: normalizeHistory() }; },
-    validateBackup, importBackup
+    validateBackup, importBackup, importSettings, deleteProfile, reset
   };
 })();

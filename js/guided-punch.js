@@ -1,9 +1,9 @@
 const GuidedPunch = (() => {
   const steps = [
-    ['morningIn', 'Morning in', 'Punch in now'],
-    ['lunchOut', 'Lunch out', 'Punch out for lunch'],
-    ['lunchReturn', 'Lunch return', 'Punch back in'],
-    ['eveningOut', 'Evening out', 'Punch out now']
+    ['morningIn', 'Morning in', 'Punch in now', 'login'],
+    ['lunchOut', 'Lunch out', 'Punch out for lunch', 'lunch_dining'],
+    ['lunchReturn', 'Lunch return', 'Punch back in', 'login'],
+    ['eveningOut', 'Evening out', 'Punch out now', 'logout']
   ];
 
   function nextAction(shift) {
@@ -20,6 +20,11 @@ const GuidedPunch = (() => {
     const byId = id => document.getElementById(id);
     const list = byId('guidedSteps');
     const primary = byId('guidedNext');
+    const actionIcon = byId('guidedActionIcon');
+    const actionLabel = byId('guidedActionLabel');
+    const dial = byId('guidedDial');
+    const done = byId('guidedDialDone');
+    const metrics = byId('guidedMetrics');
     const skipLunch = byId('guidedSkipLunch');
     const status = byId('guidedStatus');
     let displayed;
@@ -43,7 +48,27 @@ const GuidedPunch = (() => {
         next === 'morningIn' ? 'Start with your first punch. Each punch is saved as you go.' : 'Your punches are saved on this device.';
       if (status.textContent !== line) status.textContent = line;
       primary.hidden = !next;
-      primary.textContent = next === 'save' ? 'Save shift' : steps.find(([field]) => field === next)?.[2] || '';
+      if (next) {
+        const step = steps.find(([field]) => field === next);
+        const icon = step?.[3] || 'save';
+        if (actionIcon.dataset.icon !== icon) {
+          actionIcon.dataset.icon = icon;
+          Icons.draw(actionIcon, icon);
+        }
+        actionLabel.textContent = step?.[2] || 'Save shift';
+      }
+      done.hidden = Boolean(next);
+      done.textContent = off ? Shift.label(shift.mode) : shift.result.error ? 'Review punches' : 'Shift complete';
+      dial.dataset.stage = next || (shift.result.complete ? 'complete' : 'off');
+      const progress = shift.result.target > 0 ? Math.min(100, shift.result.total * 100 / shift.result.target) : 0;
+      dial.style.setProperty('--dial-progress', `${progress}%`);
+      const target = shift.result.targetOut;
+      const values = shift.result.started ? [
+        `${formatDuration(shift.result.total)} worked`,
+        !shift.result.complete && target !== null && `Target out ${displayTime(target % 1440)}${target >= 1440 ? ' (+1 day)' : ''}`
+      ].filter(Boolean) : [];
+      metrics.textContent = values.join(' · ');
+      metrics.hidden = !values.length;
       skipLunch.hidden = next !== 'lunchOut';
       list.hidden = off;
       const items = rows.map(([field, label]) => {
@@ -56,7 +81,17 @@ const GuidedPunch = (() => {
           displayTime(captured) + (field === 'eveningOut' && shift.result.endDayOffset ? ' (+1 day)' : '');
         if (field === next) item.setAttribute('aria-current', 'step');
         if (captured !== null) item.className = 'guided-captured';
-        item.append(name, time);
+        const detail = document.createElement('span');
+        detail.className = 'guided-punch-time';
+        detail.append(time);
+        const stamp = Audit.punchedAt(shift.audit, field, shift.punches[field]);
+        if (stamp) {
+          const recorded = document.createElement('time');
+          recorded.dateTime = stamp;
+          recorded.textContent = 'Logged ' + Audit.format(stamp);
+          detail.append(recorded);
+        }
+        item.append(name, detail);
         return item;
       });
       list.replaceChildren(...items);

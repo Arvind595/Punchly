@@ -43,8 +43,9 @@ const Attendance = (() => {
       const note = byId('calendarNotes');
       note.hidden = !entry?.notes;
       note.textContent = entry?.notes || '';
+      Audit.show(byId('calendarAudit'), entry?.audit);
       edit.hidden = selected > today;
-      edit.textContent = entry?.mode ? 'Open shift' : 'Log shift';
+      edit.lastChild.textContent = entry?.mode ? 'Open shift' : 'Log shift';
       grid.querySelectorAll('button').forEach(button => {
         const active = button.dataset.date === selected;
         button.setAttribute('aria-pressed', String(active));
