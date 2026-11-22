@@ -23,7 +23,10 @@ const Preferences = (() => {
     ['tahoma', 'Tahoma', 'Tahoma, Verdana, sans-serif'],
     ['trebuchet', 'Trebuchet MS', '"Trebuchet MS", Arial, sans-serif'],
     ['georgia', 'Georgia', 'Georgia, "Times New Roman", serif'],
-    ['courier', 'Courier New', '"Courier New", Courier, monospace']
+    ['courier', 'Courier New', '"Courier New", Courier, monospace'],
+    ['playpen-sans', 'Playpen Sans', '"Playpen Sans", "Segoe UI", Arial, sans-serif'],
+    ['nunito', 'Nunito', 'Nunito, "Segoe UI", Arial, sans-serif'],
+    ['comic-neue', 'Comic Neue', '"Comic Neue", "Segoe UI", Arial, sans-serif']
   ];
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
@@ -76,6 +79,7 @@ const Preferences = (() => {
   }
 
   function connect(settings, { onChange, notify }) {
+    const profileForm = byId('profileForm');
     const themeOptions = byId('themeOptions');
     const workdayOptions = byId('workdayOptions');
     const avatarOptions = byId('avatarOptions');
@@ -148,7 +152,7 @@ const Preferences = (() => {
       applyAppearance(settings);
       applyProfile(settings.displayName, settings.avatar, settings.profilePhoto);
       byId('profilePhotoRemove').hidden = !settings.profilePhoto;
-      byId('profileName').value = settings.displayName;
+      for (const [name, value] of Object.entries(Storage.profileDetails(settings))) profileForm.elements[name].value = value;
       byId('fontSelect').value = settings.font;
       byId('compactMode').checked = settings.compactMode;
       byId('mobileHaptics').checked = settings.mobileHaptics;
@@ -206,15 +210,16 @@ const Preferences = (() => {
       }, 'reminders', 'Reminders saved.');
     });
     function saveProfile(photo, message) {
+      if (!profileForm.reportValidity()) return;
       save({
-        displayName: byId('profileName').value.trim(),
+        ...Storage.profileDetails(Object.fromEntries(new FormData(profileForm))),
         avatar: avatarInputs.find(input => input.checked).value,
         profilePhoto: photo
       }, 'profile', message);
       applyProfile(settings.displayName, settings.avatar, settings.profilePhoto);
       byId('profilePhotoRemove').hidden = !settings.profilePhoto;
     }
-    byId('profileForm').addEventListener('submit', event => {
+    profileForm.addEventListener('submit', event => {
       event.preventDefault();
       const sameIcon = avatarInputs.find(input => input.checked).value === settings.avatar;
       saveProfile(sameIcon ? settings.profilePhoto : '', 'Profile saved.');

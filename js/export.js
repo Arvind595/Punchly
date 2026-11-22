@@ -2,8 +2,12 @@
   const punchFields = Shift.fields;
   const header = ['Date', 'Type', 'Title', 'Total minutes', 'Status', 'Morning in', 'Lunch out', 'Lunch return', 'Evening out', 'Notes', 'Schedule', 'Day type', 'Work target (minutes)', 'Lunch (minutes)', 'Extra worked (minutes)',
     ...punchFields.map(field => Audit.labels[field] + ' recorded (UTC)'), 'First logged (UTC)', 'Last changed (UTC)'];
-  const metaLabels = ['Profile name', 'Punchly version', 'Exported at (UTC)', 'Export time zone'];
+  const employeeFields = [
+    ['employeeId', 'Employee ID'], ['employeeEmail', 'Employee email'], ['role', 'Role'], ['department', 'Department']
+  ];
+  const metaLabels = ['Profile name', 'Punchly version', 'Exported at (UTC)', 'Export time zone', ...employeeFields.map(([, label]) => label)];
   let sheetJs;
+  let requestProfile;
   function download(content, filename, type) {
     const url = URL.createObjectURL(new Blob([content], { type }));
     const link = document.createElement('a'); link.href = url; link.download = filename; link.click();
@@ -19,18 +23,52 @@
     if (!records.length) window.showPunchlyToast?.('There are no records in this date range to export.');
     return records;
   }
-  function metadata() {
-    const profileName = Storage.getSettings().displayName || 'Unnamed profile';
+  function createProfilePrompt() {
+    const form = document.getElementById('exportProfileForm');
+    let resolve;
+    let answer;
+    const dialog = AppTools.modal('exportProfileDialog', () => {
+      const done = resolve;
+      resolve = null;
+      done?.(answer);
+    });
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      answer = Storage.profileDetails(Object.fromEntries(new FormData(form)));
+      dialog.close();
+    });
+    return () => {
+      if (resolve) return Promise.resolve(null);
+      answer = null;
+      const profile = Storage.profileDetails(Storage.getSettings());
+      for (const [field, value] of Object.entries(profile)) form.elements[field].value = value;
+      return new Promise(done => {
+        resolve = done;
+        dialog.open();
+      });
+    };
+  }
+  function chooseProfile() {
+    if (!requestProfile) requestProfile = createProfilePrompt();
+    return requestProfile();
+  }
+  function metadata(profile = Storage.profileDetails(Storage.getSettings())) {
+    const { displayName, ...employee } = profile;
+    const profileName = displayName || 'Unnamed profile';
     const appVersion = document.querySelector('meta[name="punchly-release"]').content;
     const exportedAt = new Date().toISOString();
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Local time';
-    return { profileName, appVersion, exportedAt, timeZone };
+    return { profileName, appVersion, exportedAt, timeZone, ...employee };
   }
   function metaValues(meta) {
-    return [meta.profileName, `v${meta.appVersion}`, meta.exportedAt, meta.timeZone];
+    return [meta.profileName, `v${meta.appVersion}`, meta.exportedAt, meta.timeZone,
+      ...employeeFields.map(([field]) => meta[field])];
   }
   function stamp(meta) {
     return `${meta.profileName} · Punchly v${meta.appVersion} · ${Audit.format(meta.exportedAt)} (${meta.timeZone})`;
+  }
+  function employeeLines(meta) {
+    return employeeFields.filter(([field]) => meta[field]).map(([field, label]) => `${label} · ${meta[field]}`);
   }
 
   function recordRows(records) {
@@ -46,10 +84,12 @@
       record.audit?.createdAt || '', record.audit?.updatedAt || ''
     ]);
   }
-  window.exportVisibleCSV = () => {
+  window.exportVisibleCSV = async () => {
     const records = visibleRecords();
     if (!records.length) return;
-    const meta = metaValues(metadata());
+    const profile = await chooseProfile();
+    if (!profile) return;
+    const meta = metaValues(metadata(profile));
     const rows = recordRows(records).map((row, index) => [...row,
       records[index].audit ? JSON.stringify(records[index].audit.events) : '', ...meta]);
     download([[...header, 'Change log (JSON)', ...metaLabels], ...rows]
@@ -78,7 +118,9 @@
   window.exportVisibleExcel = async () => {
     const records = visibleRecords();
     if (!records.length) return;
-    const meta = metadata();
+    const profile = await chooseProfile();
+    if (!profile) return;
+    const meta = metadata(profile);
     try {
       const xlsx = await loadSheetJs();
       const rows = recordRows(records);
@@ -134,12 +176,14 @@
     return new Blob([png.subarray(0, png.length - 12), chunk, png.subarray(png.length - 12)], { type: 'image/png' });
   }
 
-  window.exportChartPNG = () => {
+  window.exportChartPNG = async () => {
     const records = visibleRecords();
     if (!records.length) return;
+    const profile = await chooseProfile();
+    if (!profile) return;
     try {
-      const meta = metadata();
-      const canvas = Charts.exportChart(records, window.getExportChartKind?.() || 'bar', stamp(meta));
+      const meta = metadata(profile);
+      const canvas = Charts.exportChart(records, window.getExportChartKind?.() || 'bar', [stamp(meta), ...employeeLines(meta)]);
       const changeLog = records.filter(record => record.audit).map(({ date, kind, title, audit }) => ({ date, kind, title, audit }));
       download(pngWithMetadata(canvas, { ...meta, changeLog }), 'Punchly_filtered_chart.png', 'image/png');
     } catch (error) { window.showPunchlyToast?.('The chart image could not be created.'); }
@@ -196,6 +240,9 @@
       ctx.fillText(`Page ${pages.length + 1}  ·  ${records.length} ${records.length === 1 ? 'record' : 'records'}`, margin, 108);
       ctx.fillText(stamp(meta), margin, 138, lineWidth);
       y = 182;
+      const employee = employeeLines(meta);
+      employee.forEach((detail, index) => ctx.fillText(detail, margin, 166 + index * 24, lineWidth));
+      y += employee.length * 24;
     }
     function finishPage() {
       const bytes = atob(canvas.toDataURL('image/jpeg', .88).split(',')[1]);
@@ -249,13 +296,22 @@
     return pdfBlob(pages, canvas.width, canvas.height);
   }
 
-  window.exportVisiblePDF = () => {
+  window.exportVisiblePDF = async () => {
     const records = visibleRecords();
     if (!records.length) return;
-    try { download(pdfTimesheet(records, metadata()), 'Punchly_timesheet.pdf', 'application/pdf'); }
+    const profile = await chooseProfile();
+    if (!profile) return;
+    try { download(pdfTimesheet(records, metadata(profile)), 'Punchly_timesheet.pdf', 'application/pdf'); }
     catch (error) { window.showPunchlyToast?.('The PDF could not be created.'); }
   };
-  window.downloadBackup = () => download(JSON.stringify({ ...Storage.exportBackup(), ...metadata() }, null, 2), 'Punchly_backup.json', 'application/json');
+  window.downloadBackup = async () => {
+    const profile = await chooseProfile();
+    if (!profile) return false;
+    const backup = Storage.exportBackup();
+    const settings = { ...backup.settings, ...profile };
+    download(JSON.stringify({ ...backup, settings, ...metadata(profile) }, null, 2), 'Punchly_backup.json', 'application/json');
+    return true;
+  };
   window.downloadPunchlySettings = () => download(JSON.stringify({
     format: 'punchly-settings', version: 1, ...metadata(), settings: Storage.getSettings()
   }, null, 2), 'Punchly_settings.json', 'application/json');

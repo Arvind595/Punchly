@@ -2,6 +2,12 @@
 @font-face { font-family: Inter; src: url('../assets/fonts/inter-bold.woff') format('woff'); font-weight: 700; font-display: swap; }
 @font-face { font-family: Manrope; src: url('../assets/fonts/manrope-regular.woff') format('woff'); font-weight: 400; font-display: swap; }
 @font-face { font-family: Manrope; src: url('../assets/fonts/manrope-bold.woff') format('woff'); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Playpen Sans"; src: url('../assets/fonts/playpen-sans-regular.woff') format('woff'); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Playpen Sans"; src: url('../assets/fonts/playpen-sans-bold.woff') format('woff'); font-weight: 700; font-display: swap; }
+@font-face { font-family: Nunito; src: url('../assets/fonts/nunito-regular.woff') format('woff'); font-weight: 400; font-display: swap; }
+@font-face { font-family: Nunito; src: url('../assets/fonts/nunito-bold.woff') format('woff'); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Comic Neue"; src: url('../assets/fonts/comic-neue-regular.woff') format('woff'); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Comic Neue"; src: url('../assets/fonts/comic-neue-bold.woff') format('woff'); font-weight: 700; font-display: swap; }
 
 :root {
   color-scheme: light;
@@ -444,6 +450,13 @@ textarea { resize: vertical; }
 .attendance-panel { max-width: 760px; }
 .calendar-toolbar { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: .5rem; align-items: center; text-align: center; }
 .calendar-toolbar button { font-size: 1.4rem; }
+.calendar-jump {
+  display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto auto; align-items: end;
+  gap: .45rem; margin-top: .85rem;
+}
+.calendar-jump .field, .calendar-jump .matte-input { min-width: 0; }
+.calendar-leave { margin-top: .8rem; padding-top: .8rem; border-top: 1px solid var(--border-color); }
+.calendar-leave .button-row { margin-top: .55rem; }
 .calendar-weekdays, .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .3rem; }
 .calendar-weekdays { margin: .7rem 0 .35rem; color: var(--text-secondary); text-align: center; font-size: .77rem; }
 .calendar-day {
@@ -477,6 +490,9 @@ textarea { resize: vertical; }
 .settings-layout .matte-input { display: block; max-width: 100%; }
 .settings-layout form { margin-top: .85rem; }
 .settings-layout form > .btn-primary { margin-top: .75rem; }
+.profile-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); gap: .55rem; }
+.profile-fields .matte-input { min-width: 0; }
+#exportProfileForm { margin-top: .8rem; }
 .help-text { color: var(--text-secondary); font-size: .88rem; }
 .profile-heading { display: flex; align-items: center; gap: .7rem; }
 .font-field { margin-top: .85rem; }
@@ -570,12 +586,32 @@ dialog.app-dialog[open] { position: fixed; inset: 0; margin: auto; max-height: 9
 #reportMessage { resize: vertical; }
 .compact-only, .mobile-only { display: none; }
 [data-compact="true"] .compact-hide,
+[data-compact="true"] .punch-scenery,
+[data-compact="true"] #guidedTimelineKey,
+[data-compact="true"] #shiftSummary .progress-container,
+[data-compact="true"] #shiftSummary .mobile-summary-detail,
+[data-compact="true"] #today-view[data-has-extra="false"] #shiftSummary .extra-work,
+[data-compact="true"] .punch-card-heading,
 [data-compact="true"] #today-view[data-day-off="false"] #todayStatus,
-[data-compact="true"] #lunchStatus,
+[data-compact="true"] #lunchStatus:not(.lunch-over-limit),
 [data-compact="true"] #targetOutHint,
 [data-compact="true"] #today-view:not(.show-shift-details) .compact-detail { display: none; }
 [data-compact="true"] .compact-only { display: inline-flex; align-items: center; }
-[data-compact="true"] .calculation-panel { padding-block: .95rem; }
+[data-compact="true"] .guided-punch { max-width: 45rem; }
+[data-compact="true"] .punch-dial { width: min(100%, 178px); }
+[data-compact="true"] #guidedNext, [data-compact="true"] .punch-dial-done { font-size: 1.05rem; }
+[data-compact="true"] .guided-steps li { padding-block: .25rem; }
+[data-compact="true"] .today-layout { max-width: 40rem; grid-template-columns: minmax(0, 1fr); gap: .55rem; margin-inline: auto; }
+[data-compact="true"] #shiftSummary {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .35rem .65rem; padding: .75rem .9rem;
+}
+[data-compact="true"] #shiftSummary .value { font-size: 1.4rem; }
+[data-compact="true"] #shiftSummary .shift-stats { display: block; margin: 0; }
+[data-compact="true"] #shiftSummary .shift-stats .calc-result { background: transparent; padding: 0; }
+[data-compact="true"] #shiftSummary > .status-line { grid-column: 1 / -1; margin: 0; }
+[data-compact="true"] #today-view[data-day-off="true"] #shiftSummary { grid-template-columns: minmax(0, 1fr); }
+[data-compact="true"] .punch-card { padding: .65rem .85rem .85rem; }
+[data-compact="true"] .punch-grid { gap: .35rem; margin-block: .3rem .65rem; }
 
 @media screen and (max-width: 900px), screen and (max-width: 1024px) and (hover: none) and (pointer: coarse) {
   #historyTable thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
@@ -628,6 +664,7 @@ dialog.app-dialog[open] { position: fixed; inset: 0; margin: auto; max-height: 9
   .toast { bottom: calc(var(--navigation-height) + env(safe-area-inset-bottom) + .65rem); }
 }
 @media screen and (max-width: 480px) {
+  .calendar-jump { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
   .app-header { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "brand actions" "status status"; column-gap: .2rem; row-gap: .05rem; padding-bottom: .45rem; }
   .header-actions { gap: .1rem; }
   .brand { gap: .35rem; }

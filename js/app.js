@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const reminders = Reminders.connect(settings);
   const attendance = Attendance.connect({
     todayKey: () => localDateKey(new Date()), localDateKey, entriesFor: readDayEntries,
-    openDay: openDailyLog, describePunches
+    openDay: openDailyLog, describePunches, reserveLeave, cancelLeave
   });
   miniTimer = MiniTimer.connect({ desktop: () => !handheld.matches, snapshot: timerSnapshot });
   const guidedPunch = GuidedPunch.connect({
@@ -502,7 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const total = dayOff || (isDraft && result.error) ? null : isDraft ? result.total : record.totalMinutes;
     return { date, ...entry, status, total, target: result.target, lunch: result.lunch,
       extra: result.extra, isDraft, complete: result.complete, endDayOffset: result.endDayOffset,
-      audit: isDraft ? draft.audit ?? record?.audit : record?.audit };
+      hasRecord: Boolean(record), audit: isDraft ? draft.audit ?? record?.audit : record?.audit };
   }
 
   function readDayEntries(days, now = new Date()) {
@@ -552,6 +552,39 @@ document.addEventListener('DOMContentLoaded', () => {
     activateTab(document.getElementById('tab-today'));
     document.getElementById('todayHeading').focus();
     window.scrollTo(0, 0);
+  }
+
+  function leaveRecord(date) {
+    return Storage.getHistory().find(record => record.kind === 'daily' && record.date === date);
+  }
+
+  function reserveLeave(date, notes) {
+    const now = new Date();
+    if (date <= localDateKey(now)) return false;
+    const existing = leaveRecord(date);
+    if (Storage.getDraft(date) || (existing && existing.mode !== 'leave')) {
+      toast('This date already has an entry.');
+      return false;
+    }
+    const before = logInput(date, existing);
+    const mode = 'leave';
+    notes = Shift.holidayNotes(notes, date);
+    const audit = Audit.track(existing?.audit, { mode: before.mode, notes: before.notes }, { mode, notes }, now);
+    const saved = Storage.saveRecord({
+      id: existing?.id || `daily-${date}`, kind: 'daily', date, mode, notes, audit,
+      punches: {}, in: '', out: '', totalMinutes: 0, targetMinutes: 0, extraMinutes: 0, targetMet: false
+    });
+    toast(saved ? 'Leave reservation saved.' : 'Could not save the leave reservation.');
+    return saved;
+  }
+
+  function cancelLeave(date) {
+    if (date <= localDateKey(new Date())) return false;
+    const existing = leaveRecord(date);
+    if (existing?.mode !== 'leave' || Storage.getDraft(date)) return false;
+    const removed = Storage.deleteRecord(existing.id);
+    toast(removed ? 'Leave reservation canceled.' : 'Could not cancel the leave reservation.');
+    return removed;
   }
 
   function drawDayLog(list, entries, today) {
@@ -1116,7 +1149,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${hour % 12 || 12}:${String(minutes % 60).padStart(2, '0')} ${hour < 12 ? 'AM' : 'PM'}`;
   }
   function formatDuration(minutes) { minutes = Math.max(0, Math.floor(minutes || 0)); return `${Math.floor(minutes / 60)}h ${minutes % 60}m`; }
-  function localDateKey(date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
+  function localDateKey(date) { return `${String(date.getFullYear()).padStart(4, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
   function formatDate(date) { return new Date(`${date}T12:00:00`).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); }
   document.documentElement.setAttribute('data-app-ready', '');
   startup.finish(initialUpdate);

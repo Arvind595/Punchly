@@ -1,18 +1,22 @@
 const AppTools = (() => {
   const byId = id => document.getElementById(id);
 
-  function modal(id) {
+  function modal(id, onClose) {
     const dialog = byId(id);
     let previous;
+    function finish() {
+      previous?.focus();
+      onClose?.();
+    }
     function close() {
       if (dialog.close) dialog.close();
       else {
         dialog.removeAttribute('open');
-        previous?.focus();
+        finish();
       }
     }
     dialog.querySelector('[data-close]').addEventListener('click', close);
-    dialog.addEventListener('close', () => previous?.focus());
+    dialog.addEventListener('close', finish);
     dialog.addEventListener('keydown', event => {
       if (!dialog.showModal && event.key === 'Escape') close();
     });
@@ -290,7 +294,7 @@ const AppTools = (() => {
       byId('resetHeading').textContent = action + '?';
       byId('resetDescription').textContent = all ?
         'This erases your profile, preferences, punches, drafts, reports, and change logs from this browser.' :
-        'This removes your display name and profile picture from this browser. Your punches, reports, and other preferences are kept.';
+        'This removes your name, employee details, and profile picture from this browser. Your punches, reports, and other preferences are kept.';
       byId('resetActionLabel').textContent = action;
       Icons.draw(byId('resetActionIcon'), all ? 'delete_forever' : 'person_remove');
       status.hidden = true;
@@ -300,9 +304,9 @@ const AppTools = (() => {
 
     byId('deleteProfile').addEventListener('click', () => open(false));
     byId('resetApp').addEventListener('click', () => open(true));
-    byId('resetBackup').addEventListener('click', () => {
+    byId('resetBackup').addEventListener('click', async () => {
       try {
-        window.downloadBackup();
+        if (!await window.downloadBackup()) return;
         status.textContent = 'Check that the backup is in your downloads before continuing.';
       } catch (error) {
         status.textContent = 'The backup could not be downloaded.';
@@ -323,5 +327,5 @@ const AppTools = (() => {
     });
   }
 
-  return { connectStartup, connectUpdates, connectHelp, connectPhoto, connectReset };
+  return { modal, connectStartup, connectUpdates, connectHelp, connectPhoto, connectReset };
 })();

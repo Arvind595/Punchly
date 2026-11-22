@@ -1,0 +1,2089 @@
+{
+  "format": "punchly-backup",
+  "version": 1,
+  "exportedAt": "2026-11-22T09:13:20.512Z",
+  "settings": {
+    "targetShift": "08:20",
+    "font": "manrope",
+    "avatar": "orbit",
+    "profilePhoto": "",
+    "compactMode": false,
+    "mobileHaptics": true,
+    "reminderIn": "09:00",
+    "reminderLunchOut": "13:00",
+    "reminderLunchReturn": "13:45",
+    "reminderOut": "18:05",
+    "reminderTarget": true,
+    "lunchLimit": 45,
+    "theme": "lagoon",
+    "workdays": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "rounding": "none",
+    "clockFormat": "24",
+    "historyRange": "monthly",
+    "displayName": "Nila Demo"
+  },
+  "today": null,
+  "drafts": {
+    "2026-11-05": {
+      "morningIn": "09:00",
+      "lunchOut": "13:00",
+      "lunchReturn": "",
+      "eveningOut": "",
+      "mode": "full",
+      "notes": "Demo: Lunch out is saved; lunch return was never entered.",
+      "audit": {
+        "createdAt": "2026-11-05T03:30:07.000Z",
+        "updatedAt": "2026-11-05T07:30:21.000Z",
+        "events": [
+          {
+            "at": "2026-11-05T03:30:07.000Z",
+            "changes": [
+              {
+                "field": "morningIn",
+                "from": "",
+                "to": "09:00"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-05T07:30:07.000Z",
+            "changes": [
+              {
+                "field": "lunchOut",
+                "from": "",
+                "to": "13:00"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-05T07:30:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: Lunch out is saved; lunch return was never entered."
+              }
+            ]
+          }
+        ]
+      },
+      "targetShift": "08:20"
+    },
+    "2026-11-13": {
+      "morningIn": "09:00",
+      "lunchOut": "13:00",
+      "lunchReturn": "13:45",
+      "eveningOut": "18:05",
+      "mode": "full",
+      "notes": "Demo: All punches entered. Open in Today and save to complete the draft.",
+      "audit": {
+        "createdAt": "2026-11-13T03:30:07.000Z",
+        "updatedAt": "2026-11-13T12:35:21.000Z",
+        "events": [
+          {
+            "at": "2026-11-13T03:30:07.000Z",
+            "changes": [
+              {
+                "field": "morningIn",
+                "from": "",
+                "to": "09:00"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-13T07:30:07.000Z",
+            "changes": [
+              {
+                "field": "lunchOut",
+                "from": "",
+                "to": "13:00"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-13T08:15:07.000Z",
+            "changes": [
+              {
+                "field": "lunchReturn",
+                "from": "",
+                "to": "13:45"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-13T12:35:07.000Z",
+            "changes": [
+              {
+                "field": "eveningOut",
+                "from": "",
+                "to": "18:05"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-13T12:35:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: All punches entered. Open in Today and save to complete the draft."
+              }
+            ]
+          }
+        ]
+      },
+      "targetShift": "08:20"
+    },
+    "2026-11-22": {
+      "morningIn": "09:05",
+      "lunchOut": "",
+      "lunchReturn": "",
+      "eveningOut": "",
+      "mode": "full",
+      "notes": "Demo: Morning punch saved. Reopen Punch and check that it asks for lunch out.",
+      "audit": {
+        "createdAt": "2026-11-22T03:35:07.000Z",
+        "updatedAt": "2026-11-22T03:35:21.000Z",
+        "events": [
+          {
+            "at": "2026-11-22T03:35:07.000Z",
+            "changes": [
+              {
+                "field": "morningIn",
+                "from": "",
+                "to": "09:05"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-22T03:35:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: Morning punch saved. Reopen Punch and check that it asks for lunch out."
+              }
+            ]
+          }
+        ]
+      },
+      "targetShift": "08:20"
+    }
+  },
+  "week": {
+    "rows": [
+      {
+        "day": "Monday",
+        "from": "09:00",
+        "to": "18:05",
+        "break": "45",
+        "target": "08:20",
+        "workday": true
+      },
+      {
+        "day": "Tuesday",
+        "from": "09:10",
+        "to": "18:55",
+        "break": "65",
+        "target": "08:20",
+        "workday": true
+      },
+      {
+        "day": "Wednesday",
+        "from": "",
+        "to": "",
+        "break": "",
+        "target": "08:20",
+        "workday": true
+      },
+      {
+        "day": "Thursday",
+        "from": "",
+        "to": "",
+        "break": "",
+        "target": "08:20",
+        "workday": false
+      },
+      {
+        "day": "Friday",
+        "from": "21:50",
+        "to": "07:10",
+        "break": "35",
+        "target": "08:20",
+        "workday": true
+      },
+      {
+        "day": "Saturday",
+        "from": "09:05",
+        "to": "18:10",
+        "break": "45",
+        "target": "08:20",
+        "workday": true
+      },
+      {
+        "day": "Sunday",
+        "from": "",
+        "to": "",
+        "break": "",
+        "target": "08:20",
+        "workday": false
+      }
+    ],
+    "title": "Legacy weekly draft",
+    "notes": "Kept for backup compatibility.",
+    "rounding": "none"
+  },
+  "history": [
+    {
+      "id": "daily-2026-01-27",
+      "kind": "daily",
+      "date": "2026-01-27",
+      "mode": "full",
+      "punches": {
+        "morningIn": "09:00",
+        "lunchOut": "13:00",
+        "lunchReturn": "13:45",
+        "eveningOut": "18:05"
+      },
+      "in": "09:00",
+      "out": "18:05",
+      "notes": "Demo: Post-holiday handoff.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 500,
+      "extraMinutes": 0,
+      "lunchMinutes": 45,
+      "lunchLimitMinutes": 45,
+      "targetMet": true,
+      "audit": {
+        "createdAt": "2026-01-27T03:30:07.000Z",
+        "updatedAt": "2026-01-27T12:35:21.000Z",
+        "events": [
+          {
+            "at": "2026-01-27T03:30:07.000Z",
+            "changes": [
+              {
+                "field": "morningIn",
+                "from": "",
+                "to": "09:00"
+              }
+            ]
+          },
+          {
+            "at": "2026-01-27T07:30:07.000Z",
+            "changes": [
+              {
+                "field": "lunchOut",
+                "from": "",
+                "to": "13:00"
+              }
+            ]
+          },
+          {
+            "at": "2026-01-27T08:15:07.000Z",
+            "changes": [
+              {
+                "field": "lunchReturn",
+                "from": "",
+                "to": "13:45"
+              }
+            ]
+          },
+          {
+            "at": "2026-01-27T12:35:07.000Z",
+            "changes": [
+              {
+                "field": "eveningOut",
+                "from": "",
+                "to": "18:05"
+              }
+            ]
+          },
+          {
+            "at": "2026-01-27T12:35:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: Post-holiday handoff."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "daily-2026-08-14",
+      "kind": "daily",
+      "date": "2026-08-14",
+      "mode": "full",
+      "punches": {
+        "morningIn": "09:07",
+        "lunchOut": "13:10",
+        "lunchReturn": "13:52",
+        "eveningOut": "18:15"
+      },
+      "in": "09:07",
+      "out": "18:15",
+      "notes": "Demo: Prepared the sample office for Independence Day.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 506,
+      "extraMinutes": 6,
+      "lunchMinutes": 42,
+      "lunchLimitMinutes": 45,
+      "targetMet": true,
+      "audit": {
+        "createdAt": "2026-08-14T03:37:07.000Z",
+        "updatedAt": "2026-08-14T12:45:21.000Z",
+        "events": [
+          {
+            "at": "2026-08-14T03:37:07.000Z",
+            "changes": [
+              {
+                "field": "morningIn",
+                "from": "",
+                "to": "09:07"
+              }
+            ]
+          },
+          {
+            "at": "2026-08-14T07:40:07.000Z",
+            "changes": [
+              {
+                "field": "lunchOut",
+                "from": "",
+                "to": "13:10"
+              }
+            ]
+          },
+          {
+            "at": "2026-08-14T08:22:07.000Z",
+            "changes": [
+              {
+                "field": "lunchReturn",
+                "from": "",
+                "to": "13:52"
+              }
+            ]
+          },
+          {
+            "at": "2026-08-14T12:45:07.000Z",
+            "changes": [
+              {
+                "field": "eveningOut",
+                "from": "",
+                "to": "18:15"
+              }
+            ]
+          },
+          {
+            "at": "2026-08-14T12:45:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: Prepared the sample office for Independence Day."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "daily-2026-10-03",
+      "kind": "daily",
+      "date": "2026-10-03",
+      "mode": "sat1",
+      "punches": {
+        "morningIn": "09:00",
+        "lunchOut": "13:00",
+        "lunchReturn": "13:45",
+        "eveningOut": "17:15"
+      },
+      "in": "09:00",
+      "out": "17:15",
+      "notes": "Demo: Weekend inventory.\n1st Saturday worked",
+      "baseTargetMinutes": 450,
+      "targetMinutes": 450,
+      "totalMinutes": 450,
+      "extraMinutes": 0,
+      "lunchMinutes": 45,
+      "lunchLimitMinutes": 45,
+      "targetMet": true,
+      "audit": {
+        "createdAt": "2026-10-03T03:30:00.000Z",
+        "updatedAt": "2026-10-03T11:45:21.000Z",
+        "events": [
+          {
+            "at": "2026-10-03T03:30:00.000Z",
+            "changes": [
+              {
+                "field": "mode",
+                "from": "full",
+                "to": "sat1"
+              },
+              {
+                "field": "target",
+                "from": "500",
+                "to": "450"
+              }
+            ]
+          },
+          {
+            "at": "2026-10-03T03:30:07.000Z",
+            "changes": [
+              {
+                "field": "morningIn",
+                "from": "",
+                "to": "09:00"
+              }
+            ]
+          },
+          {
+            "at": "2026-10-03T07:30:07.000Z",
+            "changes": [
+              {
+                "field": "lunchOut",
+                "from": "",
+                "to": "13:00"
+              }
+            ]
+          },
+          {
+            "at": "2026-10-03T08:15:07.000Z",
+            "changes": [
+              {
+                "field": "lunchReturn",
+                "from": "",
+                "to": "13:45"
+              }
+            ]
+          },
+          {
+            "at": "2026-10-03T11:45:07.000Z",
+            "changes": [
+              {
+                "field": "eveningOut",
+                "from": "",
+                "to": "17:15"
+              }
+            ]
+          },
+          {
+            "at": "2026-10-03T11:45:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: Weekend inventory.\n1st Saturday worked"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "daily-2026-10-26",
+      "kind": "daily",
+      "date": "2026-10-26",
+      "mode": "full",
+      "punches": {
+        "morningIn": "09:00",
+        "lunchOut": "13:00",
+        "lunchReturn": "13:45",
+        "eveningOut": "18:05"
+      },
+      "in": "09:00",
+      "out": "18:05",
+      "notes": "Demo: Work target met exactly.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 500,
+      "extraMinutes": 0,
+      "lunchMinutes": 45,
+      "lunchLimitMinutes": 45,
+      "targetMet": true,
+      "audit": {
+        "createdAt": "2026-10-26T03:30:07.000Z",
+        "updatedAt": "2026-10-26T12:35:21.000Z",
+        "events": [
+          {
+            "at": "2026-10-26T03:30:07.000Z",
+            "changes": [
+              {
+                "field": "morningIn",
+                "from": "",
+                "to": "09:00"
+              }
+            ]
+          },
+          {
+            "at": "2026-10-26T07:30:07.000Z",
+            "changes": [
+              {
+                "field": "lunchOut",
+                "from": "",
+                "to": "13:00"
+              }
+            ]
+          },
+          {
+            "at": "2026-10-26T08:15:07.000Z",
+            "changes": [
+              {
+                "field": "lunchReturn",
+                "from": "",
+                "to": "13:45"
+              }
+            ]
+          },
+          {
+            "at": "2026-10-26T12:35:07.000Z",
+            "changes": [
+              {
+                "field": "eveningOut",
+                "from": "",
+                "to": "18:05"
+              }
+            ]
+          },
+          {
+            "at": "2026-10-26T12:35:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: Work target met exactly."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "daily-2026-10-27",
+      "kind": "daily",
+      "date": "2026-10-27",
+      "mode": "leave",
+      "punches": {},
+      "in": "",
+      "out": "",
+      "notes": "Demo: Medical appointment; approved leave.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 0,
+      "totalMinutes": 0,
+      "extraMinutes": 0,
+      "lunchMinutes": null,
+      "lunchLimitMinutes": 45,
+      "targetMet": false,
+      "audit": {
+        "createdAt": "2026-10-27T04:30:00.000Z",
+        "updatedAt": "2026-10-27T04:30:21.000Z",
+        "events": [
+          {
+            "at": "2026-10-27T04:30:00.000Z",
+            "changes": [
+              {
+                "field": "mode",
+                "from": "full",
+                "to": "leave"
+              }
+            ]
+          },
+          {
+            "at": "2026-10-27T04:30:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: Medical appointment; approved leave."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "daily-2026-10-28",
+      "kind": "daily",
+      "date": "2026-10-28",
+      "mode": "full",
+      "punches": {
+        "morningIn": "09:12",
+        "lunchOut": "13:05",
+        "lunchReturn": "13:42",
+        "eveningOut": "17:34"
+      },
+      "in": "09:12",
+      "out": "17:34",
+      "notes": "Demo: Shorter shift; below daily target.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 465,
+      "extraMinutes": 0,
+      "lunchMinutes": 37,
+      "lunchLimitMinutes": 45,
+      "targetMet": false,
+      "audit": {
+        "createdAt": "2026-10-28T03:42:07.000Z",
+        "updatedAt": "2026-10-28T12:04:21.000Z",
+        "events": [
+          {
+            "at": "2026-10-28T03:42:07.000Z",
+            "changes": [
+              {
+                "field": "morningIn",
+                "from": "",
+                "to": "09:12"
+              }
+            ]
+          },
+          {
+            "at": "2026-10-28T07:35:07.000Z",
+            "changes": [
+              {
+                "field": "lunchOut",
+                "from": "",
+                "to": "13:05"
+              }
+            ]
+          },
+          {
+            "at": "2026-10-28T08:12:07.000Z",
+            "changes": [
+              {
+                "field": "lunchReturn",
+                "from": "",
+                "to": "13:42"
+              }
+            ]
+          },
+          {
+            "at": "2026-10-28T12:04:07.000Z",
+            "changes": [
+              {
+                "field": "eveningOut",
+                "from": "",
+                "to": "17:34"
+              }
+            ]
+          },
+          {
+            "at": "2026-10-28T12:04:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: Shorter shift; below daily target."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "daily-2026-10-29",
+      "kind": "daily",
+      "date": "2026-10-29",
+      "mode": "full",
+      "punches": {
+        "morningIn": "09:00",
+        "lunchOut": "13:00",
+        "lunchReturn": "13:45",
+        "eveningOut": ""
+      },
+      "in": "09:00",
+      "out": "",
+      "notes": "Demo: Saved incomplete shift; evening punch missing.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 240,
+      "extraMinutes": 0,
+      "lunchMinutes": 45,
+      "lunchLimitMinutes": 45,
+      "targetMet": false,
+      "audit": {
+        "createdAt": "2026-10-29T03:30:07.000Z",
+        "updatedAt": "2026-10-29T08:15:21.000Z",
+        "events": [
+          {
+            "at": "2026-10-29T03:30:07.000Z",
+            "changes": [
+              {
+                "field": "morningIn",
+                "from": "",
+                "to": "09:00"
+              }
+            ]
+          },
+          {
+            "at": "2026-10-29T07:30:07.000Z",
+            "changes": [
+              {
+                "field": "lunchOut",
+                "from": "",
+                "to": "13:00"
+              }
+            ]
+          },
+          {
+            "at": "2026-10-29T08:15:07.000Z",
+            "changes": [
+              {
+                "field": "lunchReturn",
+                "from": "",
+                "to": "13:45"
+              }
+            ]
+          },
+          {
+            "at": "2026-10-29T08:15:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: Saved incomplete shift; evening punch missing."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "daily-2026-10-30",
+      "kind": "daily",
+      "date": "2026-10-30",
+      "mode": "full",
+      "punches": {
+        "morningIn": "20:45",
+        "lunchOut": "00:30",
+        "lunchReturn": "01:10",
+        "eveningOut": "06:00"
+      },
+      "in": "20:45",
+      "out": "06:00",
+      "notes": "Demo: Overnight maintenance; lunch starts after midnight.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 515,
+      "extraMinutes": 15,
+      "lunchMinutes": 40,
+      "lunchLimitMinutes": 45,
+      "targetMet": true,
+      "audit": {
+        "createdAt": "2026-10-30T15:15:07.000Z",
+        "updatedAt": "2026-10-31T00:30:21.000Z",
+        "events": [
+          {
+            "at": "2026-10-30T15:15:07.000Z",
+            "changes": [
+              {
+                "field": "morningIn",
+                "from": "",
+                "to": "20:45"
+              }
+            ]
+          },
+          {
+            "at": "2026-10-30T19:00:07.000Z",
+            "changes": [
+              {
+                "field": "lunchOut",
+                "from": "",
+                "to": "00:30"
+              }
+            ]
+          },
+          {
+            "at": "2026-10-30T19:40:07.000Z",
+            "changes": [
+              {
+                "field": "lunchReturn",
+                "from": "",
+                "to": "01:10"
+              }
+            ]
+          },
+          {
+            "at": "2026-10-31T00:30:07.000Z",
+            "changes": [
+              {
+                "field": "eveningOut",
+                "from": "",
+                "to": "06:00"
+              }
+            ]
+          },
+          {
+            "at": "2026-10-31T00:30:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: Overnight maintenance; lunch starts after midnight."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "daily-2026-10-31",
+      "kind": "daily",
+      "date": "2026-10-31",
+      "mode": "full",
+      "punches": {
+        "morningIn": "09:05",
+        "lunchOut": "13:10",
+        "lunchReturn": "13:55",
+        "eveningOut": "18:10"
+      },
+      "in": "09:05",
+      "out": "18:10",
+      "notes": "Demo: Month-end stock count.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 500,
+      "extraMinutes": 0,
+      "lunchMinutes": 45,
+      "lunchLimitMinutes": 45,
+      "targetMet": true,
+      "audit": {
+        "createdAt": "2026-10-31T03:35:07.000Z",
+        "updatedAt": "2026-10-31T12:40:21.000Z",
+        "events": [
+          {
+            "at": "2026-10-31T03:35:07.000Z",
+            "changes": [
+              {
+                "field": "morningIn",
+                "from": "",
+                "to": "09:05"
+              }
+            ]
+          },
+          {
+            "at": "2026-10-31T07:40:07.000Z",
+            "changes": [
+              {
+                "field": "lunchOut",
+                "from": "",
+                "to": "13:10"
+              }
+            ]
+          },
+          {
+            "at": "2026-10-31T08:25:07.000Z",
+            "changes": [
+              {
+                "field": "lunchReturn",
+                "from": "",
+                "to": "13:55"
+              }
+            ]
+          },
+          {
+            "at": "2026-10-31T12:40:07.000Z",
+            "changes": [
+              {
+                "field": "eveningOut",
+                "from": "",
+                "to": "18:10"
+              }
+            ]
+          },
+          {
+            "at": "2026-10-31T12:40:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: Month-end stock count."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "daily-2026-11-02",
+      "kind": "daily",
+      "date": "2026-11-02",
+      "mode": "full",
+      "punches": {
+        "morningIn": "08:58",
+        "lunchOut": "13:00",
+        "lunchReturn": "13:44",
+        "eveningOut": "18:02"
+      },
+      "in": "08:58",
+      "out": "18:02",
+      "notes": "Demo: Regular shift.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 500,
+      "extraMinutes": 0,
+      "lunchMinutes": 44,
+      "lunchLimitMinutes": 45,
+      "targetMet": true,
+      "audit": {
+        "createdAt": "2026-11-02T03:28:07.000Z",
+        "updatedAt": "2026-11-02T12:32:21.000Z",
+        "events": [
+          {
+            "at": "2026-11-02T03:28:07.000Z",
+            "changes": [
+              {
+                "field": "morningIn",
+                "from": "",
+                "to": "08:58"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-02T07:30:07.000Z",
+            "changes": [
+              {
+                "field": "lunchOut",
+                "from": "",
+                "to": "13:00"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-02T08:14:07.000Z",
+            "changes": [
+              {
+                "field": "lunchReturn",
+                "from": "",
+                "to": "13:44"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-02T12:32:07.000Z",
+            "changes": [
+              {
+                "field": "eveningOut",
+                "from": "",
+                "to": "18:02"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-02T12:32:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: Regular shift."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "daily-2026-11-03",
+      "kind": "daily",
+      "date": "2026-11-03",
+      "mode": "full",
+      "punches": {
+        "morningIn": "08:55",
+        "lunchOut": "13:05",
+        "lunchReturn": "13:50",
+        "eveningOut": "18:45"
+      },
+      "in": "08:55",
+      "out": "18:45",
+      "notes": "Demo: Overtime for month-end reconciliation.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 545,
+      "extraMinutes": 45,
+      "lunchMinutes": 45,
+      "lunchLimitMinutes": 45,
+      "targetMet": true,
+      "audit": {
+        "createdAt": "2026-11-03T03:25:07.000Z",
+        "updatedAt": "2026-11-03T13:15:21.000Z",
+        "events": [
+          {
+            "at": "2026-11-03T03:25:07.000Z",
+            "changes": [
+              {
+                "field": "morningIn",
+                "from": "",
+                "to": "08:55"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-03T07:35:07.000Z",
+            "changes": [
+              {
+                "field": "lunchOut",
+                "from": "",
+                "to": "13:05"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-03T08:20:07.000Z",
+            "changes": [
+              {
+                "field": "lunchReturn",
+                "from": "",
+                "to": "13:50"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-03T13:15:07.000Z",
+            "changes": [
+              {
+                "field": "eveningOut",
+                "from": "",
+                "to": "18:45"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-03T13:15:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: Overtime for month-end reconciliation."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "daily-2026-11-04",
+      "kind": "daily",
+      "date": "2026-11-04",
+      "mode": "holiday",
+      "punches": {},
+      "in": "",
+      "out": "",
+      "notes": "Demo: Company Foundation Day; office closed.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 0,
+      "totalMinutes": 0,
+      "extraMinutes": 0,
+      "lunchMinutes": null,
+      "lunchLimitMinutes": 45,
+      "targetMet": false,
+      "audit": {
+        "createdAt": "2026-11-04T04:30:00.000Z",
+        "updatedAt": "2026-11-04T04:30:21.000Z",
+        "events": [
+          {
+            "at": "2026-11-04T04:30:00.000Z",
+            "changes": [
+              {
+                "field": "mode",
+                "from": "full",
+                "to": "holiday"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-04T04:30:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: Company Foundation Day; office closed."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "daily-2026-11-06",
+      "kind": "daily",
+      "date": "2026-11-06",
+      "mode": "full",
+      "punches": {
+        "morningIn": "09:12",
+        "lunchOut": "13:00",
+        "lunchReturn": "13:40",
+        "eveningOut": "17:15"
+      },
+      "in": "09:12",
+      "out": "17:15",
+      "notes": "Demo: Left early; below daily target.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 443,
+      "extraMinutes": 0,
+      "lunchMinutes": 40,
+      "lunchLimitMinutes": 45,
+      "targetMet": false,
+      "audit": {
+        "createdAt": "2026-11-06T03:42:07.000Z",
+        "updatedAt": "2026-11-06T11:45:21.000Z",
+        "events": [
+          {
+            "at": "2026-11-06T03:42:07.000Z",
+            "changes": [
+              {
+                "field": "morningIn",
+                "from": "",
+                "to": "09:12"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-06T07:30:07.000Z",
+            "changes": [
+              {
+                "field": "lunchOut",
+                "from": "",
+                "to": "13:00"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-06T08:10:07.000Z",
+            "changes": [
+              {
+                "field": "lunchReturn",
+                "from": "",
+                "to": "13:40"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-06T11:45:07.000Z",
+            "changes": [
+              {
+                "field": "eveningOut",
+                "from": "",
+                "to": "17:15"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-06T11:45:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: Left early; below daily target."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "daily-2026-11-09",
+      "kind": "daily",
+      "date": "2026-11-09",
+      "mode": "full",
+      "punches": {
+        "morningIn": "09:00",
+        "lunchOut": "12:55",
+        "lunchReturn": "13:35",
+        "eveningOut": "18:00"
+      },
+      "in": "09:00",
+      "out": "18:00",
+      "notes": "Demo: Normal workday; 40-minute lunch.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 500,
+      "extraMinutes": 0,
+      "lunchMinutes": 40,
+      "lunchLimitMinutes": 45,
+      "targetMet": true,
+      "audit": {
+        "createdAt": "2026-11-09T03:30:07.000Z",
+        "updatedAt": "2026-11-09T12:30:21.000Z",
+        "events": [
+          {
+            "at": "2026-11-09T03:30:07.000Z",
+            "changes": [
+              {
+                "field": "morningIn",
+                "from": "",
+                "to": "09:00"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-09T07:25:07.000Z",
+            "changes": [
+              {
+                "field": "lunchOut",
+                "from": "",
+                "to": "12:55"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-09T08:05:07.000Z",
+            "changes": [
+              {
+                "field": "lunchReturn",
+                "from": "",
+                "to": "13:35"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-09T12:30:07.000Z",
+            "changes": [
+              {
+                "field": "eveningOut",
+                "from": "",
+                "to": "18:00"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-09T12:30:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: Normal workday; 40-minute lunch."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "daily-2026-11-10",
+      "kind": "daily",
+      "date": "2026-11-10",
+      "mode": "half",
+      "punches": {
+        "morningIn": "09:05",
+        "eveningOut": "13:15"
+      },
+      "in": "09:05",
+      "out": "13:15",
+      "notes": "Demo: Half day for training.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 250,
+      "totalMinutes": 250,
+      "extraMinutes": 0,
+      "lunchMinutes": null,
+      "lunchLimitMinutes": 45,
+      "targetMet": true,
+      "audit": {
+        "createdAt": "2026-11-10T03:35:00.000Z",
+        "updatedAt": "2026-11-10T07:45:21.000Z",
+        "events": [
+          {
+            "at": "2026-11-10T03:35:00.000Z",
+            "changes": [
+              {
+                "field": "mode",
+                "from": "full",
+                "to": "half"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-10T03:35:07.000Z",
+            "changes": [
+              {
+                "field": "morningIn",
+                "from": "",
+                "to": "09:05"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-10T07:45:07.000Z",
+            "changes": [
+              {
+                "field": "eveningOut",
+                "from": "",
+                "to": "13:15"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-10T07:45:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: Half day for training."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "daily-2026-11-11",
+      "kind": "daily",
+      "date": "2026-11-11",
+      "mode": "leave",
+      "punches": {},
+      "in": "",
+      "out": "",
+      "notes": "Demo: Approved annual leave.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 0,
+      "totalMinutes": 0,
+      "extraMinutes": 0,
+      "lunchMinutes": null,
+      "lunchLimitMinutes": 45,
+      "targetMet": false,
+      "audit": {
+        "createdAt": "2026-11-11T04:30:00.000Z",
+        "updatedAt": "2026-11-11T04:30:21.000Z",
+        "events": [
+          {
+            "at": "2026-11-11T04:30:00.000Z",
+            "changes": [
+              {
+                "field": "mode",
+                "from": "full",
+                "to": "leave"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-11T04:30:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: Approved annual leave."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "daily-2026-11-12",
+      "kind": "daily",
+      "date": "2026-11-12",
+      "mode": "full",
+      "punches": {
+        "morningIn": "09:00",
+        "lunchOut": "13:00",
+        "lunchReturn": "13:35",
+        "eveningOut": "18:12"
+      },
+      "in": "09:00",
+      "out": "18:12",
+      "notes": "Demo: Changed target to 7h 30m for this shift.",
+      "baseTargetMinutes": 450,
+      "targetMinutes": 450,
+      "totalMinutes": 517,
+      "extraMinutes": 67,
+      "lunchMinutes": 35,
+      "lunchLimitMinutes": 45,
+      "targetMet": true,
+      "audit": {
+        "createdAt": "2026-11-12T03:30:00.000Z",
+        "updatedAt": "2026-11-12T12:42:21.000Z",
+        "events": [
+          {
+            "at": "2026-11-12T03:30:00.000Z",
+            "changes": [
+              {
+                "field": "target",
+                "from": "500",
+                "to": "450"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-12T03:30:07.000Z",
+            "changes": [
+              {
+                "field": "morningIn",
+                "from": "",
+                "to": "09:00"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-12T07:30:07.000Z",
+            "changes": [
+              {
+                "field": "lunchOut",
+                "from": "",
+                "to": "13:00"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-12T08:05:07.000Z",
+            "changes": [
+              {
+                "field": "lunchReturn",
+                "from": "",
+                "to": "13:35"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-12T12:42:07.000Z",
+            "changes": [
+              {
+                "field": "eveningOut",
+                "from": "",
+                "to": "18:12"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-12T12:42:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: Changed target to 7h 30m for this shift."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "daily-2026-11-14",
+      "kind": "daily",
+      "date": "2026-11-14",
+      "mode": "full",
+      "punches": {
+        "morningIn": "08:00",
+        "lunchOut": "",
+        "lunchReturn": "",
+        "eveningOut": "16:20"
+      },
+      "in": "08:00",
+      "out": "16:20",
+      "notes": "Demo: Saturday support coverage without lunch.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 500,
+      "extraMinutes": 0,
+      "lunchMinutes": null,
+      "lunchLimitMinutes": 45,
+      "targetMet": true,
+      "audit": {
+        "createdAt": "2026-11-14T02:30:07.000Z",
+        "updatedAt": "2026-11-15T05:50:07.000Z",
+        "events": [
+          {
+            "at": "2026-11-14T02:30:07.000Z",
+            "changes": [
+              {
+                "field": "morningIn",
+                "from": "",
+                "to": "08:00"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-14T10:40:07.000Z",
+            "changes": [
+              {
+                "field": "eveningOut",
+                "from": "",
+                "to": "16:10"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-14T10:50:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: Saturday support coverage without lunch."
+              }
+            ]
+          },
+          {
+            "at": "2026-11-15T05:50:07.000Z",
+            "changes": [
+              {
+                "field": "eveningOut",
+                "from": "16:10",
+                "to": "16:20"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "daily-2026-11-16",
+      "kind": "daily",
+      "date": "2026-11-16",
+      "mode": "full",
+      "punches": {
+        "morningIn": "09:00",
+        "lunchOut": "13:00",
+        "lunchReturn": "13:45",
+        "eveningOut": "18:05"
+      },
+      "in": "09:00",
+      "out": "18:05",
+      "notes": "Demo: Target met exactly.\nExport check with \"quotes\", commas and Café.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 500,
+      "extraMinutes": 0,
+      "lunchMinutes": 45,
+      "lunchLimitMinutes": 45,
+      "targetMet": true,
+      "audit": {
+        "createdAt": "2026-11-16T03:30:07.000Z",
+        "updatedAt": "2026-11-17T03:15:07.000Z",
+        "events": [
+          {
+            "at": "2026-11-16T03:30:07.000Z",
+            "changes": [
+              {
+                "field": "morningIn",
+                "from": "",
+                "to": "09:00"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-16T07:30:07.000Z",
+            "changes": [
+              {
+                "field": "lunchOut",
+                "from": "",
+                "to": "13:00"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-16T08:15:07.000Z",
+            "changes": [
+              {
+                "field": "lunchReturn",
+                "from": "",
+                "to": "13:45"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-16T12:35:07.000Z",
+            "changes": [
+              {
+                "field": "eveningOut",
+                "from": "",
+                "to": "18:05"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-16T12:35:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: Target met exactly."
+              }
+            ]
+          },
+          {
+            "at": "2026-11-17T03:15:07.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "Demo: Target met exactly.",
+                "to": "Demo: Target met exactly.\nExport check with \"quotes\", commas and Café."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "daily-2026-11-17",
+      "kind": "daily",
+      "date": "2026-11-17",
+      "mode": "full",
+      "punches": {
+        "morningIn": "09:10",
+        "lunchOut": "13:10",
+        "lunchReturn": "14:15",
+        "eveningOut": "18:55"
+      },
+      "in": "09:10",
+      "out": "18:55",
+      "notes": "Demo: Extended lunch and overtime. Morning punch corrected the next day.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 520,
+      "extraMinutes": 20,
+      "lunchMinutes": 65,
+      "lunchLimitMinutes": 45,
+      "targetMet": true,
+      "audit": {
+        "createdAt": "2026-11-17T03:30:07.000Z",
+        "updatedAt": "2026-11-18T03:55:07.000Z",
+        "events": [
+          {
+            "at": "2026-11-17T03:30:07.000Z",
+            "changes": [
+              {
+                "field": "morningIn",
+                "from": "",
+                "to": "09:00"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-17T07:40:07.000Z",
+            "changes": [
+              {
+                "field": "lunchOut",
+                "from": "",
+                "to": "13:10"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-17T08:45:07.000Z",
+            "changes": [
+              {
+                "field": "lunchReturn",
+                "from": "",
+                "to": "14:15"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-17T13:25:07.000Z",
+            "changes": [
+              {
+                "field": "eveningOut",
+                "from": "",
+                "to": "18:55"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-17T13:25:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: Extended lunch and overtime. Morning punch corrected the next day."
+              }
+            ]
+          },
+          {
+            "at": "2026-11-18T03:55:07.000Z",
+            "changes": [
+              {
+                "field": "morningIn",
+                "from": "09:00",
+                "to": "09:10"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "daily-2026-11-19",
+      "kind": "daily",
+      "date": "2026-11-19",
+      "mode": "leave",
+      "punches": {},
+      "in": "",
+      "out": "",
+      "notes": "Demo: Approved personal leave.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 0,
+      "totalMinutes": 0,
+      "extraMinutes": 0,
+      "lunchMinutes": null,
+      "lunchLimitMinutes": 45,
+      "targetMet": false,
+      "audit": {
+        "createdAt": "2026-11-19T04:30:00.000Z",
+        "updatedAt": "2026-11-19T04:30:21.000Z",
+        "events": [
+          {
+            "at": "2026-11-19T04:30:00.000Z",
+            "changes": [
+              {
+                "field": "mode",
+                "from": "full",
+                "to": "leave"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-19T04:30:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: Approved personal leave."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "daily-2026-11-20",
+      "kind": "daily",
+      "date": "2026-11-20",
+      "mode": "full",
+      "punches": {
+        "morningIn": "21:50",
+        "lunchOut": "02:00",
+        "lunchReturn": "02:35",
+        "eveningOut": "07:10"
+      },
+      "in": "21:50",
+      "out": "07:10",
+      "notes": "Demo: Overnight handover and monitoring. Clock-out is the next day.",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 525,
+      "extraMinutes": 25,
+      "lunchMinutes": 35,
+      "lunchLimitMinutes": 45,
+      "targetMet": true,
+      "audit": {
+        "createdAt": "2026-11-20T16:20:07.000Z",
+        "updatedAt": "2026-11-21T01:40:21.000Z",
+        "events": [
+          {
+            "at": "2026-11-20T16:20:07.000Z",
+            "changes": [
+              {
+                "field": "morningIn",
+                "from": "",
+                "to": "21:50"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-20T20:30:07.000Z",
+            "changes": [
+              {
+                "field": "lunchOut",
+                "from": "",
+                "to": "02:00"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-20T21:05:07.000Z",
+            "changes": [
+              {
+                "field": "lunchReturn",
+                "from": "",
+                "to": "02:35"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-21T01:40:07.000Z",
+            "changes": [
+              {
+                "field": "eveningOut",
+                "from": "",
+                "to": "07:10"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-21T01:40:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: Overnight handover and monitoring. Clock-out is the next day."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "daily-2026-11-21",
+      "kind": "daily",
+      "date": "2026-11-21",
+      "mode": "sat3",
+      "punches": {
+        "morningIn": "09:05",
+        "lunchOut": "13:05",
+        "lunchReturn": "13:50",
+        "eveningOut": "18:10"
+      },
+      "in": "09:05",
+      "out": "18:10",
+      "notes": "Demo: Third-Saturday stock count.\n3rd Saturday worked",
+      "baseTargetMinutes": 500,
+      "targetMinutes": 500,
+      "totalMinutes": 500,
+      "extraMinutes": 0,
+      "lunchMinutes": 45,
+      "lunchLimitMinutes": 45,
+      "targetMet": true,
+      "audit": {
+        "createdAt": "2026-11-21T03:35:00.000Z",
+        "updatedAt": "2026-11-21T12:40:21.000Z",
+        "events": [
+          {
+            "at": "2026-11-21T03:35:00.000Z",
+            "changes": [
+              {
+                "field": "mode",
+                "from": "full",
+                "to": "sat3"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-21T03:35:07.000Z",
+            "changes": [
+              {
+                "field": "morningIn",
+                "from": "",
+                "to": "09:05"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-21T07:35:07.000Z",
+            "changes": [
+              {
+                "field": "lunchOut",
+                "from": "",
+                "to": "13:05"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-21T08:20:07.000Z",
+            "changes": [
+              {
+                "field": "lunchReturn",
+                "from": "",
+                "to": "13:50"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-21T12:40:07.000Z",
+            "changes": [
+              {
+                "field": "eveningOut",
+                "from": "",
+                "to": "18:10"
+              }
+            ]
+          },
+          {
+            "at": "2026-11-21T12:40:21.000Z",
+            "changes": [
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Demo: Third-Saturday stock count.\n3rd Saturday worked"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "weekly-demo-2026-10-26",
+      "kind": "weekly",
+      "date": "2026-10-31",
+      "title": "Demo archived legacy report",
+      "notes": "Archived schedule for testing History and exported reports.",
+      "schedule": [
+        {
+          "day": "Monday",
+          "from": "09:00",
+          "to": "18:05",
+          "breakDeduction": "45",
+          "target": "08:20",
+          "workday": true
+        },
+        {
+          "day": "Tuesday",
+          "from": "",
+          "to": "",
+          "breakDeduction": "",
+          "target": "08:20",
+          "workday": false
+        },
+        {
+          "day": "Wednesday",
+          "from": "09:12",
+          "to": "17:34",
+          "breakDeduction": "37",
+          "target": "08:20",
+          "workday": true
+        },
+        {
+          "day": "Thursday",
+          "from": "",
+          "to": "",
+          "breakDeduction": "",
+          "target": "08:20",
+          "workday": true
+        },
+        {
+          "day": "Friday",
+          "from": "20:45",
+          "to": "06:00",
+          "breakDeduction": "40",
+          "target": "08:20",
+          "workday": true
+        },
+        {
+          "day": "Saturday",
+          "from": "09:05",
+          "to": "18:10",
+          "breakDeduction": "45",
+          "target": "08:20",
+          "workday": true
+        },
+        {
+          "day": "Sunday",
+          "from": "",
+          "to": "",
+          "breakDeduction": "",
+          "target": "08:20",
+          "workday": false
+        }
+      ],
+      "totalMinutes": 1980,
+      "rounding": "none",
+      "legacy": true,
+      "targetMinutes": 500
+    },
+    {
+      "id": "weekly-demo-2026-11-16",
+      "kind": "weekly",
+      "date": "2026-11-21",
+      "title": "Demo saved weekly report",
+      "notes": "Archived schedule for testing History and exported reports.",
+      "schedule": [
+        {
+          "day": "Monday",
+          "from": "09:00",
+          "to": "18:05",
+          "break": "45",
+          "target": "08:20",
+          "workday": true
+        },
+        {
+          "day": "Tuesday",
+          "from": "09:10",
+          "to": "18:55",
+          "break": "65",
+          "target": "08:20",
+          "workday": true
+        },
+        {
+          "day": "Wednesday",
+          "from": "",
+          "to": "",
+          "break": "",
+          "target": "08:20",
+          "workday": true
+        },
+        {
+          "day": "Thursday",
+          "from": "",
+          "to": "",
+          "break": "",
+          "target": "08:20",
+          "workday": false
+        },
+        {
+          "day": "Friday",
+          "from": "21:50",
+          "to": "07:10",
+          "break": "35",
+          "target": "08:20",
+          "workday": true
+        },
+        {
+          "day": "Saturday",
+          "from": "09:05",
+          "to": "18:10",
+          "break": "45",
+          "target": "08:20",
+          "workday": true
+        },
+        {
+          "day": "Sunday",
+          "from": "",
+          "to": "",
+          "break": "",
+          "target": "08:20",
+          "workday": false
+        }
+      ],
+      "totalMinutes": 2045,
+      "rounding": "none",
+      "legacy": false,
+      "audit": {
+        "createdAt": "2026-11-21T13:30:07.000Z",
+        "updatedAt": "2026-11-21T13:30:07.000Z",
+        "events": [
+          {
+            "at": "2026-11-21T13:30:07.000Z",
+            "changes": [
+              {
+                "field": "title",
+                "from": "",
+                "to": "Demo saved weekly report"
+              },
+              {
+                "field": "notes",
+                "from": "",
+                "to": "Archived schedule for testing History and exported reports."
+              },
+              {
+                "field": "schedule",
+                "from": "",
+                "to": "[{\"day\":\"Monday\",\"from\":\"09:00\",\"to\":\"18:05\",\"break\":\"45\",\"target\":\"08:20\",\"workday\":true},{\"day\":\"Tuesday\",\"from\":\"09:10\",\"to\":\"18:55\",\"break\":\"65\",\"target\":\"08:20\",\"workday\":true},{\"day\":\"Wednesday\",\"from\":\"\",\"to\":\"\",\"break\":\"\",\"target\":\"08:20\",\"workday\":true},{\"day\":\"Thursday\",\"from\":\"\",\"to\":\"\",\"break\":\"\",\"target\":\"08:20\",\"workday\":false},{\"day\":\"Friday\",\"from\":\"21:50\",\"to\":\"07:10\",\"break\":\"35\",\"target\":\"08:20\",\"workday\":true},{\"day\":\"Saturday\",\"from\":\"09:05\",\"to\":\"18:10\",\"break\":\"45\",\"target\":\"08:20\",\"workday\":true},{\"day\":\"Sunday\",\"from\":\"\",\"to\":\"\",\"break\":\"\",\"target\":\"08:20\",\"workday\":false}]"
+              }
+            ]
+          }
+        ]
+      },
+      "targetMinutes": 500
+    }
+  ],
+  "appVersion": "18",
+  "profileName": "Nila Demo",
+  "timeZone": "Asia/Calcutta"
+}

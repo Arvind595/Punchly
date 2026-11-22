@@ -5,6 +5,7 @@ const Storage = (() => {
   const legacyWeekKey = 'timecard_calculator_history_v1';
   const migrationKey = 'punchly_legacy_weekly_migrated_v1';
   const resetKey = 'punchly_last_reset';
+  const profileLengths = { displayName: 48, employeeId: 40, employeeEmail: 254, role: 60, department: 60 };
   const defaults = {
     targetShift: '08:20',
     font: 'manrope',
@@ -23,7 +24,7 @@ const Storage = (() => {
     rounding: 'none',
     clockFormat: '24',
     historyRange: 'weekly',
-    displayName: ''
+    ...Object.fromEntries(Object.keys(profileLengths).map(field => [field, '']))
   };
 
   function read(key, fallback) {
@@ -86,7 +87,8 @@ const Storage = (() => {
     if (!['none', '5', '15', '30'].includes(settings.rounding)) settings.rounding = defaults.rounding;
     if (!['24', '12'].includes(settings.clockFormat)) settings.clockFormat = defaults.clockFormat;
     if (!['weekly', 'monthly', 'yearly', 'all'].includes(settings.historyRange)) settings.historyRange = defaults.historyRange;
-    if (!['system', 'manrope', 'inter', 'satoshi', 'arial', 'verdana', 'tahoma', 'trebuchet', 'georgia', 'courier'].includes(settings.font)) settings.font = defaults.font;
+    if (!['system', 'manrope', 'inter', 'satoshi', 'arial', 'verdana', 'tahoma', 'trebuchet', 'georgia', 'courier',
+      'playpen-sans', 'nunito', 'comic-neue'].includes(settings.font)) settings.font = defaults.font;
     settings.avatar = oldAvatars.get(settings.avatar) ?? settings.avatar;
     if (!avatarOptions.some(([id]) => id === settings.avatar)) settings.avatar = defaults.avatar;
     if (typeof settings.profilePhoto !== 'string' || settings.profilePhoto.length > 200000 ||
@@ -99,8 +101,12 @@ const Storage = (() => {
     });
     if (!Array.isArray(settings.workdays)) settings.workdays = defaults.workdays;
     else settings.workdays = settings.workdays.filter(day => Number.isInteger(day) && day >= 0 && day <= 6);
-    settings.displayName = typeof settings.displayName === 'string' ? settings.displayName.trim().slice(0, 48) : defaults.displayName;
-    return settings;
+    return { ...settings, ...profileDetails(settings) };
+  }
+  function profileDetails(data) {
+    return Object.fromEntries(Object.entries(profileLengths).map(([field, max]) => [
+      field, typeof data[field] === 'string' ? data[field].replace(/\s+/g, ' ').trim().slice(0, max) : ''
+    ]));
   }
   function saveRecord(record) {
     const history = normalizeHistory();
@@ -159,7 +165,8 @@ const Storage = (() => {
   }
 
   function deleteProfile() {
-    const { displayName, avatar, profilePhoto, ...settings } = getSettings();
+    const { avatar, profilePhoto, ...settings } = getSettings();
+    Object.keys(profileLengths).forEach(field => delete settings[field]);
     return write(keys.SETTINGS, settings);
   }
 
@@ -202,7 +209,7 @@ const Storage = (() => {
     return added;
   }
   return {
-    keys, resetKey, avatarOptions,
+    keys, resetKey, avatarOptions, profileDetails,
     getToday: () => read(keys.TODAY, null), saveToday: data => write(keys.TODAY, data),
     getDraft(date) { return getDrafts()[date] || null; },
     getDrafts,

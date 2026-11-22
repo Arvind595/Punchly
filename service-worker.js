@@ -1,4 +1,4 @@
-const RELEASE = 18;
+const RELEASE = 19;
 const CACHE_NAME = `punchly-static-v${RELEASE}`;
 const APP_ASSETS = [
   ...['css/style.css', 'manifest.webmanifest', 'js/shift.js', 'js/icons.js', 'js/audit.js', 'js/storage.js',
@@ -11,6 +11,9 @@ const APP_ASSETS = [
   './assets/avatar-coffee.svg', './assets/avatar-orbit.svg',
   './assets/fonts/inter-regular.woff', './assets/fonts/inter-bold.woff',
   './assets/fonts/manrope-regular.woff', './assets/fonts/manrope-bold.woff',
+  './assets/fonts/playpen-sans-regular.woff', './assets/fonts/playpen-sans-bold.woff',
+  './assets/fonts/nunito-regular.woff', './assets/fonts/nunito-bold.woff',
+  './assets/fonts/comic-neue-regular.woff', './assets/fonts/comic-neue-bold.woff',
   './vendor/xlsx-0.20.3.mini.js'
 ].map(path => new URL(path, self.registration.scope).href);
 const entryUrl = new URL('./index.html', self.registration.scope).href;

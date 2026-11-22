@@ -155,14 +155,14 @@ const Charts = (() => {
     draw(chart, records, records, kind, states, 860, 430, true);
     const canvas = document.createElement('canvas');
     canvas.width = chart.width;
-    canvas.height = chart.height + 42;
+    canvas.height = chart.height + 42 + (details.length - 1) * 21;
     const context = canvas.getContext('2d');
     context.fillStyle = '#ffffff';
     context.fillRect(0, 0, canvas.width, canvas.height);
     context.drawImage(chart, 0, 0);
     context.fillStyle = '#46465b';
     context.font = '15px sans-serif';
-    context.fillText(details, 18, chart.height + 25, canvas.width - 36);
+    details.forEach((line, index) => context.fillText(line, 18, chart.height + 25 + index * 21, canvas.width - 36));
     return canvas;
   }
 
