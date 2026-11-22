@@ -160,7 +160,7 @@ const Preferences = (() => {
       byId('reminderTarget').checked = settings.reminderTarget;
       byId('defaultTarget').value = settings.targetShift;
       byId('lunchLimit').value = settings.lunchLimit;
-      byId('defaultRounding').value = settings.rounding;
+
       byId('clockFormat').value = settings.clockFormat;
       byId('defaultRange').value = settings.historyRange;
       const selectedTheme = themeInputs.find(input => input.value === settings.theme) || themeInputs[1];
@@ -226,7 +226,7 @@ const Preferences = (() => {
       save({
         targetShift: byId('defaultTarget').value,
         lunchLimit: byId('lunchLimit').valueAsNumber,
-        rounding: byId('defaultRounding').value,
+
         clockFormat: byId('clockFormat').value,
         historyRange: byId('defaultRange').value,
         workdays: workdayInputs.filter(input => input.checked).map(input => Number(input.value))

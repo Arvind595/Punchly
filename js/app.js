@@ -13,8 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const statsView = document.getElementById('statsView');
   const exportRange = document.getElementById('exportRange');
   const todayView = document.getElementById('today-view');
-  const quickLog = document.getElementById('quickLog');
-  const manualWeek = document.getElementById('manualWeek');
   const compactDetails = document.getElementById('compactDetails');
   const tabs = [...document.querySelectorAll('.tab-nav [role="tab"]')];
   const tabDock = document.getElementById('tabDock');
@@ -25,22 +23,20 @@ document.addEventListener('DOMContentLoaded', () => {
   let todayKey = localDateKey(new Date());
   let lastRenderedMinute = null;
   let lastDayLogs = '';
-  let weekRows = loadWeek();
-  let weeklyMinutes = 0;
-  let editingWeeklyId = null;
   let hasShiftTarget = false;
-  let expandedWeekDay = null;
   let miniTimer;
 
   const version = document.querySelector('meta[name="punchly-release"]').content;
   document.getElementById('appVersion').textContent = `v${version}`;
   document.title = `Punchly v${version} | Time Tracker`;
 
+  const startup = AppTools.connectStartup(version);
   Icons.init();
   connectClientLayout();
-  AppTools.connectUpdates(version, localDateKey, toast);
+  const initialUpdate = AppTools.connectUpdates(version, localDateKey, toast);
   AppTools.connectHelp(version);
   const preferences = Preferences.connect(settings, { notify: toast, onChange: applyPreferences });
+  startup.profileReady(settings.displayName);
   AppTools.connectReset({
     onProfileDeleted() {
       Object.assign(settings, Storage.getSettings());
@@ -65,7 +61,6 @@ document.addEventListener('DOMContentLoaded', () => {
   workDate.max = todayKey;
   workDate.value = todayKey;
   restoreToday();
-  renderWeek();
   scheduleTrackingRefresh();
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) return;
@@ -178,7 +173,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const mobile = handheld.matches;
       document.documentElement.dataset.layout = mobile ? 'mobile' : 'desktop';
       settingsFolds.forEach(panel => { panel.open = !mobile; });
-      quickLog.open = !mobile;
       if (mobile) miniTimer?.close();
       setTabMenu(false);
     }
@@ -191,17 +185,11 @@ document.addEventListener('DOMContentLoaded', () => {
       settingsFolds.forEach(other => { if (other !== panel) other.open = false; });
     }));
 
-    for (const [buttonId, containerId] of [
-      ['mobileSummaryToggle', 'shiftSummary'],
-      ['weeklyOptionsToggle', 'weekly-view']
-    ]) {
-      const button = document.getElementById(buttonId);
-      const container = document.getElementById(containerId);
-      button.addEventListener('click', () => {
-        const expanded = container.classList.toggle('mobile-expanded');
-        button.setAttribute('aria-expanded', String(expanded));
-      });
-    }
+    const summaryToggle = document.getElementById('mobileSummaryToggle');
+    summaryToggle.addEventListener('click', () => {
+      const expanded = document.getElementById('shiftSummary').classList.toggle('mobile-expanded');
+      summaryToggle.setAttribute('aria-expanded', String(expanded));
+    });
   }
 
   function connectMobileHaptics() {
@@ -217,11 +205,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (section === 'tracking') {
       if (!hasShiftTarget && !dayInputs.some(input => input.value)) shiftTarget.value = settings.targetShift;
       historyRange.value = settings.historyRange;
-      if (!editingWeeklyId && !weekRows.some(row => row.from || row.to || row.break) &&
-          !document.getElementById('reportHeaderInput').value && !document.getElementById('reportNotesInput').value) {
-        weekRows = loadWeek(null);
-        renderWeek();
-      }
       renderDay();
       refreshDayLogs();
     }
@@ -319,8 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
     preferences.refresh();
     historyRange.value = settings.historyRange;
     statsRange.value = settings.historyRange;
-    editingWeeklyId = null;
-    restoreToday(); weekRows = loadWeek(); renderWeek(); renderDay(); updateHistory(); refreshDayLogs(); miniTimer.refresh(); refreshGuided();
+    restoreToday(); renderDay(); updateHistory(); refreshDayLogs(); miniTimer.refresh(); refreshGuided();
   });
   window.addEventListener('punchly:settings-imported', () => {
     Object.assign(settings, Storage.getSettings());
@@ -329,21 +311,6 @@ document.addEventListener('DOMContentLoaded', () => {
     statsRange.value = settings.historyRange;
     updateStatistics();
   });
-  document.getElementById('printWeekly').addEventListener('click', printWeeklyReport);
-  document.getElementById('printWeeklyMobile').addEventListener('click', printWeeklyReport);
-  document.getElementById('copyFirstRow').addEventListener('click', () => {
-    weekRows.slice(1).forEach((row, index) => Object.assign(row, { from: weekRows[0].from, to: weekRows[0].to, break: weekRows[0].break, workday: row.workday }));
-    renderWeek(); toast('Monday times copied to the remaining days.');
-  });
-  document.getElementById('clearWeekly').addEventListener('click', () => {
-    editingWeeklyId = null;
-    weekRows = loadWeek(null);
-    renderWeek();
-  });
-  document.getElementById('roundTimeSelect').addEventListener('change', renderWeek);
-  ['reportHeaderInput', 'reportNotesInput'].forEach(id => document.getElementById(id).addEventListener('input', saveWeek));
-  document.getElementById('saveWeeklyBtn').addEventListener('click', saveWeekly);
-
   function connectInstall() {
     const button = document.getElementById('installApp');
     const note = document.getElementById('installNote');
@@ -366,172 +333,6 @@ document.addEventListener('DOMContentLoaded', () => {
       try { await prompt.prompt(); } catch (error) { /* The browser menu remains available. */ }
     });
     window.addEventListener('appinstalled', installed);
-  }
-
-  function loadWeek(saved = Storage.getWeek()) {
-    const days = Preferences.days;
-    const rows = days.map((day, index) => ({
-      day, from: '', to: '', break: '', target: settings.targetShift, workday: settings.workdays.includes((index + 1) % 7)
-    }));
-    if (saved && Array.isArray(saved.rows)) saved.rows.forEach((row, i) => { if (rows[i]) Object.assign(rows[i], row, { day: days[i] }); });
-    document.getElementById('reportHeaderInput').value = saved?.title || '';
-    document.getElementById('reportNotesInput').value = saved?.notes || '';
-    document.getElementById('roundTimeSelect').value = saved?.rounding || settings.rounding;
-    return rows;
-  }
-  function saveWeek() {
-    Storage.saveWeek({ rows: weekRows, title: document.getElementById('reportHeaderInput').value, notes: document.getElementById('reportNotesInput').value, rounding: document.getElementById('roundTimeSelect').value });
-  }
-  function renderWeek() {
-    const body = document.getElementById('scheduleRows'); body.replaceChildren();
-    let total = 0; let invalid = false;
-    weekRows.forEach((row, index) => {
-      const tr = document.createElement('tr');
-      tr.setAttribute('role', 'row');
-      const workCell = document.createElement('td');
-      const workdayLabel = document.createElement('label');
-      workdayLabel.className = 'workday-toggle';
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.checked = Boolean(row.workday);
-      checkbox.setAttribute('aria-label', `Count ${row.day} as a workday`);
-      checkbox.addEventListener('change', () => { row.workday = checkbox.checked; saveWeek(); updateWeeklyTotal(); });
-      const workdayText = document.createElement('span');
-      workdayText.textContent = 'Workday';
-      workdayText.setAttribute('aria-hidden', 'true');
-      workdayLabel.append(checkbox, workdayText);
-      workCell.append(workdayLabel); tr.append(workCell);
-      const dayCell = document.createElement('th');
-      dayCell.scope = 'row';
-      const dayTitle = document.createElement('span');
-      dayTitle.className = 'week-day-title';
-      dayTitle.textContent = row.day;
-      const dayToggle = document.createElement('button');
-      dayToggle.type = 'button';
-      dayToggle.className = 'mobile-only week-day-toggle';
-      dayToggle.append(row.day, Icons.make('expand_more'));
-      dayToggle.setAttribute('aria-expanded', String(expandedWeekDay === index));
-      tr.classList.toggle('week-day-expanded', expandedWeekDay === index);
-      dayToggle.addEventListener('click', () => {
-        expandedWeekDay = expandedWeekDay === index ? null : index;
-        [...body.rows].forEach((dayRow, rowIndex) => {
-          const open = rowIndex === expandedWeekDay;
-          dayRow.classList.toggle('week-day-expanded', open);
-          dayRow.querySelector('.week-day-toggle').setAttribute('aria-expanded', String(open));
-        });
-        if (expandedWeekDay === index) dayToggle.scrollIntoView({ block: 'nearest' });
-      });
-      dayCell.append(dayTitle, dayToggle);
-      tr.append(dayCell);
-      [['from', 'From'], ['to', 'To'], ['break', 'Break'], ['target', 'Daily target']].forEach(([field, label]) => {
-        const cell = document.createElement('td');
-        const input = document.createElement('input');
-        const caption = document.createElement('span');
-        caption.className = 'mobile-field-label';
-        caption.textContent = label;
-        caption.setAttribute('aria-hidden', 'true');
-        input.className = 'matte-input schedule-input';
-        input.type = field === 'target' ? 'time' : 'text';
-        input.value = row[field] || '';
-        input.placeholder = field === 'break' ? '0:30' : '9:00 AM';
-        input.setAttribute('aria-label', `${row.day} ${label}`);
-        input.addEventListener('input', () => { row[field] = input.value; saveWeek(); updateWeeklyTotal(); });
-        cell.append(caption, input);
-        tr.append(cell);
-      });
-      const amount = rowMinutes(row); if (amount === null && (row.from || row.to || row.break)) invalid = true; else { row.calculatedMinutes = amount || 0; total += row.calculatedMinutes; }
-      const worked = document.createElement('td');
-      worked.className = 'week-row-total';
-      worked.textContent = formatDuration(row.calculatedMinutes || 0);
-      tr.append(worked);
-      const action = document.createElement('td');
-      const clear = document.createElement('button');
-      clear.type = 'button';
-      clear.className = 'btn-text icon-button';
-      clear.append(Icons.make('delete'), 'Clear');
-      clear.setAttribute('aria-label', `Clear ${row.day}`);
-      clear.addEventListener('click', () => { row.from = ''; row.to = ''; row.break = ''; renderWeek(); });
-      action.append(clear);
-      tr.append(action);
-      Array.from(tr.cells).forEach(cell => cell.setAttribute('role', cell.tagName === 'TH' ? 'rowheader' : 'cell'));
-      const fields = Array.from(tr.cells).filter(cell => cell !== dayCell && cell !== worked);
-      fields.forEach((cell, fieldIndex) => { cell.id = `weekly-day-${index}-field-${fieldIndex}`; });
-      dayToggle.setAttribute('aria-controls', fields.map(cell => cell.id).join(' '));
-      body.append(tr);
-    });
-    weeklyMinutes = total; document.getElementById('weeklyTotal').textContent = formatDuration(total);
-    const expected = weekRows.reduce((sum, row) => sum + (row.workday && validTime(row.target) ? toMinutes(row.target) : 0), 0);
-    document.getElementById('weeklyExpectation').textContent = `Scheduled target: ${formatDuration(expected)} · ${formatDuration(Math.max(0, total - expected))} overtime`;
-    const error = document.getElementById('weeklyValidation'); error.hidden = !invalid; error.textContent = invalid ? 'Check the weekly time entries. Use valid times and a break such as 0:30 or 30.' : '';
-    saveWeek();
-  }
-  function updateWeeklyTotal() {
-    let total = 0, invalid = false;
-    weekRows.forEach((row, index) => {
-      const amount = rowMinutes(row);
-      if (amount === null && (row.from || row.to || row.break)) { invalid = true; row.calculatedMinutes = 0; }
-      else { row.calculatedMinutes = amount || 0; total += row.calculatedMinutes; }
-      const workedCell = document.querySelectorAll('#scheduleRows tr')[index]?.children[6];
-      if (workedCell) workedCell.textContent = formatDuration(row.calculatedMinutes);
-    });
-    weeklyMinutes = total; document.getElementById('weeklyTotal').textContent = formatDuration(total);
-    const expected = weekRows.reduce((sum, row) => sum + (row.workday && validTime(row.target) ? toMinutes(row.target) : 0), 0);
-    document.getElementById('weeklyExpectation').textContent = `Scheduled target: ${formatDuration(expected)} · ${formatDuration(Math.max(0, total - expected))} overtime`;
-    const error = document.getElementById('weeklyValidation'); error.hidden = !invalid; error.textContent = invalid ? 'Check the weekly time entries. Use valid times and a break such as 0:30 or 30.' : '';
-  }
-  function rowMinutes(row) {
-    if (!row.from && !row.to && !row.break) return 0;
-    if (!row.from || !row.to || !validFlexibleTime(row.from) || !validFlexibleTime(row.to)) return null;
-    const start = parseFlexibleTime(row.from), end = parseFlexibleTime(row.to);
-    let elapsed = end - start; if (elapsed < 0) elapsed += 1440;
-    const breakMinutes = parseBreak(row.break); if (breakMinutes === null || breakMinutes > elapsed) return null;
-    let worked = Math.max(0, elapsed - breakMinutes);
-    const rounding = document.getElementById('roundTimeSelect').value;
-    if (rounding !== 'none') worked = Math.round(worked / Number(rounding)) * Number(rounding);
-    return worked;
-  }
-  function saveWeekly() {
-    renderWeek();
-    if (document.getElementById('weeklyValidation').hidden === false) return toast('Fix the invalid time entries before saving.');
-    const now = new Date();
-    const previous = editingWeeklyId && Storage.getHistory().find(row => row.id === editingWeeklyId);
-    const date = previous?.date || localDateKey(now);
-    const record = { kind: 'weekly', id: editingWeeklyId || `weekly-${date}-${now.getTime()}`, date, title: document.getElementById('reportHeaderInput').value.trim() || 'Weekly time report', notes: document.getElementById('reportNotesInput').value.trim(), totalMinutes: weeklyMinutes, schedule: weekRows.map(({ day, from, to, break: breakTime, target, workday }) => ({ day, from, to, break: breakTime, target, workday })), rounding: document.getElementById('roundTimeSelect').value };
-    const snapshot = row => ({
-      title: row?.title || row?.header, notes: row?.notes,
-      schedule: row ? JSON.stringify(row.schedule.map(day => ({
-        from: day.from || '', to: day.to || '', break: day.break ?? day.breakDeduction ?? '',
-        target: day.target || settings.targetShift, workday: Boolean(day.workday ?? true)
-      }))) : '',
-      rounding: row?.rounding || 'none'
-    });
-    record.audit = Audit.track(previous?.audit, snapshot(previous), snapshot(record), now);
-    if (!Storage.saveRecord(record)) return toast('Could not save. Browser storage may be full or unavailable.');
-    editingWeeklyId = null;
-    toast('Weekly report saved to history.');
-  }
-  function printWeeklyReport() {
-    renderWeek();
-    if (!document.getElementById('weeklyValidation').hidden) return toast('Fix the invalid time entries before printing.');
-    document.getElementById('weeklyPrintReport').innerHTML = '';
-    const root = document.getElementById('weeklyPrintReport'); const title = document.createElement('h1'); title.textContent = document.getElementById('reportHeaderInput').value.trim() || 'Weekly time report'; root.append(title);
-    const stamp = document.createElement('p');
-    stamp.textContent = window.punchlyExportStamp();
-    root.append(stamp);
-    const table = document.createElement('table'); table.className = 'minimal-table';
-    table.innerHTML = '<thead><tr><th>Workday</th><th>Day</th><th>From</th><th>To</th><th>Break</th><th>Target</th><th>Worked</th></tr></thead>';
-    const tbody = document.createElement('tbody'); weekRows.forEach(row => { const tr = document.createElement('tr'); [row.workday ? 'Yes' : 'No', row.day, row.from || '—', row.to || '—', row.break || '—', row.target || '—', formatDuration(row.calculatedMinutes || 0)].forEach(value => { const td = document.createElement('td'); td.textContent = value; tr.append(td); }); tbody.append(tr); }); table.append(tbody); root.append(table);
-    const expected = weekRows.reduce((sum, row) => sum + (row.workday && validTime(row.target) ? toMinutes(row.target) : 0), 0);
-    const summary = document.createElement('p'); summary.textContent = `Weekly total: ${formatDuration(weeklyMinutes)} · Scheduled target: ${formatDuration(expected)} · Overtime: ${formatDuration(Math.max(0, weeklyMinutes - expected))}`; root.append(summary);
-    const notes = document.getElementById('reportNotesInput').value.trim(); if (notes) { const p = document.createElement('p'); p.textContent = `Notes: ${notes}`; root.append(p); }
-    const audit = editingWeeklyId && Storage.getHistory().find(row => row.id === editingWeeklyId)?.audit;
-    if (audit?.events.length) {
-      const log = changeLog(audit);
-      log.open = true;
-      root.append(log);
-    }
-    activateTab(document.getElementById('tab-weekly'));
-    window.print();
   }
 
   function scheduleTrackingRefresh() {
@@ -577,9 +378,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function readShift(date) {
       const record = Storage.getHistory().find(row => row.kind === 'daily' && row.date === date);
       const draft = Storage.getDraft(date) || (!record && legacyDraftOn(date, Storage.getToday()));
-      const input = logInput(record, draft || (!record && { mode: Shift.saturdayMode(date) || 'full' }));
+      const input = {
+        ...logInput(date, record, draft),
+        lunchLimit: settings.lunchLimit
+      };
       const elapsed = nowMinutesForDay(now, date);
-      const result = Shift.measure({ ...input, lunchLimit: settings.lunchLimit, now: elapsed });
+      const result = Shift.measure({ ...input, now: elapsed });
       const saved = Boolean(record && (!draft || matchingDraft(record, draft)));
       return { ...input, date, result, saved, elapsed, audit: draft?.audit ?? record?.audit };
     }
@@ -646,24 +450,23 @@ document.addEventListener('DOMContentLoaded', () => {
     return localDateKey(result);
   }
 
-  function logInput(record, draft) {
-    const mode = Shift.normalizeMode(draft?.mode ?? record?.mode);
-    const punches = Shift.punchesForMode(
-      draft || record?.punches || { morningIn: record?.in, eveningOut: record?.out === '--:--' ? '' : record?.out },
-      mode
-    );
+  function logInput(date, record, draft) {
+    const source = draft || record?.punches || { morningIn: record?.in, eveningOut: record?.out === '--:--' ? '' : record?.out };
+    const scheduled = Shift.nationalHoliday(date) && !Shift.hasPunches(source) ? 'holiday' : Shift.saturdayMode(date);
+    const mode = Shift.normalizeMode(draft?.mode ?? record?.mode ?? scheduled);
+    const punches = Shift.punchesForMode(source, mode);
     const savedTarget = record?.baseTargetMinutes ?? (record?.mode === 'half' ? record.targetMinutes * 2 : record?.targetMinutes);
     return {
       mode, punches,
       baseTarget: toMinutes(draft?.targetShift) || savedTarget || toMinutes(settings.targetShift),
-      notes: String(draft?.notes ?? record?.notes ?? '').trim()
+      notes: Shift.holidayNotes(draft?.notes ?? record?.notes, date).trim()
     };
   }
 
   function matchingDraft(record, draft) {
     if (!draft) return false;
-    const saved = logInput(record);
-    const current = logInput(record, draft);
+    const saved = logInput(record.date, record);
+    const current = logInput(record.date, record, draft);
     return saved.mode === current.mode && saved.notes === current.notes &&
       JSON.stringify(record.audit ?? null) === JSON.stringify(draft.audit ?? record.audit ?? null) &&
       (Shift.isDayOff(saved.mode) || (saved.baseTarget === current.baseTarget &&
@@ -678,16 +481,18 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function logEntry(date, record, draft, now) {
-    const draftInput = draft && logInput(record, draft);
+    const draftInput = draft && logInput(date, record, draft);
     const hasDraft = draftInput && (draft.audit || draftInput.mode !== 'full' || draftInput.notes ||
       Object.values(draftInput.punches).some(Boolean));
     const isDraft = Boolean(hasDraft && (!record || !matchingDraft(record, draft)));
     if (!record && !isDraft) {
+      const holiday = Shift.nationalHoliday(date);
+      if (holiday) return { date, mode: 'holiday', notes: holiday, status: 'Holiday', total: null };
       const saturday = Shift.saturdayMode(date);
       return { date, mode: saturday, status: saturday ? Shift.label(saturday) + ' holiday' : 'No entry', total: null };
     }
 
-    const entry = isDraft ? draftInput : logInput(record);
+    const entry = isDraft ? draftInput : logInput(date, record);
     const result = Shift.measure({ ...entry, lunchLimit: settings.lunchLimit, now: nowMinutesForDay(now, date) });
     const dayOff = Shift.isHoliday(entry.mode, entry.punches);
     entry.notes = Shift.saturdayNotes(entry.notes, date, Shift.parseTime(entry.punches.morningIn) !== null);
@@ -712,20 +517,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function refreshDayLogs(now = new Date()) {
     const today = localDateKey(now);
-    const days = Array.from({ length: 7 }, (_, index) => offsetDate(today, -index));
-    const entries = readDayEntries(days, now);
-    const week = entries.slice(0, ((now.getDay() + 6) % 7) + 1).reverse();
-    const key = JSON.stringify([entries, settings.clockFormat]);
+    const length = (now.getDay() + 6) % 7 + 1;
+    const dates = Array.from({ length }, (_, index) => offsetDate(today, index + 1 - length));
+    const week = readDayEntries(dates, now);
+    const key = JSON.stringify([week, settings.clockFormat]);
     if (key === lastDayLogs) return;
     lastDayLogs = key;
-    drawDayLog(document.getElementById('quickLogRows'), entries, today, false);
-    drawDayLog(document.getElementById('weekLogRows'), week, today, true);
+    drawDayLog(document.getElementById('weekLogRows'), week, today);
     setText(document.getElementById('weekLogRange'), `${formatDate(week[0].date)} – ${formatDate(today)}`);
     const total = week.reduce((minutes, entry) => minutes + (entry.total || 0), 0);
     setText(document.getElementById('weekLogTotal'), formatDuration(total));
   }
 
-  function describePunches(entry, showLunch = true) {
+  function describePunches(entry) {
     const punch = value => {
       const minutes = Shift.parseTime(value);
       return minutes === null ? '' : displayClock(minutes);
@@ -734,10 +538,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const end = punch(entry.punches?.eveningOut);
     const times = [];
     if (start) times.push(`In ${start}`);
-    if (showLunch) {
-      const lunch = [punch(entry.punches?.lunchOut), punch(entry.punches?.lunchReturn)].filter(Boolean);
-      if (lunch.length) times.push(`Lunch ${lunch.join('–')}`);
-    }
+    const lunch = [punch(entry.punches?.lunchOut), punch(entry.punches?.lunchReturn)].filter(Boolean);
+    if (lunch.length) times.push(`Lunch ${lunch.join('–')}`);
     if (end) times.push(`Out ${end}${entry.endDayOffset ? ' (+1 day)' : ''}`);
     return times;
   }
@@ -752,7 +554,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.scrollTo(0, 0);
   }
 
-  function drawDayLog(list, entries, today, showLunch) {
+  function drawDayLog(list, entries, today) {
     const focusedDate = list.contains(document.activeElement) ? document.activeElement.dataset.date : null;
     const fragment = document.createDocumentFragment();
     let toRefocus;
@@ -771,11 +573,11 @@ document.addEventListener('DOMContentLoaded', () => {
       details.append(title);
       const line = document.createElement('p');
       line.className = 'help-text log-detail';
-      const times = describePunches(entry, showLunch);
+      const times = describePunches(entry);
       const status = entry.mode === 'half' ? `Half day · ${entry.status}` : entry.status;
       line.textContent = [times.join(' · '), status].filter(Boolean).join(' · ');
       details.append(line);
-      if (showLunch && entry.notes) {
+      if (entry.notes) {
         const notes = document.createElement('p');
         notes.className = 'help-text log-detail';
         notes.textContent = entry.notes;
@@ -789,15 +591,15 @@ document.addEventListener('DOMContentLoaded', () => {
         total.textContent = formatDuration(entry.total);
         actions.append(total);
       }
-      const open = document.createElement('button');
-      open.type = 'button';
-      open.className = 'btn-text';
-      open.dataset.date = entry.date;
-      open.textContent = entry.status === 'No entry' ? 'Log' : 'Open';
-      open.setAttribute('aria-label', `${open.textContent} shift for ${formatDate(entry.date)}`);
-      open.addEventListener('click', () => openDailyLog(entry.date));
-      if (entry.date === focusedDate) toRefocus = open;
-      actions.append(open);
+      const edit = document.createElement('button');
+      edit.type = 'button';
+      edit.className = 'btn-text';
+      edit.dataset.date = entry.date;
+      edit.textContent = entry.status === 'No entry' ? 'Log' : 'Edit';
+      edit.setAttribute('aria-label', `${edit.textContent} shift for ${formatDate(entry.date)}`);
+      edit.addEventListener('click', () => openDailyLog(entry.date));
+      if (entry.date === focusedDate) toRefocus = edit;
+      actions.append(edit);
       row.append(details, actions);
       fragment.append(row);
     }
@@ -812,8 +614,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function loadDayFields(draft, record) {
-    const saturday = Shift.saturdayMode(selectedDay());
-    let mode = Shift.normalizeMode(draft?.mode ?? record?.mode ?? saturday);
+    const date = selectedDay();
+    const saturday = Shift.saturdayMode(date);
+    let mode = logInput(date, record, draft).mode;
     if (Shift.isSaturday(mode) && mode !== saturday) mode = saturday || 'full';
     for (const option of shiftMode.options) {
       if (Shift.isSaturday(option.value)) option.disabled = option.hidden = option.value !== saturday;
@@ -823,7 +626,7 @@ document.addEventListener('DOMContentLoaded', () => {
     shiftMode.value = mode;
     hasShiftTarget = toMinutes(savedTarget) > 0;
     shiftTarget.value = hasShiftTarget ? savedTarget : settings.targetShift;
-    dayNotes.value = draft?.notes ?? record?.notes ?? '';
+    dayNotes.value = Shift.holidayNotes(draft?.notes ?? record?.notes, date);
 
     const punches = draft || record?.punches || { morningIn: record?.in, eveningOut: record?.out };
     dayInputs.forEach(input => { input.value = punches[input.id] || ''; });
@@ -866,12 +669,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function dayForReminder(date) {
     if (date === selectedDay()) return { date, mode: shiftMode.value, punches: readPunches(), baseTarget: toMinutes(shiftTarget.value) };
     const draft = Storage.getDraft(date);
-    const record = !draft && Storage.getHistory().find(item => item.kind === 'daily' && item.date === date);
-    const mode = Shift.normalizeMode(draft?.mode ?? record?.mode ?? Shift.saturdayMode(date));
-    return {
-      date, mode, punches: draft || record?.punches || { morningIn: record?.in, eveningOut: record?.out },
-      baseTarget: toMinutes(draft?.targetShift) || record?.baseTargetMinutes || toMinutes(settings.targetShift)
-    };
+    const record = Storage.getHistory().find(item => item.kind === 'daily' && item.date === date);
+    return { date, ...logInput(date, record, draft) };
   }
 
   function timerSnapshot(now) {
@@ -996,14 +795,14 @@ document.addEventListener('DOMContentLoaded', () => {
       ? shiftTarget.value : '';
     const record = Storage.getHistory().find(item => item.kind === 'daily' && item.date === date);
     const previous = Storage.getDraft(date) || (!record && legacyDraftOn(date, Storage.getToday()));
-    const before = logInput(record, previous || (!record && { mode: Shift.saturdayMode(date) || 'full' }));
+    const before = logInput(date, record, previous);
     const next = {
       ...punches, targetShift: draftTarget, mode: shiftMode.value, notes: dayNotes.value
     };
     const snapshot = input => ({ ...Object.fromEntries(dayFields.map(field => [field, input.punches[field]])),
       mode: input.mode, target: input.baseTarget, notes: input.notes });
     next.audit = Audit.track(previous?.audit ?? record?.audit, snapshot(before),
-      snapshot(logInput(record, next)), now, editingNotes);
+      snapshot(logInput(date, record, next)), now, editingNotes);
     const ok = Storage.saveDraft(date, next);
     if (!ok) toast('Could not save the draft to browser storage.');
     else {
@@ -1041,7 +840,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!saveDayDraft(readPunches(), now)) return;
     const record = {
       id: `daily-${date}`, kind: 'daily', date, mode, punches,
-      in: punches.morningIn || '', out: punches.eveningOut || '', notes: dayNotes.value.trim(),
+      in: punches.morningIn || '', out: punches.eveningOut || '', notes: Shift.holidayNotes(dayNotes.value, date).trim(),
       baseTargetMinutes: toMinutes(shiftTarget.value), targetMinutes: result.target,
       totalMinutes: result.total, extraMinutes: result.extra, lunchMinutes: result.lunch, lunchLimitMinutes: settings.lunchLimit,
       targetMet: result.complete && result.total >= result.target, audit: Storage.getDraft(date)?.audit
@@ -1072,14 +871,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function periodEntries(all, range, now) {
     const today = localDateKey(now);
-    let start = rangeStart(range, now);
-    if (range === 'all') {
-      const dates = [...all.filter(row => row.kind === 'daily').map(row => row.date), ...Object.keys(Storage.getDrafts())];
-      start = dates.filter(date => date <= today && /^\d{4}-\d{2}-\d{2}$/.test(date)).sort()[0] || rangeStart('monthly', now);
-    }
+    const start = periodStart(range, now, all, Object.keys(Storage.getDrafts()));
     const dates = [];
     for (let date = start; date <= today; date = offsetDate(date, 1)) dates.push(date);
     return readDayEntries(dates, now);
+  }
+
+  function periodStart(range, now, records, draftDates) {
+    if (range !== 'all') return rangeStart(range, now);
+    const first = rangeStart('yearly', now);
+    const dates = [...records.filter(row => row.kind === 'daily').map(row => row.date), ...draftDates];
+    return dates.filter(date => date < first && /^\d{4}-\d{2}-\d{2}$/.test(date)).sort()[0] || first;
   }
 
   function entryRecord(entry, type, status) {
@@ -1092,7 +894,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function historyRecords(all, now, range, filter) {
-    const records = withDrafts(inRange(all, range, now), range, now);
+    const records = withDailyEntries(inRange(all, range, now), range, now);
     if (filter === 'all') return records;
     if (filter === 'leave') return records.filter(record => record.kind === 'daily' && record.mode === 'leave');
     if (filter === 'overtime') return records.filter(record => record.kind === 'daily' && record.extraMinutes > 0);
@@ -1162,22 +964,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const now = new Date();
     if (exportRange.value === 'history') return Array.isArray(visibleHistory) ? visibleHistory : filteredHistory(now);
     const range = exportRange.value;
-    return withDrafts(inRange(Storage.getHistory(), range, now), range, now).sort((a, b) => b.date.localeCompare(a.date));
+    return withDailyEntries(inRange(Storage.getHistory(), range, now), range, now).sort((a, b) => b.date.localeCompare(a.date));
   }
 
-  function withDrafts(records, range, now) {
+  function withDailyEntries(records, range, now) {
     const today = localDateKey(now);
-    const start = rangeStart(range, now);
-    const dates = Object.keys(Storage.getDrafts()).filter(date => date <= today && (range === 'all' || date >= start));
-    const drafts = readDayEntries(dates, now).filter(entry => entry.isDraft);
-    const draftsByDate = new Map(drafts.map(entry => [entry.date, entryRecord(entry, entry.mode, entry.status)]));
+    const draftDates = Object.keys(Storage.getDrafts());
+    const start = periodStart(range, now, records, draftDates);
+    const dates = new Set(draftDates.filter(date => date <= today && date >= start));
+    const holidays = Shift.nationalHolidayDates(start, today);
+    holidays.forEach(date => dates.add(date));
+    const entries = readDayEntries([...dates], now).filter(entry => entry.isDraft ||
+      (entry.mode === 'holiday' && Shift.nationalHoliday(entry.date)));
+    const byDate = new Map(entries.map(entry => [entry.date, entry]));
     const saved = records.map(record => {
-      const draft = record.kind === 'daily' && draftsByDate.get(record.date);
-      if (!draft) return record;
-      draftsByDate.delete(record.date);
-      return { ...record, ...draft, id: record.id, derived: false, hasDraft: true };
+      if (record.kind !== 'daily') return record;
+      const entry = byDate.get(record.date);
+      byDate.delete(record.date);
+      if (entry?.isDraft) return { ...record, ...entryRecord(entry, entry.mode, entry.status),
+        id: record.id, derived: false, hasDraft: true };
+      const notes = Shift.holidayNotes(record.notes, record.date);
+      return notes === record.notes ? record : { ...record, notes };
     });
-    return [...saved, ...draftsByDate.values()];
+    return [...saved, ...Array.from(byDate.values(), entry => entryRecord(entry, entry.mode, entry.status))];
   }
 
   function changeLog(audit) {
@@ -1187,6 +996,29 @@ document.addEventListener('DOMContentLoaded', () => {
     summary.textContent = 'Change log';
     details.append(summary);
     Audit.show(details, audit);
+    return details;
+  }
+
+  function weeklyArchive(record) {
+    const details = document.createElement('details');
+    details.className = 'audit-log';
+    const summary = document.createElement('summary');
+    summary.textContent = 'View saved report';
+    details.append(summary);
+    if (record.notes) {
+      const notes = document.createElement('p');
+      notes.textContent = record.notes;
+      details.append(notes);
+    }
+    const schedule = document.createElement('ul');
+    (record.schedule || []).forEach((row, index) => {
+      if (!row.from && !row.to) return;
+      const line = document.createElement('li');
+      const pause = row.break || row.breakDeduction;
+      line.textContent = `${row.day || Preferences.days[index] || 'Shift'} · ${row.from || '—'}–${row.to || '—'}${pause ? ` · Break ${pause}` : ''}`;
+      schedule.append(line);
+    });
+    if (schedule.childElementCount) details.append(schedule);
     return details;
   }
 
@@ -1228,6 +1060,7 @@ document.addEventListener('DOMContentLoaded', () => {
         notes.textContent = record.notes;
         label.append(notes);
       }
+      if (record.kind === 'weekly' && (record.notes || record.schedule?.length)) label.append(weeklyArchive(record));
       if (record.audit) label.append(changeLog(record.audit));
       tr.append(label);
       const amount = document.createElement('td');
@@ -1236,11 +1069,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const status = document.createElement('td'); status.textContent = Shift.recordStatus(record); tr.append(status);
       const actions = document.createElement('td'); actions.className = 'action-cell';
       const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'btn-text icon-button';
-      edit.append(Icons.make(record.kind === 'weekly' ? 'folder_open' : record.derived ? 'open_in_new' : 'edit'),
-        record.kind === 'weekly' ? 'Load' : record.derived ? 'Open' : 'Edit');
+      edit.append(Icons.make('edit'), 'Edit');
       edit.addEventListener('click', () => {
-        if (record.kind === 'weekly') loadWeeklyRecord(record);
-        else if (record.derived) openDailyLog(record.date);
+        if (record.derived) openDailyLog(record.date);
         else loadDailyRecord(record);
       });
       const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'btn-text icon-button danger';
@@ -1259,7 +1090,7 @@ document.addEventListener('DOMContentLoaded', () => {
         refreshDayLogs();
         toast('Record deleted.');
       });
-      if (record.kind === 'weekly' || record.date <= today) actions.append(edit);
+      if (record.kind === 'daily' && record.date <= today) actions.append(edit);
       if (!record.derived) actions.append(remove);
       tr.append(actions);
       Array.from(tr.cells).forEach(cell => cell.setAttribute('role', 'cell'));
@@ -1275,39 +1106,8 @@ document.addEventListener('DOMContentLoaded', () => {
     activateTab(document.getElementById('tab-today'));
     toast(`Loaded ${formatDate(record.date)}. Save to update that record.`);
   }
-  function loadWeeklyRecord(record) {
-    editingWeeklyId = record.id;
-    weekRows = loadWeek();
-    if (Array.isArray(record.schedule)) record.schedule.forEach((row, i) => { if (weekRows[i]) Object.assign(weekRows[i], row, { break: row.break ?? row.breakDeduction ?? '' }); });
-    document.getElementById('reportHeaderInput').value = record.title || record.header || '';
-    document.getElementById('reportNotesInput').value = record.notes || '';
-    document.getElementById('roundTimeSelect').value = record.rounding || 'none';
-    renderWeek();
-    manualWeek.open = true;
-    activateTab(document.getElementById('tab-weekly'));
-    manualWeek.scrollIntoView({ block: 'start' });
-    toast('Weekly report loaded.');
-  }
   function toast(message) { const el = document.getElementById('toast'); el.textContent = message; el.classList.add('visible'); clearTimeout(toast.timer); toast.timer = setTimeout(() => el.classList.remove('visible'), 3200); }
   window.showPunchlyToast = toast;
-  function parseFlexibleTime(value) {
-    const match = value.trim().toUpperCase().match(/^(\d{1,2})(?::|\.)(\d{1,2})\s*(AM|PM)?$|^(\d{3,4})\s*(AM|PM)?$/);
-    if (!match) return null;
-    let hour, minute, suffix;
-    if (match[4]) { hour = Number(match[4].slice(0, -2)); minute = Number(match[4].slice(-2)); suffix = match[5]; }
-    else { hour = Number(match[1]); minute = Number(match[2]); suffix = match[3]; }
-    if (minute > 59 || (suffix ? hour < 1 || hour > 12 : hour > 23)) return null;
-    if (suffix === 'PM' && hour < 12) hour += 12; if (suffix === 'AM' && hour === 12) hour = 0;
-    return hour * 60 + minute;
-  }
-  function validFlexibleTime(value) { return parseFlexibleTime(value) !== null; }
-  function parseBreak(value) {
-    if (!value.trim()) return 0;
-    if (/^\d{1,2}:\d{1,2}$/.test(value.trim())) { const [hours, minutes] = value.split(':').map(Number); return minutes < 60 ? hours * 60 + minutes : null; }
-    if (/^\d+$/.test(value.trim())) return Number(value);
-    return null;
-  }
-  function validTime(value) { return Shift.parseTime(value) !== null; }
   function toMinutes(value) { return Shift.parseTime(value) ?? 0; }
   function formatClock(minutes) { minutes = ((minutes % 1440) + 1440) % 1440; return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`; }
   function displayClock(minutes) {
@@ -1319,4 +1119,5 @@ document.addEventListener('DOMContentLoaded', () => {
   function localDateKey(date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
   function formatDate(date) { return new Date(`${date}T12:00:00`).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); }
   document.documentElement.setAttribute('data-app-ready', '');
+  startup.finish(initialUpdate);
 });

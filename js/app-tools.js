@@ -29,6 +29,51 @@ const AppTools = (() => {
     };
   }
 
+  function connectStartup(version) {
+    const screen = byId('startupScreen');
+    const profile = byId('startupProfile');
+    const update = byId('startupUpdate');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const minVisible = reducedMotion ? 0 : 600;
+    byId('startupVersion').textContent = `v${version}`;
+
+    function profileReady(displayName) {
+      profile.textContent = displayName ? `Profile ready · ${displayName}` : 'Local profile ready';
+      profile.dataset.state = 'done';
+      update.dataset.state = 'active';
+      update.hidden = false;
+    }
+
+    function finish(initialUpdate) {
+      function revealApp() {
+        byId('startupNotice').hidden = true;
+        screen.hidden = true;
+        document.documentElement.removeAttribute('data-app-starting');
+      }
+
+      // Continue checking in the background if the update server is slow.
+      const deadline = window.setTimeout(revealApp, 1200);
+      initialUpdate.then(result => {
+        if (screen.hidden) return;
+        if (result === 'updating') {
+          update.textContent = 'Opening the updated version…';
+          return;
+        }
+        update.textContent = {
+          current: 'Latest version checked',
+          offline: 'Opening offline',
+          local: 'Opening local copy'
+        }[result] || 'Opening Punchly';
+        update.dataset.state = result === 'offline' ? 'offline' : 'done';
+        window.clearTimeout(deadline);
+        const elapsed = performance.now() - Number(screen.dataset.startedAt);
+        window.setTimeout(revealApp, Math.max(0, minVisible - elapsed));
+      });
+    }
+
+    return { profileReady, finish };
+  }
+
   function connectUpdates(version, dateKey, notify) {
     const status = byId('connectionStatus');
     const button = byId('refreshPage');
@@ -43,20 +88,20 @@ const AppTools = (() => {
 
     function display(state) {
       status.dataset.state = state;
-      status.textContent = { checking: 'Checking connection…', online: 'Connected', offline: 'Not connected' }[state];
+      status.textContent = { checking: 'Checking connection…', online: 'Connected', offline: 'Offline' }[state];
     }
 
     async function check(manual = false) {
       if (pending) return;
       if (!navigator.onLine) {
         display('offline');
-        if (manual) notify('Not connected. You can still use Punchly offline.');
-        return;
+        if (manual) notify('Offline. Your saved punches are available.');
+        return 'offline';
       }
       if (localFile) {
         display('online');
         if (manual) location.reload();
-        return;
+        return 'local';
       }
       pending = true;
       button.setAttribute('aria-busy', 'true');
@@ -83,10 +128,13 @@ const AppTools = (() => {
             try { sessionStorage.setItem(`punchly-update-${version}`, next); } catch (error) { /* optional */ }
           }
           location.reload();
+          return 'updating';
         }
+        return 'current';
       } catch (error) {
         display('offline');
-        if (manual) notify('Not connected. Punchly could not reach its update server.');
+        if (manual) notify('Offline. Punchly could not reach its update server.');
+        return 'offline';
       } finally {
         clearTimeout(timeout);
         request = null;
@@ -114,7 +162,7 @@ const AppTools = (() => {
     window.addEventListener('focus', onReturn);
     setInterval(() => { if (!document.hidden) check(); }, 60000);
     display('checking');
-    check();
+    return check();
   }
 
   function connectHelp(version) {
@@ -275,5 +323,5 @@ const AppTools = (() => {
     });
   }
 
-  return { connectUpdates, connectHelp, connectPhoto, connectReset };
+  return { connectStartup, connectUpdates, connectHelp, connectPhoto, connectReset };
 })();

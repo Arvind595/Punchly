@@ -32,7 +32,6 @@
   function stamp(meta) {
     return `${meta.profileName} · Punchly v${meta.appVersion} · ${Audit.format(meta.exportedAt)} (${meta.timeZone})`;
   }
-  window.punchlyExportStamp = () => stamp(metadata());
 
   function recordRows(records) {
     return records.map(record => [

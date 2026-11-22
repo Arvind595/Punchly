@@ -4,15 +4,46 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f7f7ff">
-  <meta name="punchly-release" content="12">
+  <meta name="punchly-release" content="18">
   <meta name="description" content="A private, browser-based time tracker and weekly time-card calculator.">
   <title>Punchly | Time Tracker</title>
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-192.png">
-  <link rel="manifest" href="manifest.webmanifest?v=12">
-  <link rel="stylesheet" href="css/style.css?v=12">
+  <link rel="manifest" href="manifest.webmanifest?v=18">
+  <link rel="stylesheet" href="css/style.css?v=18">
 </head>
 <body>
+  <section id="startupScreen" class="startup-screen" aria-label="Starting Punchly" hidden>
+    <div class="startup-content">
+      <div class="startup-emblem" aria-hidden="true"><img src="assets/logo.svg" width="72" height="72" alt=""></div>
+      <div class="startup-brand">Punchly <small id="startupVersion"></small></div>
+      <div class="startup-steps" role="status">
+        <p id="startupProfile" class="startup-step" data-state="active">Reading local profile…</p>
+        <p id="startupUpdate" class="startup-step" hidden>Checking for updates…</p>
+      </div>
+    </div>
+    <small class="startup-credit">Designed by Aravind</small>
+  </section>
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var screen = document.getElementById('startupScreen');
+      screen.dataset.startedAt = performance.now();
+      root.setAttribute('data-app-starting', '');
+      screen.hidden = false;
+      function recoverStartup() {
+        if (root.hasAttribute('data-app-ready')) return;
+        root.removeAttribute('data-app-starting');
+        screen.hidden = true;
+        var notice = document.getElementById('startupNotice');
+        if (notice) notice.hidden = false;
+      }
+      document.addEventListener('DOMContentLoaded', function () {
+        window.setTimeout(recoverStartup, 0);
+      });
+      window.setTimeout(recoverStartup, 12000);
+    })();
+  </script>
   <header class="app-header">
     <div class="brand-toolbar">
       <a class="brand" href="#punch-view" aria-label="Punchly home">
@@ -52,16 +83,26 @@
     </p>
     <section id="punch-view" class="tab-pane active" role="tabpanel" aria-labelledby="tab-punch">
       <div class="matte-panel guided-punch">
+        <div class="punch-scenery" id="guidedScenery" aria-hidden="true"></div>
         <div class="section-heading">
           <div><p class="eyebrow" id="guidedDate"></p><h2>Punch in and out</h2></div>
         </div>
         <div class="punch-layout">
           <div class="punch-action">
             <div class="punch-dial" id="guidedDial">
+              <svg class="punch-timeline" viewBox="0 0 264 264" aria-hidden="true" focusable="false">
+                <circle class="punch-track" cx="132" cy="132" r="110"></circle>
+                <g id="guidedTimeline"></g>
+              </svg>
               <button id="guidedNext" class="btn-primary" type="button" hidden><span class="punch-cta"><span id="guidedActionIcon" class="ui-icon" aria-hidden="true"></span><span id="guidedActionLabel"></span></span></button>
               <div id="guidedDialDone" class="punch-dial-done" hidden></div>
             </div>
             <p id="guidedMetrics" class="punch-metrics"></p>
+            <ul id="guidedTimelineKey" class="punch-timeline-key" aria-label="Timeline markers" hidden>
+              <li><span class="punch-key-mark" data-kind="planned" aria-hidden="true"></span>Planned</li>
+              <li><span class="punch-key-mark" data-kind="recorded" aria-hidden="true"></span>Recorded</li>
+              <li id="guidedEstimateKey"><span class="punch-key-mark" data-kind="estimate" aria-hidden="true"></span>Est. checkout</li>
+            </ul>
           </div>
           <div class="punch-detail">
             <p class="guided-status" id="guidedStatus" role="status"></p>
@@ -148,32 +189,6 @@
         </div>
         <ul class="daily-log" id="weekLogRows"></ul>
       </div>
-      <details class="matte-panel quick-log" id="quickLog" open>
-        <summary>Quick log <span>Last 7 days</span></summary>
-        <ul class="daily-log" id="quickLogRows"></ul>
-      </details>
-      <details class="matte-panel manual-week" id="manualWeek">
-        <summary>Manual report</summary>
-        <div class="section-heading"><h3>Manual weekly report</h3><button id="printWeekly" class="btn-secondary icon-button" type="button"><span class="ui-icon" data-icon="print" aria-hidden="true"></span>Print report</button></div>
-        <div class="table-container">
-          <table class="minimal-table schedule-table" role="table" aria-label="Weekly time entries">
-            <thead role="rowgroup"><tr role="row"><th scope="col">Workday</th><th scope="col">Day</th><th scope="col">From</th><th scope="col">To</th><th scope="col">Break</th><th scope="col">Daily target</th><th scope="col">Worked</th><th scope="col">Action</th></tr></thead>
-            <tbody id="scheduleRows" role="rowgroup"></tbody>
-            <tfoot role="rowgroup"><tr role="row"><th colspan="6" scope="row" role="rowheader">Weekly total</th><td id="weeklyTotal" role="cell">0h 0m</td><td></td></tr></tfoot>
-          </table>
-        </div>
-        <p id="weeklyExpectation" class="weekly-expectation"></p>
-        <button id="weeklyOptionsToggle" class="btn-text mobile-only" type="button" aria-expanded="false" aria-controls="weeklyTools weeklyReportFields printWeeklyMobile">Report options</button>
-        <div class="button-row weekly-tools" id="weeklyTools"><button id="copyFirstRow" class="btn-secondary" type="button">Copy Monday down</button><button id="clearWeekly" class="btn-secondary" type="button">Clear week</button><label class="inline-field" for="roundTimeSelect">Round each day <select id="roundTimeSelect" class="matte-input"><option value="none">No rounding</option><option value="5">5 minutes</option><option value="15">15 minutes</option><option value="30">30 minutes</option></select></label></div>
-        <div class="report-fields" id="weeklyReportFields">
-          <label for="reportHeaderInput">Report title<input id="reportHeaderInput" class="matte-input" type="text" placeholder="e.g. Employee time card" maxlength="100"></label>
-          <label for="reportNotesInput">Notes<textarea id="reportNotesInput" class="matte-input" rows="3" placeholder="Optional notes" maxlength="1000"></textarea></label>
-        </div>
-        <button id="printWeeklyMobile" class="btn-secondary mobile-only compact-hide icon-button" type="button"><span class="ui-icon" data-icon="print" aria-hidden="true"></span>Print report</button>
-        <p id="weeklyValidation" class="message error" role="alert" hidden></p>
-        <div class="button-row"><button id="saveWeeklyBtn" class="btn-primary" type="button">Save weekly report</button></div>
-        <div id="weeklyPrintReport" class="print-only"></div>
-      </details>
     </section>
 
     <section id="calendar-view" class="tab-pane" role="tabpanel" aria-labelledby="tab-calendar" hidden>
@@ -296,12 +311,12 @@
         <details class="matte-panel tracking-panel settings-fold" open>
           <summary class="mobile-only">Tracking defaults</summary>
           <h3 id="trackingHeading"><span class="ui-icon" data-icon="schedule" aria-hidden="true"></span> Tracking defaults</h3>
-          <p class="help-text">These defaults apply to new shifts and weekly drafts.</p>
+          <p class="help-text">These defaults apply to new shifts.</p>
           <form id="trackingForm">
             <div class="settings-row">
               <label class="field" for="defaultTarget">Daily work target (excludes lunch)<input id="defaultTarget" class="matte-input" type="time" min="00:01" required></label>
               <label class="field" for="lunchLimit">Lunch limit (minutes)<input id="lunchLimit" class="matte-input" type="number" min="0" max="720" step="1" inputmode="numeric" required><span class="help-text">Used to estimate clock-out and flag long breaks.</span></label>
-              <label class="field" for="defaultRounding">Weekly rounding<select id="defaultRounding" class="matte-input"><option value="none">No rounding</option><option value="5">5 minutes</option><option value="15">15 minutes</option><option value="30">30 minutes</option></select></label>
+
               <label class="field" for="clockFormat">Time format<select id="clockFormat" class="matte-input"><option value="24">24 hour</option><option value="12">12 hour</option></select></label>
               <label class="field" for="defaultRange">Starting history range<select id="defaultRange" class="matte-input"><option value="weekly">This week</option><option value="monthly">This month</option><option value="yearly">This year</option><option value="all">All time</option></select></label>
             </div>
@@ -339,9 +354,9 @@
           <h3 id="dataHeading"><span class="ui-icon" data-icon="backup" aria-hidden="true"></span> Data &amp; backups</h3>
           <p class="help-text">Download a JSON backup of your records, drafts, and preferences, or import one from another device.</p>
           <div class="button-row">
-            <button id="backupExport" class="btn-secondary icon-button" type="button"><span class="ui-icon" data-icon="download" aria-hidden="true"></span>Export backup</button>
+            <button id="backupExport" class="btn-secondary icon-button" type="button"><span class="ui-icon" data-icon="logout" aria-hidden="true"></span>Export backup</button>
             <button id="settingsExport" class="btn-secondary icon-button" type="button"><span class="ui-icon" data-icon="settings" aria-hidden="true"></span>Export settings</button>
-            <button id="backupImportBtn" class="btn-secondary icon-button" type="button"><span class="ui-icon" data-icon="upload" aria-hidden="true"></span>Import backup</button>
+            <button id="backupImportBtn" class="btn-secondary icon-button" type="button"><span class="ui-icon" data-icon="login" aria-hidden="true"></span>Import backup</button>
             <input id="backupImport" type="file" accept="application/json,.json" hidden>
           </div>
           <div class="reset-section">
@@ -359,6 +374,27 @@
             <dt>Lunch return</dt><dd><kbd>Alt + 3</kbd></dd>
             <dt>Evening out</dt><dd><kbd>Alt + 4</kbd></dd>
           </dl>
+        </details>
+        <details class="matte-panel settings-fold" open>
+          <summary class="mobile-only">What’s New</summary>
+          <h3><span class="ui-icon" data-icon="history" aria-hidden="true"></span> What’s New</h3>
+          <div class="release-notes">
+            <h4>v18</h4>
+            <ul>
+              <li>The Punch background shows a countryside landscape from sunrise to night.</li>
+              <li>The mobile navigation bar and More menu follow your chosen theme.</li>
+            </ul>
+            <h4>v17</h4>
+            <ul>
+              <li>National holidays and days marked Holiday get a festive scene.</li>
+            </ul>
+            <h4>v14–v16</h4>
+            <ul>
+              <li>The Punch dial marks planned and recorded punches and shows estimated checkout.</li>
+              <li>India’s national holidays appear automatically with notes. The Week tab is now a single editable time card.</li>
+              <li>Punch icons show the next action, and backup arrows show whether data is coming in or going out.</li>
+            </ul>
+          </div>
         </details>
         <details class="matte-panel settings-fold" open>
           <summary class="mobile-only">About &amp; help</summary>
@@ -454,27 +490,18 @@
     <div class="button-row"><a class="btn-primary icon-button" id="openReportEmail" href="mailto:arvindne555@gmail.com"><span class="ui-icon" data-icon="forward_to_inbox" aria-hidden="true"></span>Open email draft</a><button class="btn-text" type="button" data-close>Cancel</button></div>
   </dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      window.setTimeout(function () {
-        if (!document.documentElement.hasAttribute('data-app-ready')) {
-          document.getElementById('startupNotice').hidden = false;
-        }
-      }, 0);
-    });
-  </script>
-  <script src="js/shift.js?v=12"></script>
-  <script src="js/icons.js?v=12"></script>
-  <script src="js/audit.js?v=12"></script>
-  <script src="js/storage.js?v=12"></script>
-  <script src="js/charts.js?v=12"></script>
-  <script src="js/export.js?v=12"></script>
-  <script src="js/settings.js?v=12"></script>
-  <script src="js/reminders.js?v=12"></script>
-  <script src="js/attendance.js?v=12"></script>
-  <script src="js/mini-timer.js?v=12"></script>
-  <script src="js/guided-punch.js?v=12"></script>
-  <script src="js/app-tools.js?v=12"></script>
-  <script src="js/app.js?v=12"></script>
+  <script src="js/shift.js?v=18"></script>
+  <script src="js/icons.js?v=18"></script>
+  <script src="js/audit.js?v=18"></script>
+  <script src="js/storage.js?v=18"></script>
+  <script src="js/charts.js?v=18"></script>
+  <script src="js/export.js?v=18"></script>
+  <script src="js/settings.js?v=18"></script>
+  <script src="js/reminders.js?v=18"></script>
+  <script src="js/attendance.js?v=18"></script>
+  <script src="js/mini-timer.js?v=18"></script>
+  <script src="js/guided-punch.js?v=18"></script>
+  <script src="js/app-tools.js?v=18"></script>
+  <script src="js/app.js?v=18"></script>
 </body>
 </html>

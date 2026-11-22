@@ -10,7 +10,7 @@ const Attendance = (() => {
 
   function stateFor(date, today, entry) {
     const saturday = Shift.saturdayMode(date);
-    if (date > today) return saturday || 'upcoming';
+    if (date > today) return Shift.nationalHoliday(date) ? 'holiday' : saturday || 'upcoming';
     if (entry?.mode === 'leave' || entry?.mode === 'holiday') return entry.mode;
     const hasPunches = Shift.hasPunches(entry?.punches);
     if (entry?.mode === 'half' && hasPunches) return 'half';

@@ -2,6 +2,9 @@ const Shift = (() => {
   const MINUTES_PER_DAY = 1440;
   const MAX_WORK_SEGMENT = 18 * 60;
   const fields = ['morningIn', 'lunchOut', 'lunchReturn', 'eveningOut'];
+  const nationalHolidays = new Map([
+    ['01-26', 'Republic Day'], ['08-15', 'Independence Day'], ['10-02', 'Gandhi Jayanti']
+  ]);
   const labels = new Map([
     ['full', 'Full day'],
     ['half', 'Half day'],
@@ -31,6 +34,28 @@ const Shift = (() => {
 
   function isSaturday(mode) {
     return mode === 'sat1' || mode === 'sat3';
+  }
+
+  function nationalHoliday(date) {
+    return nationalHolidays.get(date.slice(5));
+  }
+
+  function nationalHolidayDates(start, end) {
+    const dates = [];
+    for (let year = Number(start.slice(0, 4)); year <= Number(end.slice(0, 4)); year++) {
+      for (const day of nationalHolidays.keys()) {
+        const date = String(year).padStart(4, '0') + '-' + day;
+        if (date >= start && date <= end) dates.push(date);
+      }
+    }
+    return dates;
+  }
+
+  function holidayNotes(value, date) {
+    const name = nationalHoliday(date);
+    const notes = String(value ?? '');
+    if (!name || notes.split(/\r?\n/).some(line => line.trim() === name)) return notes;
+    return [notes.trimEnd(), name].filter(Boolean).join('\n');
   }
 
   function hasPunches(punches) {
@@ -65,7 +90,7 @@ const Shift = (() => {
     const target = isHoliday(mode, punches) ? 0 : mode === 'half' ? Math.ceil(baseTarget / 2) : baseTarget;
     const result = {
       target, total: 0, extra: 0, lunch: null, lunchOpen: false, started: false, complete: false,
-      targetOut: null, endDayOffset: 0, estimatedLunch: false, error: ''
+      targetOut: null, endDayOffset: 0, estimatedLunch: false, error: '', timeline: null
     };
     if (isDayOff(mode)) return result;
 
@@ -109,6 +134,7 @@ const Shift = (() => {
     result.endDayOffset = end !== null ? Math.floor(end / MINUTES_PER_DAY) : 0;
     result.total = firstSegment + secondSegment;
     const activeNow = now !== null && now >= start && now - start < MINUTES_PER_DAY ? now : null;
+    result.timeline = { morningIn: start, lunchOut, lunchReturn, eveningOut: end, now: activeNow };
     if (!result.complete && activeNow !== null) {
       const activeStart = lunchReturn ?? (lunchOut === null ? start : null);
       if (activeStart !== null && activeNow >= activeStart) result.total += activeNow - activeStart;
@@ -141,5 +167,6 @@ const Shift = (() => {
     return record.out ? 'Below target' : 'In progress';
   }
 
-  return { fields, label, normalizeMode, isDayOff, isSaturday, saturdayMode, saturdayNotes, hasPunches, isHoliday, parseTime, punchesForMode, measure, recordStatus };
+  return { fields, label, normalizeMode, isDayOff, isSaturday, saturdayMode, saturdayNotes, nationalHoliday,
+    nationalHolidayDates, holidayNotes, hasPunches, isHoliday, parseTime, punchesForMode, measure, recordStatus };
 })();
