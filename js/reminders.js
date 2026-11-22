@@ -31,30 +31,40 @@ const Reminders = (() => {
   }
 
   function connect(settings) {
-    const button = document.getElementById('enableNotifications');
-    const status = document.getElementById('notificationStatus');
+    const buttons = ['enableNotifications', 'setupNotifications'].map(id => document.getElementById(id));
+    const statuses = ['notificationStatus', 'setupNotificationStatus'].map(id => document.getElementById(id));
     const banner = document.getElementById('reminderBanner');
     const message = document.getElementById('reminderMessage');
     const supported = 'Notification' in window && window.isSecureContext;
     function showPermission() {
       const permission = supported ? Notification.permission : 'unsupported';
-      button.disabled = permission !== 'default';
+      buttons.forEach(button => { button.disabled = permission !== 'default'; });
       const messages = {
         granted: 'Device alerts are enabled.',
         denied: 'Device alerts are blocked. Change the site permission in your browser to enable them.',
         unsupported: 'Device alerts are unavailable here. In-app reminders still work.'
       };
-      status.textContent = messages[permission] || 'In-app reminders are on when scheduled.';
+      statuses[0].textContent = messages[permission] || 'In-app reminders are on when scheduled.';
+      statuses[1].textContent = messages[permission] || 'Allow device alerts to receive scheduled punch reminders.';
     }
-    button.addEventListener('click', async () => {
-      try { await Notification.requestPermission(); } catch (error) { /* Keep the in-app fallback. */ }
-      showPermission();
-    });
+    buttons.forEach(button => button.addEventListener('click', async () => {
+      if (!supported) return;
+      const respond = UiSounds.feedback();
+      try {
+        const permission = await Notification.requestPermission();
+        showPermission();
+        if (permission === 'granted') respond('success');
+        else if (permission === 'denied') respond('blocked');
+      } catch (error) {
+        showPermission();
+        respond('error');
+      }
+    }));
     document.getElementById('dismissReminder').addEventListener('click', () => { banner.hidden = true; });
     window.addEventListener('focus', showPermission);
     showPermission();
 
-    function check(now, today, day, activeShift) {
+    function check(now, today, day, activeShift, audible) {
       const messages = [];
       const elapsed = now.getHours() * 60 + now.getMinutes();
       function due(value) {
@@ -83,6 +93,7 @@ const Reminders = (() => {
       if (!messages.length) return;
       message.textContent = messages.join(' ');
       banner.hidden = false;
+      if (audible) UiSounds.play('notification', { cooldownMs: 2000 });
       sendDeviceAlert(message.textContent);
     }
     return { check };

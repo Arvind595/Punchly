@@ -5,7 +5,9 @@ const Attendance = (() => {
     incomplete: 'Incomplete shift', draft: 'Draft'
   };
   const asDate = date => new Date(`${date}T12:00:00`);
+  const byId = id => document.getElementById(id);
   const monthTitle = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' });
+  const monthLabel = new Intl.DateTimeFormat(undefined, { month: 'short' });
   const fullDate = new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
   function stateFor(date, today, entry) {
@@ -21,25 +23,102 @@ const Attendance = (() => {
     return 'incomplete';
   }
 
+  function connectMonthPicker({ currentMonth, selectMonth, selectToday }) {
+    const trigger = byId('calendarMonthButton');
+    const title = byId('calendarPickerTitle');
+    const yearPane = byId('calendarYearPane');
+    const monthPane = byId('calendarMonthPane');
+    const years = byId('calendarYearGrid');
+    const months = byId('calendarMonthGrid');
+    const previous = byId('calendarPrevDecade');
+    const next = byId('calendarNextDecade');
+    const jump = byId('calendarYearJump');
+    let decade;
+    const picker = AppTools.modal('calendarPicker', () => {
+      trigger.setAttribute('aria-expanded', 'false');
+      trigger.focus();
+    });
+
+    function choice(label, current, select) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'btn-secondary';
+      button.textContent = label;
+      if (current) button.setAttribute('aria-current', 'true');
+      button.addEventListener('click', select);
+      return button;
+    }
+
+    function showYears() {
+      monthPane.hidden = true;
+      yearPane.hidden = false;
+      title.textContent = 'Select year';
+      const first = Math.max(1, decade);
+      const last = decade + 9;
+      const shownYear = Number(currentMonth().slice(0, 4));
+      byId('calendarDecade').textContent = `${first}–${last}`;
+      previous.disabled = decade === 0;
+      next.disabled = decade === 9990;
+      const options = [];
+      for (let year = first; year <= last; year++) {
+        options.push(choice(year, year === shownYear, () => showMonths(year)));
+      }
+      years.replaceChildren(...options);
+    }
+
+    function showMonths(year) {
+      decade = Math.floor(year / 10) * 10;
+      yearPane.hidden = true;
+      monthPane.hidden = false;
+      title.textContent = `Select month · ${year}`;
+      const options = Array.from({ length: 12 }, (_, index) => {
+        const id = `${String(year).padStart(4, '0')}-${String(index + 1).padStart(2, '0')}`;
+        const button = choice(monthLabel.format(asDate(`${id}-01`)), id === currentMonth(), () => {
+          const changed = id !== currentMonth();
+          selectMonth(id);
+          picker.close();
+          if (changed) UiSounds.play('select');
+        });
+        button.setAttribute('aria-label', monthTitle.format(asDate(`${id}-01`)));
+        return button;
+      });
+      months.replaceChildren(...options);
+      (months.querySelector('[aria-current]') || options[0]).focus();
+    }
+
+    trigger.addEventListener('click', () => {
+      decade = Math.floor(Number(currentMonth().slice(0, 4)) / 10) * 10;
+      jump.reset();
+      showYears();
+      picker.open();
+      years.querySelector('[aria-current]')?.focus();
+      trigger.setAttribute('aria-expanded', 'true');
+    });
+    previous.addEventListener('click', () => { decade -= 10; showYears(); });
+    next.addEventListener('click', () => { decade += 10; showYears(); });
+    jump.addEventListener('submit', event => {
+      event.preventDefault();
+      showMonths(jump.elements.year.valueAsNumber);
+    });
+    byId('calendarPickerBack').addEventListener('click', () => {
+      showYears();
+      (years.querySelector('[aria-current]') || years.firstElementChild).focus();
+    });
+    byId('calendarToday').addEventListener('click', () => {
+      selectToday();
+      picker.close();
+    });
+  }
+
   function connect({ todayKey, localDateKey, entriesFor, openDay, describePunches, reserveLeave, cancelLeave }) {
-    const byId = id => document.getElementById(id);
     const grid = byId('calendarDays');
     const next = byId('calendarNext');
     const previous = byId('calendarPrevious');
     const edit = byId('calendarEdit');
-    const jumpMonth = byId('calendarJumpMonth');
-    const jumpYear = byId('calendarJumpYear');
     const leaveForm = byId('calendarLeaveForm');
     const leaveNotes = byId('calendarLeaveNotes');
     const leaveButton = byId('calendarReserveLeave');
     const cancelButton = byId('calendarCancelLeave');
-    const monthName = new Intl.DateTimeFormat(undefined, { month: 'long' });
-    for (let index = 0; index < 12; index++) {
-      const option = document.createElement('option');
-      option.value = String(index + 1).padStart(2, '0');
-      option.textContent = monthName.format(new Date(2020, index, 1, 12));
-      jumpMonth.append(option);
-    }
     let month;
     let selected;
     let entries;
@@ -59,7 +138,6 @@ const Attendance = (() => {
       const note = byId('calendarNotes');
       note.hidden = !entry?.notes;
       note.textContent = entry?.notes || '';
-      Audit.show(byId('calendarAudit'), entry?.audit);
       edit.hidden = future;
       edit.lastChild.textContent = entry?.mode ? 'Open shift' : 'Log shift';
       leaveForm.hidden = !future || entry?.isDraft || (entry?.hasRecord && !reserved);
@@ -86,8 +164,6 @@ const Attendance = (() => {
       const dates = Array.from({ length: last.getDate() }, (_, i) => `${month}-${String(i + 1).padStart(2, '0')}`);
       entries = new Map(entriesFor(dates).map(entry => [entry.date, entry]));
       byId('calendarMonth').textContent = monthTitle.format(first);
-      jumpMonth.value = month.slice(5);
-      jumpYear.value = Number(month.slice(0, 4));
       previous.disabled = month === '0001-01';
       next.disabled = month === '9999-12';
 
@@ -124,15 +200,17 @@ const Attendance = (() => {
 
     previous.addEventListener('click', () => moveMonth(-1));
     next.addEventListener('click', () => moveMonth(1));
-    byId('calendarJump').addEventListener('submit', event => {
-      event.preventDefault();
-      month = `${jumpYear.valueAsNumber.toString().padStart(4, '0')}-${jumpMonth.value}`;
-      refresh();
-    });
-    byId('calendarToday').addEventListener('click', () => {
-      selected = todayKey();
-      month = selected.slice(0, 7);
-      refresh();
+    connectMonthPicker({
+      currentMonth: () => month,
+      selectMonth(value) {
+        month = value;
+        refresh();
+      },
+      selectToday() {
+        selected = todayKey();
+        month = selected.slice(0, 7);
+        refresh();
+      }
     });
     edit.addEventListener('click', () => { if (selected && selected <= todayKey()) openDay(selected); });
     leaveForm.addEventListener('submit', event => {

@@ -20,7 +20,7 @@
   }
   function visibleRecords() {
     const records = window.getExportRecords?.() ?? window.getVisibleHistory?.() ?? [];
-    if (!records.length) window.showPunchlyToast?.('There are no records in this date range to export.');
+    if (!records.length) window.showPunchlyToast?.('There are no records in this date range to export.', 'blocked');
     return records;
   }
   function createProfilePrompt() {
@@ -51,6 +51,10 @@
   function chooseProfile() {
     if (!requestProfile) requestProfile = createProfilePrompt();
     return requestProfile();
+  }
+  function exportOutcome(respond, failed = '') {
+    window.showPunchlyToast?.(failed || 'Download started.');
+    respond(failed ? 'error' : 'success');
   }
   function metadata(profile = Storage.profileDetails(Storage.getSettings())) {
     const { displayName, ...employee } = profile;
@@ -89,11 +93,15 @@
     if (!records.length) return;
     const profile = await chooseProfile();
     if (!profile) return;
-    const meta = metaValues(metadata(profile));
-    const rows = recordRows(records).map((row, index) => [...row,
-      records[index].audit ? JSON.stringify(records[index].audit.events) : '', ...meta]);
-    download([[...header, 'Change log (JSON)', ...metaLabels], ...rows]
-      .map(row => row.map(csvCell).join(',')).join('\r\n'), 'Punchly_filtered_history.csv', 'text/csv;charset=utf-8');
+    const respond = UiSounds.feedback();
+    try {
+      const meta = metaValues(metadata(profile));
+      const rows = recordRows(records).map((row, index) => [...row,
+        records[index].audit ? JSON.stringify(records[index].audit.events) : '', ...meta]);
+      download([[...header, 'Change log (JSON)', ...metaLabels], ...rows]
+        .map(row => row.map(csvCell).join(',')).join('\r\n'), 'Punchly_filtered_history.csv', 'text/csv;charset=utf-8');
+    } catch (error) { exportOutcome(respond, 'The CSV file could not be created.'); return; }
+    exportOutcome(respond);
   };
   function loadSheetJs() {
     if (window.XLSX) return Promise.resolve(window.XLSX);
@@ -101,8 +109,18 @@
       sheetJs = new Promise((resolve, reject) => {
         const script = document.createElement('script');
         script.src = 'vendor/xlsx-0.20.3.mini.js';
-        script.onload = () => window.XLSX ? resolve(window.XLSX) : reject(new Error('SheetJS did not load.'));
-        script.onerror = () => { script.remove(); reject(new Error('SheetJS did not load.')); };
+        const timeout = setTimeout(fail, 8000);
+        function fail() {
+          clearTimeout(timeout);
+          script.remove();
+          reject(new Error('SheetJS did not load.'));
+        }
+        script.onload = () => {
+          if (!window.XLSX) { fail(); return; }
+          clearTimeout(timeout);
+          resolve(window.XLSX);
+        };
+        script.onerror = fail;
         document.head.append(script);
       }).catch(error => { sheetJs = undefined; throw error; });
     }
@@ -116,11 +134,21 @@
     return (time - epoch) / 86400000 + Number(time >= Date.UTC(1900, 2, 1));
   }
   window.exportVisibleExcel = async () => {
+    const button = document.getElementById('exportExcel');
+    if (button.disabled) return;
     const records = visibleRecords();
     if (!records.length) return;
     const profile = await chooseProfile();
     if (!profile) return;
     const meta = metadata(profile);
+    const respond = UiSounds.feedback();
+    const status = document.getElementById('exportStatus');
+    status.textContent = 'Preparing Excel workbook…';
+    status.hidden = false;
+    button.disabled = true;
+    button.setAttribute('aria-busy', 'true');
+    const stopLoading = UiSounds.startLoading(status);
+    let failure = '';
     try {
       const xlsx = await loadSheetJs();
       const rows = recordRows(records);
@@ -153,7 +181,14 @@
       info['!cols'] = [{ wch: 24 }, { wch: 48 }];
       xlsx.utils.book_append_sheet(workbook, info, 'Export details');
       xlsx.writeFile(workbook, 'Punchly_history.xlsx');
-    } catch (error) { window.showPunchlyToast?.('The Excel file could not be created.'); }
+    } catch (error) { failure = 'The Excel file could not be created.'; }
+    finally {
+      stopLoading();
+      button.disabled = false;
+      button.removeAttribute('aria-busy');
+      status.hidden = true;
+    }
+    exportOutcome(respond, failure);
   };
   function pngWithMetadata(canvas, data) {
     const png = Uint8Array.from(atob(canvas.toDataURL('image/png').split(',')[1]), char => char.charCodeAt(0));
@@ -181,12 +216,14 @@
     if (!records.length) return;
     const profile = await chooseProfile();
     if (!profile) return;
+    const respond = UiSounds.feedback();
     try {
       const meta = metadata(profile);
       const canvas = Charts.exportChart(records, window.getExportChartKind?.() || 'bar', [stamp(meta), ...employeeLines(meta)]);
       const changeLog = records.filter(record => record.audit).map(({ date, kind, title, audit }) => ({ date, kind, title, audit }));
       download(pngWithMetadata(canvas, { ...meta, changeLog }), 'Punchly_filtered_chart.png', 'image/png');
-    } catch (error) { window.showPunchlyToast?.('The chart image could not be created.'); }
+    } catch (error) { exportOutcome(respond, 'The chart image could not be created.'); return; }
+    exportOutcome(respond);
   };
 
   function pdfBlob(images, width, height) {
@@ -301,21 +338,31 @@
     if (!records.length) return;
     const profile = await chooseProfile();
     if (!profile) return;
+    const respond = UiSounds.feedback();
     try { download(pdfTimesheet(records, metadata(profile)), 'Punchly_timesheet.pdf', 'application/pdf'); }
-    catch (error) { window.showPunchlyToast?.('The PDF could not be created.'); }
+    catch (error) { exportOutcome(respond, 'The PDF could not be created.'); return; }
+    exportOutcome(respond);
   };
   window.downloadBackup = async () => {
     const profile = await chooseProfile();
     if (!profile) return false;
-    const backup = Storage.exportBackup();
-    const settings = { ...backup.settings, ...profile };
-    download(JSON.stringify({ ...backup, settings, ...metadata(profile) }, null, 2), 'Punchly_backup.json', 'application/json');
+    const respond = UiSounds.feedback();
+    try {
+      const backup = Storage.exportBackup();
+      const settings = { ...backup.settings, ...profile };
+      download(JSON.stringify({ ...backup, settings, ...metadata(profile) }, null, 2), 'Punchly_backup.json', 'application/json');
+    } catch (error) { exportOutcome(respond, 'The backup could not be downloaded.'); throw error; }
+    exportOutcome(respond);
     return true;
   };
-  window.downloadPunchlySettings = () => download(JSON.stringify({
-    format: 'punchly-settings', version: 1, ...metadata(), settings: Storage.getSettings()
-  }, null, 2), 'Punchly_settings.json', 'application/json');
-  function chooseRestoreMode(backup) {
+  window.downloadPunchlySettings = () => {
+    try {
+      download(JSON.stringify({ format: 'punchly-settings', version: 1, ...metadata(), settings: Storage.getSettings() },
+        null, 2), 'Punchly_settings.json', 'application/json');
+    } catch (error) { exportOutcome(UiSounds.play, 'The settings file could not be created.'); return; }
+    exportOutcome(UiSounds.play);
+  };
+  function chooseRestoreMode(backup, respond) {
     const dialog = document.getElementById('restoreDialog');
     const count = backup.history.length;
     if (typeof dialog.showModal !== 'function') {
@@ -326,6 +373,7 @@
     return new Promise(resolve => {
       dialog.returnValue = 'cancel';
       dialog.showModal();
+      respond('open');
       dialog.addEventListener('close', () => resolve(dialog.returnValue), { once: true });
     });
   }
@@ -338,25 +386,31 @@
       reader.readAsText(file);
     });
   }
-  window.importBackupFile = async input => {
-    const file = input.files?.[0]; if (!file) return;
+  window.importBackupFile = async (input, notify = message => window.showPunchlyToast?.(message)) => {
+    const file = input.files?.[0]; if (!file) return false;
+    const respond = UiSounds.feedback();
     try {
       const backup = JSON.parse(await readBackupFile(file));
       if (backup?.format === 'punchly-settings') {
-        if (!confirm('Apply these Punchly preferences? Your punches and time reports will be kept.')) return;
+        if (!confirm('Apply these Punchly preferences? Your punches and time reports will be kept.')) return false;
         Storage.importSettings(backup);
         window.dispatchEvent(new CustomEvent('punchly:settings-imported'));
-        window.showPunchlyToast?.('Settings imported.');
-        return;
+        notify('Settings imported.');
+        respond('success');
+        return true;
       }
       Storage.validateBackup(backup);
-      const mode = await chooseRestoreMode(backup);
-      if (mode !== 'merge' && mode !== 'replace') return;
+      const mode = await chooseRestoreMode(backup, respond);
+      if (mode !== 'merge' && mode !== 'replace') { respond('cancel'); return false; }
       const count = Storage.importBackup(backup, mode === 'merge');
       window.dispatchEvent(new CustomEvent('punchly:backup-imported'));
-      window.showPunchlyToast?.(`${mode === 'replace' ? 'Backup restored.' : 'Backup merged.'} ${count} ${count === 1 ? 'record' : 'records'} added.`);
+      notify(`${mode === 'replace' ? 'Backup restored.' : 'Backup merged.'} ${count} ${count === 1 ? 'record' : 'records'} added.`);
+      respond('success');
+      return true;
     } catch (error) {
-      window.showPunchlyToast?.(error instanceof SyntaxError ? 'This file is not valid JSON.' : error.message || 'Could not import that backup file.');
+      notify(error instanceof SyntaxError ? 'This file is not valid JSON.' : error.message || 'Could not import that backup file.');
+      respond('error');
+      return false;
     }
     finally { input.value = ''; }
   };

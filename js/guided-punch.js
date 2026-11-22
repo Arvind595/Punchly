@@ -6,14 +6,6 @@ const GuidedPunch = (() => {
     ['eveningOut', 'Evening out', 'Punch out now', 'logout']
   ];
 
-  function dayPeriod(now) {
-    const hour = now.getHours();
-    if (hour < 5 || hour >= 20) return 'night';
-    if (hour < 12) return 'morning';
-    if (hour < 17) return 'afternoon';
-    return 'evening';
-  }
-
   function nextAction(shift) {
     if (Shift.isDayOff(shift.mode) || shift.result.error) return null;
     if (shift.result.complete) return shift.saved ? null : 'save';
@@ -136,7 +128,7 @@ const GuidedPunch = (() => {
         shift.overnight ? 'Continuing your overnight shift.' :
         next === 'morningIn' ? 'Start with your first punch. Each punch is saved as you go.' : 'Your punches are saved on this device.';
       if (status.textContent !== line) status.textContent = line;
-      const period = dayPeriod(now);
+      const period = Shift.dayPeriod(now);
       dial.dataset.period = period;
       scenery.dataset.scene = shift.mode === 'holiday' || nationalHoliday ? 'holiday' : period;
       primary.hidden = !next;

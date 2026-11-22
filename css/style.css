@@ -51,6 +51,27 @@
   background: linear-gradient(135deg, #000, #100919);
   border: 1px solid var(--border-color);
 }
+[data-theme="champagne"] {
+  --surface-color: #fffcf4;
+  --text-primary: #382818;
+  --text-secondary: #69533c;
+  --border-color: #e3d3b8;
+  --input-bg: #f7efdf;
+}
+[data-theme="lavender"] {
+  --surface-color: #fdfaff;
+  --text-primary: #30223f;
+  --text-secondary: #615271;
+  --border-color: #ded2ee;
+  --input-bg: #f3ecfa;
+}
+[data-theme="forest"] {
+  --surface-color: #192c20;
+  --text-primary: #edf7e9;
+  --text-secondary: #b9cfbc;
+  --border-color: #3b5744;
+  --input-bg: #223a2b;
+}
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html { scroll-padding-top: 80px; }
@@ -450,11 +471,8 @@ textarea { resize: vertical; }
 .attendance-panel { max-width: 760px; }
 .calendar-toolbar { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: .5rem; align-items: center; text-align: center; }
 .calendar-toolbar button { font-size: 1.4rem; }
-.calendar-jump {
-  display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto auto; align-items: end;
-  gap: .45rem; margin-top: .85rem;
-}
-.calendar-jump .field, .calendar-jump .matte-input { min-width: 0; }
+#calendarMonthButton { max-width: 100%; font-size: 1rem; justify-content: center; padding-inline: .65rem; }
+#calendarMonthButton .ui-icon { transform: rotate(90deg); }
 .calendar-leave { margin-top: .8rem; padding-top: .8rem; border-top: 1px solid var(--border-color); }
 .calendar-leave .button-row { margin-top: .55rem; }
 .calendar-weekdays, .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .3rem; }
@@ -493,9 +511,27 @@ textarea { resize: vertical; }
 .profile-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); gap: .55rem; }
 .profile-fields .matte-input { min-width: 0; }
 #exportProfileForm { margin-top: .8rem; }
+#setupForm fieldset { min-width: 0; margin: .75rem 0 0; padding: 0; border: 0; }
+#setupForm fieldset > .btn-secondary, #setupForm .profile-fields { margin-top: .65rem; }
+.setup-logo { display: block; border-radius: 13px; margin-bottom: .8rem; }
+.setup-welcome > p { margin-top: .65rem; color: var(--text-secondary); }
+.privacy-note {
+  display: grid; gap: .45rem; margin: .85rem 0; padding: .75rem .85rem;
+  border: 1px solid var(--border-color); border-radius: 12px; background: var(--input-bg);
+  color: var(--text-secondary); font-size: .88rem;
+}
+.privacy-note h3, .privacy-note h4 {
+  display: flex; align-items: center; gap: .4rem; margin: 0;
+  color: var(--text-primary); font-size: 1rem; letter-spacing: normal;
+}
+.privacy-note .ui-icon { color: var(--accent-color); }
+.setup-actions { justify-content: end; }
 .help-text { color: var(--text-secondary); font-size: .88rem; }
 .profile-heading { display: flex; align-items: center; gap: .7rem; }
 .font-field { margin-top: .85rem; }
+.sound-volume { display: grid; grid-template-columns: 1fr auto; gap: .2rem .6rem; margin-top: .75rem; font-size: .88rem; }
+.sound-volume input { grid-column: 1 / -1; width: 100%; min-height: 32px; margin: 0; accent-color: var(--accent-color); }
+.sound-volume output { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .toggle-field { display: flex; align-items: center; gap: .55rem; min-height: 44px; font-weight: 650; }
 .toggle-field input { width: 1.15rem; height: 1.15rem; accent-color: var(--accent-color); }
 .avatar-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(56px, 1fr)); gap: .55rem .3rem; }
@@ -523,7 +559,11 @@ kbd { padding: .12rem .35rem; border: 1px solid var(--border-color); border-radi
 .startup-notice { margin-bottom: 1rem; }
 .settings-group { min-width: 0; border: 0; padding: 0; margin: .75rem 0 0; }
 .settings-group legend { padding: 0; margin-bottom: .5rem; font-size: .88rem; font-weight: 650; }
+.theme-section { min-width: 0; margin: 0; padding: 0; border: 0; }
+.theme-section + .theme-section { margin-top: .8rem; }
+.theme-section legend { color: var(--text-secondary); font-size: .8rem; }
 .theme-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: .5rem; }
+.theme-section:first-child .theme-grid { max-width: 10rem; }
 .theme-option, .weekday-option { position: relative; cursor: pointer; }
 .theme-option input, .weekday-option input { position: absolute; opacity: 0; inset: 0; margin: 0; width: 100%; height: 100%; cursor: pointer; }
 .theme-tile, .weekday-option span {
@@ -574,6 +614,14 @@ dialog::backdrop { background: rgb(16 12 24 / 62%); }
 dialog p { margin-top: .65rem; }
 dialog .button-row { margin-top: 1rem; }
 dialog.app-dialog[open] { position: fixed; inset: 0; margin: auto; max-height: 90vh; overflow: auto; z-index: 30; }
+.calendar-picker h2 { font-size: 1.3rem; }
+.decade-toolbar { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: .45rem; text-align: center; margin-top: .65rem; }
+.calendar-picker-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .35rem; margin-top: .55rem; }
+#calendarMonthGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.calendar-picker-grid button { padding-inline: .2rem; }
+.calendar-picker-grid button[aria-current] { color: var(--accent-color); border-color: var(--accent-color); background: var(--input-bg); }
+.calendar-year-jump { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: .45rem; margin-top: .8rem; }
+#calendarPickerBack { margin-top: .45rem; }
 .help-steps { padding-inline-start: 1.4rem; }
 .help-steps li { margin-block: .5rem; }
 .profile-photo-actions { margin-block: .65rem; }
@@ -587,6 +635,8 @@ dialog.app-dialog[open] { position: fixed; inset: 0; margin: auto; max-height: 9
 .compact-only, .mobile-only { display: none; }
 [data-compact="true"] .compact-hide,
 [data-compact="true"] .punch-scenery,
+[data-compact="true"] .guided-plan-time,
+[data-compact="true"] .guided-punch-time time,
 [data-compact="true"] #guidedTimelineKey,
 [data-compact="true"] #shiftSummary .progress-container,
 [data-compact="true"] #shiftSummary .mobile-summary-detail,
@@ -622,6 +672,14 @@ dialog.app-dialog[open] { position: fixed; inset: 0; margin: auto; max-height: 9
 }
 
 @media screen and (max-width: 680px), screen and (max-width: 1024px) and (hover: none) and (pointer: coarse) {
+  dialog.calendar-picker[open] {
+    inset: auto 0 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    border-radius: 18px 18px 0 0;
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
+  }
   .today-layout, .settings-layout { grid-template-columns: minmax(0, 1fr); }
   .tab-dock {
     position: fixed; z-index: 10; inset: auto 0 0;
@@ -664,7 +722,6 @@ dialog.app-dialog[open] { position: fixed; inset: 0; margin: auto; max-height: 9
   .toast { bottom: calc(var(--navigation-height) + env(safe-area-inset-bottom) + .65rem); }
 }
 @media screen and (max-width: 480px) {
-  .calendar-jump { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
   .app-header { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "brand actions" "status status"; column-gap: .2rem; row-gap: .05rem; padding-bottom: .45rem; }
   .header-actions { gap: .1rem; }
   .brand { gap: .35rem; }

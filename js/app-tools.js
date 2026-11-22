@@ -1,7 +1,7 @@
 const AppTools = (() => {
   const byId = id => document.getElementById(id);
 
-  function modal(id, onClose) {
+  function modal(id, onClose, sound = true) {
     const dialog = byId(id);
     let previous;
     function finish() {
@@ -15,20 +15,27 @@ const AppTools = (() => {
         finish();
       }
     }
-    dialog.querySelector('[data-close]').addEventListener('click', close);
+    function dismiss() {
+      close();
+      if (sound) UiSounds.play('close');
+    }
+    dialog.querySelector('[data-close]')?.addEventListener('click', dismiss);
     dialog.addEventListener('close', finish);
     dialog.addEventListener('keydown', event => {
-      if (!dialog.showModal && event.key === 'Escape') close();
+      if (!dialog.showModal && event.key === 'Escape') dismiss();
     });
+    dialog.addEventListener('cancel', () => { if (sound) UiSounds.play('close'); });
     return {
       close,
-      open() {
+      open(withSound = sound) {
+        if (dialog.hasAttribute('open')) return;
         previous = document.activeElement;
         if (dialog.showModal) dialog.showModal();
         else {
           dialog.setAttribute('open', '');
           dialog.querySelector('button, input, a')?.focus();
         }
+        if (withSound) UiSounds.play('open');
       }
     };
   }
@@ -48,11 +55,12 @@ const AppTools = (() => {
       update.hidden = false;
     }
 
-    function finish(initialUpdate) {
+    function finish(initialUpdate, onReveal) {
       function revealApp() {
         byId('startupNotice').hidden = true;
         screen.hidden = true;
         document.documentElement.removeAttribute('data-app-starting');
+        onReveal?.();
       }
 
       // Continue checking in the background if the update server is slow.
@@ -156,10 +164,17 @@ const AppTools = (() => {
       if (!document.hidden && (checkedDay !== dateKey(new Date()) || status.dataset.state !== 'online')) check();
     }
     button.addEventListener('click', () => check(true));
-    window.addEventListener('online', () => check());
+    window.addEventListener('online', async () => {
+      const wasOffline = status.dataset.state === 'offline';
+      const respond = UiSounds.feedback();
+      const result = await check();
+      if (wasOffline && (result === 'current' || result === 'local')) respond('connect', { cooldownMs: 1200 });
+    });
     window.addEventListener('offline', () => {
       request?.abort();
+      const wasOnline = status.dataset.state === 'online';
       display('offline');
+      if (wasOnline) UiSounds.play('disconnect', { cooldownMs: 1200 });
     });
     document.addEventListener('visibilitychange', onReturn);
     window.addEventListener('pageshow', onReturn);
@@ -259,6 +274,7 @@ const AppTools = (() => {
       const file = fileInput.files[0];
       fileInput.value = '';
       if (!file) return;
+      const respond = UiSounds.feedback();
       const url = URL.createObjectURL(file);
       const next = new Image();
       next.onload = () => {
@@ -267,11 +283,13 @@ const AppTools = (() => {
         zoom.value = '100';
         x.value = y.value = '50';
         render();
-        crop.open();
+        crop.open(false);
+        respond('open');
       };
       next.onerror = () => {
         URL.revokeObjectURL(url);
         notify('Choose a JPEG, PNG, or WebP image that this browser can open.');
+        respond('error');
       };
       next.src = url;
     });
@@ -319,11 +337,15 @@ const AppTools = (() => {
         status.textContent = 'Browser storage is unavailable. The changes could not be saved.';
         status.hidden = false;
         confirm.disabled = false;
+        UiSounds.play('error');
         return;
       }
       confirmDialog.close();
       if (resetAll) onReset();
-      else onProfileDeleted();
+      else {
+        onProfileDeleted();
+        UiSounds.play('delete');
+      }
     });
   }
 

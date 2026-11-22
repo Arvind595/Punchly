@@ -18,6 +18,14 @@ const Shift = (() => {
     return labels.has(mode) ? mode : 'full';
   }
 
+  function dayPeriod(now) {
+    const hour = now.getHours();
+    if (hour < 5 || hour >= 20) return 'night';
+    if (hour < 12) return 'morning';
+    if (hour < 17) return 'afternoon';
+    return 'evening';
+  }
+
   function isDayOff(mode) {
     return mode === 'leave' || mode === 'holiday';
   }
@@ -167,6 +175,6 @@ const Shift = (() => {
     return record.out ? 'Below target' : 'In progress';
   }
 
-  return { fields, label, normalizeMode, isDayOff, isSaturday, saturdayMode, saturdayNotes, nationalHoliday,
+  return { fields, label, normalizeMode, dayPeriod, isDayOff, isSaturday, saturdayMode, saturdayNotes, nationalHoliday,
     nationalHolidayDates, holidayNotes, hasPunches, isHoliday, parseTime, punchesForMode, measure, recordStatus };
 })();

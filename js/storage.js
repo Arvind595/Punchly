@@ -5,6 +5,7 @@ const Storage = (() => {
   const legacyWeekKey = 'timecard_calculator_history_v1';
   const migrationKey = 'punchly_legacy_weekly_migrated_v1';
   const resetKey = 'punchly_last_reset';
+  const setupKey = 'punchly_setup_complete';
   const profileLengths = { displayName: 48, employeeId: 40, employeeEmail: 254, role: 60, department: 60 };
   const defaults = {
     targetShift: '08:20',
@@ -13,6 +14,9 @@ const Storage = (() => {
     profilePhoto: '',
     compactMode: false,
     mobileHaptics: true,
+    punchAudio: true,
+    soundVolume: 70,
+    typingSounds: false,
     reminderIn: '',
     reminderLunchOut: '',
     reminderLunchReturn: '',
@@ -22,7 +26,7 @@ const Storage = (() => {
     theme: 'light',
     workdays: [1, 2, 3, 4, 5, 6],
     rounding: 'none',
-    clockFormat: '24',
+    clockFormat: '12',
     historyRange: 'weekly',
     ...Object.fromEntries(Object.keys(profileLengths).map(field => [field, '']))
   };
@@ -95,6 +99,11 @@ const Storage = (() => {
         !/^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/i.test(settings.profilePhoto)) settings.profilePhoto = '';
     settings.compactMode = settings.compactMode === true;
     settings.mobileHaptics = settings.mobileHaptics !== false;
+    settings.punchAudio = settings.punchAudio !== false;
+    if (!Number.isInteger(settings.soundVolume) || settings.soundVolume < 0 || settings.soundVolume > 100) {
+      settings.soundVolume = defaults.soundVolume;
+    }
+    settings.typingSounds = settings.typingSounds === true;
     settings.reminderTarget = settings.reminderTarget === true;
     ['reminderIn', 'reminderLunchOut', 'reminderLunchReturn', 'reminderOut'].forEach(key => {
       if (Shift.parseTime(settings[key]) === null) settings[key] = '';
@@ -170,8 +179,26 @@ const Storage = (() => {
     return write(keys.SETTINGS, settings);
   }
 
+  function needsSetup() {
+    const history = read(keys.HISTORY, []);
+    const legacy = read(legacyWeekKey, []);
+    return !read(setupKey, false) && !read(keys.SETTINGS, null) && !read(keys.TODAY, null) &&
+      !read(keys.WEEK, null) && !Object.keys(getDrafts()).length &&
+      !(Array.isArray(history) && history.length) && !(Array.isArray(legacy) && legacy.length);
+  }
+
+  function finishSetup(settings) {
+    try {
+      restoreKeys([[keys.SETTINGS, settings], [setupKey, true]]);
+      return true;
+    } catch (error) {
+      console.warn('Punchly could not save initial setup.', error);
+      return false;
+    }
+  }
+
   function reset() {
-    const entries = [...Object.values(keys), legacyWeekKey, migrationKey, 'punchly_reminder_log'].map(key => [key, null]);
+    const entries = [...Object.values(keys), setupKey, legacyWeekKey, migrationKey, 'punchly_reminder_log'].map(key => [key, null]);
     try {
       restoreKeys([...entries, [resetKey, new Date().toISOString()]]);
       return true;
@@ -220,6 +247,6 @@ const Storage = (() => {
     saveRecord,
     deleteRecord(id) { return write(keys.HISTORY, normalizeHistory().filter(item => item.id !== id)); },
     exportBackup() { return { format: 'punchly-backup', version: 1, exportedAt: new Date().toISOString(), settings: getSettings(), today: read(keys.TODAY, null), drafts: read(keys.DRAFTS, {}), week: read(keys.WEEK, null), history: normalizeHistory() }; },
-    validateBackup, importBackup, importSettings, deleteProfile, reset
+    validateBackup, importBackup, importSettings, needsSetup, finishSetup, deleteProfile, reset
   };
 })();

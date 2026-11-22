@@ -1,18 +1,27 @@
 const Preferences = (() => {
-  const themes = [
-    { id: 'system', name: 'Match device', colors: ['#f7f7ff', '#6555e8', '#20213f'] },
+  const deviceTheme = { id: 'system', name: 'Match device', colors: ['#f7f7ff', '#6555e8', '#20213f'] };
+  const lightThemes = [
     { id: 'light', name: 'Periwinkle', colors: ['#f7f7ff', '#5546cc', '#4938c7', '#7338a3'] },
     { id: 'ocean', name: 'Ocean', colors: ['#eef7ff', '#075eaa', '#1552ae', '#096e84'] },
     { id: 'mint', name: 'Mint', colors: ['#eef9f4', '#12674d', '#14634d', '#207663'] },
     { id: 'peach', name: 'Peach', colors: ['#fff4ed', '#a23d24', '#a33a32', '#9a4d1e'] },
     { id: 'berry', name: 'Berry', colors: ['#fff0f7', '#9f2861', '#962255', '#843093'] },
     { id: 'solar', name: 'Marigold', colors: ['#fff8e7', '#805007', '#825007', '#9d5419'] },
+    { id: 'champagne', name: 'Champagne', colors: ['#f8eedc', '#80531c', '#76491a', '#a36724'] },
+    { id: 'lavender', name: 'Lavender', colors: ['#f3edfc', '#68459c', '#5e3d8e', '#8053a4'] }
+  ];
+  const darkThemes = [
     { id: 'dark', name: 'Midnight', dark: true, colors: ['#17172a', '#bfb4ff', '#4537aa', '#703993'] },
     { id: 'lagoon', name: 'Lagoon', dark: true, colors: ['#102321', '#79dbc8', '#12665b', '#235a86'] },
     { id: 'ember', name: 'Ember', dark: true, colors: ['#281b20', '#ffa594', '#90343e', '#944421'] },
     { id: 'graphite', name: 'Graphite', dark: true, colors: ['#1b1c20', '#d4d8e4', '#424a64', '#545768'] },
-    { id: 'amoled', name: 'AMOLED Black', dark: true, colors: ['#000000', '#cabaff', '#352090', '#581f78'] }
+    { id: 'amoled', name: 'AMOLED Black', dark: true, colors: ['#000000', '#cabaff', '#352090', '#581f78'] },
+    { id: 'forest', name: 'Forest', dark: true, colors: ['#101e15', '#a9dda5', '#235437', '#39714b'] }
   ];
+  const themeGroups = [
+    ['Device appearance', [deviceTheme]], ['Light themes', lightThemes], ['Dark themes', darkThemes]
+  ];
+  const themes = [deviceTheme, ...lightThemes, ...darkThemes];
   const fonts = [
     ['system', 'System', 'system-ui, -apple-system, "Segoe UI", Arial, sans-serif'],
     ['manrope', 'Manrope', 'Manrope, "Segoe UI", Arial, sans-serif'],
@@ -33,8 +42,8 @@ const Preferences = (() => {
   const byId = id => document.getElementById(id);
 
   function applyAppearance(settings) {
-    let theme = themes.find(option => option.id === settings.theme) || themes[1];
-    if (theme.id === 'system') theme = themes.find(option => option.id === (systemDark.matches ? 'dark' : 'light'));
+    let theme = themes.find(option => option.id === settings.theme) || lightThemes[0];
+    if (theme === deviceTheme) theme = systemDark.matches ? darkThemes[0] : lightThemes[0];
     const [background, accent, primary, secondary] = theme.colors;
     const root = document.documentElement;
     root.dataset.theme = theme.id;
@@ -78,11 +87,36 @@ const Preferences = (() => {
     byId('headerProfileName').textContent = displayName || 'Profile';
   }
 
+  function drawThemeTile(theme) {
+    const label = document.createElement('label');
+    label.className = 'theme-option';
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = 'theme';
+    input.value = theme.id;
+    const tile = document.createElement('span');
+    tile.className = 'theme-tile';
+    const preview = document.createElement('span');
+    preview.className = 'theme-preview';
+    preview.setAttribute('aria-hidden', 'true');
+    preview.style.setProperty('--swatch-bg', theme.colors[0]);
+    preview.style.setProperty('--swatch-accent', theme.colors[1]);
+    preview.style.setProperty('--swatch-secondary', theme.colors[3] || theme.colors[2]);
+    const name = document.createElement('span');
+    name.textContent = theme.name;
+    tile.append(preview, name);
+    label.append(input, tile);
+    return label;
+  }
+
   function connect(settings, { onChange, notify }) {
     const profileForm = byId('profileForm');
     const themeOptions = byId('themeOptions');
     const workdayOptions = byId('workdayOptions');
     const avatarOptions = byId('avatarOptions');
+    const soundVolume = byId('soundVolume');
+    const soundVolumeLabel = byId('soundVolumeLabel');
+    const typingSounds = byId('typingSounds');
     for (const [id, name, stack] of fonts) {
       const option = document.createElement('option');
       option.value = id;
@@ -110,26 +144,16 @@ const Preferences = (() => {
       label.append(input, preview, caption);
       avatarOptions.append(label);
     }
-    for (const theme of themes) {
-      const label = document.createElement('label');
-      label.className = 'theme-option';
-      const input = document.createElement('input');
-      input.type = 'radio';
-      input.name = 'theme';
-      input.value = theme.id;
-      const tile = document.createElement('span');
-      tile.className = 'theme-tile';
-      const preview = document.createElement('span');
-      preview.className = 'theme-preview';
-      preview.setAttribute('aria-hidden', 'true');
-      preview.style.setProperty('--swatch-bg', theme.colors[0]);
-      preview.style.setProperty('--swatch-accent', theme.colors[1]);
-      preview.style.setProperty('--swatch-secondary', theme.colors[3] || theme.colors[2]);
-      const name = document.createElement('span');
-      name.textContent = theme.name;
-      tile.append(preview, name);
-      label.append(input, tile);
-      themeOptions.append(label);
+    for (const [name, choices] of themeGroups) {
+      const group = document.createElement('fieldset');
+      group.className = 'theme-section';
+      const legend = document.createElement('legend');
+      legend.textContent = name;
+      const grid = document.createElement('div');
+      grid.className = 'theme-grid';
+      grid.append(...choices.map(drawThemeTile));
+      group.append(legend, grid);
+      themeOptions.append(group);
     }
     days.forEach((day, index) => {
       const label = document.createElement('label');
@@ -156,6 +180,7 @@ const Preferences = (() => {
       byId('fontSelect').value = settings.font;
       byId('compactMode').checked = settings.compactMode;
       byId('mobileHaptics').checked = settings.mobileHaptics;
+      refreshSoundControls();
       avatarInputs.find(input => input.value === settings.avatar).checked = true;
       byId('reminderIn').value = settings.reminderIn;
       byId('reminderLunchOut').value = settings.reminderLunchOut;
@@ -167,26 +192,38 @@ const Preferences = (() => {
 
       byId('clockFormat').value = settings.clockFormat;
       byId('defaultRange').value = settings.historyRange;
-      const selectedTheme = themeInputs.find(input => input.value === settings.theme) || themeInputs[1];
+      const selectedTheme = themeInputs.find(input => input.value === settings.theme) || themeInputs.find(input => input.value === lightThemes[0].id);
       selectedTheme.checked = true;
       workdayInputs.forEach(input => { input.checked = settings.workdays.includes(Number(input.value)); });
     }
 
-    function save(changes, section, message) {
+    function refreshSoundControls() {
+      byId('punchAudio').checked = settings.punchAudio;
+      soundVolume.value = settings.soundVolume;
+      soundVolumeLabel.value = `${settings.soundVolume}%`;
+      soundVolume.disabled = typingSounds.disabled = !settings.punchAudio;
+      typingSounds.checked = settings.typingSounds;
+      UiSounds.sync(settings);
+    }
+
+    function save(changes, section, message, cue = message ? 'success' : null) {
       const next = { ...settings, ...changes };
       if (!Storage.saveSettings(next)) {
         refresh();
         notify('Browser storage is unavailable. Settings could not be saved.');
+        UiSounds.play('error');
         return;
       }
       Object.assign(settings, next);
+      if (section === 'sound') refreshSoundControls();
       if (section === 'appearance') applyAppearance(settings);
       onChange(section);
       if (message) notify(message);
+      if (cue) UiSounds.play(cue);
     }
 
     themeOptions.addEventListener('change', event => {
-      save({ theme: event.target.value }, 'appearance');
+      save({ theme: event.target.value }, 'appearance', null, 'select');
     });
     const onSystemTheme = () => {
       if (settings.theme === 'system') {
@@ -196,9 +233,14 @@ const Preferences = (() => {
     };
     if (systemDark.addEventListener) systemDark.addEventListener('change', onSystemTheme);
     else if (systemDark.addListener) systemDark.addListener(onSystemTheme);
-    byId('fontSelect').addEventListener('change', event => save({ font: event.target.value }, 'appearance'));
-    byId('compactMode').addEventListener('change', event => save({ compactMode: event.target.checked }, 'appearance'));
-    byId('mobileHaptics').addEventListener('change', event => save({ mobileHaptics: event.target.checked }, 'interaction'));
+    byId('fontSelect').addEventListener('change', event => save({ font: event.target.value }, 'appearance', null, 'select'));
+    const toggleCue = checked => checked ? 'toggle-on' : 'toggle-off';
+    byId('compactMode').addEventListener('change', event => save({ compactMode: event.target.checked }, 'appearance', null, toggleCue(event.target.checked)));
+    byId('mobileHaptics').addEventListener('change', event => save({ mobileHaptics: event.target.checked }, 'interaction', null, toggleCue(event.target.checked)));
+    byId('punchAudio').addEventListener('change', event => save({ punchAudio: event.target.checked }, 'sound', null, toggleCue(event.target.checked)));
+    typingSounds.addEventListener('change', event => save({ typingSounds: event.target.checked }, 'sound', null, toggleCue(event.target.checked)));
+    soundVolume.addEventListener('input', () => { soundVolumeLabel.value = `${soundVolume.value}%`; });
+    soundVolume.addEventListener('change', () => save({ soundVolume: soundVolume.valueAsNumber }, 'sound', null, 'volume-change'));
     byId('remindersForm').addEventListener('submit', event => {
       event.preventDefault();
       save({
@@ -215,7 +257,7 @@ const Preferences = (() => {
         ...Storage.profileDetails(Object.fromEntries(new FormData(profileForm))),
         avatar: avatarInputs.find(input => input.checked).value,
         profilePhoto: photo
-      }, 'profile', message);
+      }, 'profile', message, photo === '' && settings.profilePhoto ? 'delete' : 'success');
       applyProfile(settings.displayName, settings.avatar, settings.profilePhoto);
       byId('profilePhotoRemove').hidden = !settings.profilePhoto;
     }
@@ -241,5 +283,5 @@ const Preferences = (() => {
     return { refresh };
   }
 
-  return { days, connect };
+  return { days, themeGroups, connect };
 })();

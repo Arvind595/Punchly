@@ -2,6 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const dayFields = Shift.fields;
   const dayInputs = dayFields.map(id => document.getElementById(id));
   const settings = Storage.getSettings();
+  UiSounds.connect(settings);
+  const manualPunchSounds = new Map();
   const workDate = document.getElementById('workDate');
   const shiftMode = document.getElementById('shiftMode');
   const shiftTarget = document.getElementById('targetShift');
@@ -80,8 +82,16 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   updateHistory();
   connectInstall();
+  const setup = Setup.connect(settings, (chosen, saved, respond) => {
+    Object.assign(settings, chosen);
+    preferences.refresh();
+    applyPreferences('tracking');
+    if (!saved) toast('Setup choices are available for this session. Browser storage is unavailable.');
+    respond(saved ? 'complete' : 'error');
+  });
 
   function reopenAfterReset() {
+    UiSounds.silence();
     const home = new URL(location.href);
     home.hash = 'punch-view';
     history.replaceState(null, '', home.href);
@@ -125,6 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
   moreTabs.addEventListener('click', () => {
     const open = moreTabs.getAttribute('aria-expanded') !== 'true';
     setTabMenu(open);
+    UiSounds.play(open ? 'open' : 'close');
     if (open) (extraTabs.querySelector('[aria-selected="true"]') || extraTabs.querySelector('button')).focus();
   });
   document.addEventListener('click', event => {
@@ -134,9 +145,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (event.key !== 'Escape' || moreTabs.getAttribute('aria-expanded') !== 'true') return;
     setTabMenu(false);
     moreTabs.focus();
+    UiSounds.play('close');
   });
-  function activateTab(tab, updateLocation = true, keepMenu = false) {
+  function activateTab(tab, updateLocation = true, keepMenu = false, withSound = updateLocation) {
     const changed = tab.getAttribute('aria-selected') !== 'true';
+    if (changed) UiSounds.leaveView();
     tabs.forEach(item => { const active = item === tab; item.classList.toggle('active', active); item.setAttribute('aria-selected', String(active)); });
     if (keepMenu) updateTabFocus(); else setTabMenu(false);
     document.querySelectorAll('.tab-pane').forEach(pane => { const active = pane.id === tab.dataset.target; pane.classList.toggle('active', active); pane.hidden = !active; });
@@ -148,6 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tab.dataset.target === 'calendar-view') attendance.refresh();
     if (tab.dataset.target === 'stats-view') updateStatistics();
     if (tab.dataset.target === 'export-view') updateExport();
+    if (changed && withSound) UiSounds.play('select', { volume: .12, cooldownMs: 110 });
   }
 
   function openLinkedTab() {
@@ -208,15 +222,21 @@ document.addEventListener('DOMContentLoaded', () => {
       renderDay();
       refreshDayLogs();
     }
-    if (section === 'tracking' || section === 'reminders') runReminders(new Date());
+    if (section === 'tracking' || section === 'reminders') runReminders(new Date(), false, false);
     if (section === 'appearance' || section === 'tracking') updateHistory();
     refreshGuided();
     miniTimer.refresh();
   }
   function punchNow(field) {
     const now = new Date();
-    document.getElementById(field).value = formatClock(now.getHours() * 60 + now.getMinutes());
-    updateDayDraft(now);
+    const input = document.getElementById(field);
+    const previous = input.value;
+    input.value = formatClock(now.getHours() * 60 + now.getMinutes());
+    manualPunchSounds.delete(input);
+    if (!updateDayDraft(now)) { UiSounds.play('error'); return; }
+    if (previous === input.value) return;
+    if (measureDay(now).error) UiSounds.play('error');
+    else UiSounds.punch(Shift.dayPeriod(now));
   }
   document.querySelectorAll('.btn-now').forEach((button, index) => {
     button.setAttribute('aria-keyshortcuts', `Alt+${index + 1}`);
@@ -239,10 +259,10 @@ document.addEventListener('DOMContentLoaded', () => {
       workDate.value = todayKey;
       restoreToday();
     }
-    activateTab(document.getElementById('tab-today'));
+    activateTab(document.getElementById('tab-today'), true, false, false);
     const field = dayFields[Number(digit) - 1];
     if (Shift.isDayOff(shiftMode.value) || (shiftMode.value === 'half' && (field === 'lunchOut' || field === 'lunchReturn'))) {
-      toast('This punch is unavailable for the selected day type.');
+      toast('This punch is unavailable for the selected day type.', 'blocked');
       return;
     }
     punchNow(field);
@@ -252,13 +272,30 @@ document.addEventListener('DOMContentLoaded', () => {
     compactDetails.setAttribute('aria-expanded', String(expanded));
     compactDetails.textContent = expanded ? 'Hide shift details' : 'Show shift details';
   });
-  dayInputs.forEach(input => input.addEventListener('input', () => updateDayDraft()));
+  dayInputs.forEach(input => {
+    input.addEventListener('input', () => {
+      const now = new Date();
+      const saved = updateDayDraft(now);
+      if (Shift.parseTime(input.value) !== null) {
+        manualPunchSounds.set(input, { value: input.value, valid: saved && !measureDay(now).error });
+      }
+      else manualPunchSounds.delete(input);
+    });
+    input.addEventListener('change', () => {
+      const pending = manualPunchSounds.get(input);
+      if (pending?.value === input.value) {
+        if (pending.valid) UiSounds.punch(Shift.dayPeriod(new Date()));
+        else UiSounds.play('error');
+      }
+      manualPunchSounds.delete(input);
+    });
+  });
   workDate.addEventListener('change', () => {
     const today = localDateKey(new Date());
     workDate.max = today;
     if (workDate.value > today) {
       workDate.value = today;
-      toast('Choose today or an earlier shift start date.');
+      toast('Choose today or an earlier shift start date.', 'error');
     }
     restoreToday();
     renderDay();
@@ -271,8 +308,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('saveDayBtn').addEventListener('click', () => saveDay());
   document.getElementById('clearDayBtn').addEventListener('click', () => {
+    const hadPunches = dayInputs.some(input => input.value);
+    manualPunchSounds.clear();
     dayInputs.forEach(input => { input.value = ''; });
-    if (updateDayDraft()) toast('Punches cleared.');
+    if (updateDayDraft()) toast('Punches cleared.', hadPunches ? 'delete' : null);
+    else UiSounds.play('error');
   });
   document.getElementById('timeRangeFilter').addEventListener('change', updateHistory);
   historySearch.addEventListener('input', () => updateHistory());
@@ -293,7 +333,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('exportCSV').addEventListener('click', () => window.exportVisibleCSV?.());
   document.getElementById('exportChartPNG').addEventListener('click', () => window.exportChartPNG?.());
   document.getElementById('exportPDF').addEventListener('click', () => window.exportVisiblePDF?.());
-  document.getElementById('backupExport').addEventListener('click', () => window.downloadBackup?.());
+  document.getElementById('backupExport').addEventListener('click', () => window.downloadBackup().catch(() => {}));
   document.getElementById('settingsExport').addEventListener('click', () => window.downloadPunchlySettings?.());
   document.getElementById('backupImportBtn').addEventListener('click', () => document.getElementById('backupImport').click());
   document.getElementById('backupImport').addEventListener('change', event => window.importBackupFile?.(event.target));
@@ -312,27 +352,36 @@ document.addEventListener('DOMContentLoaded', () => {
     updateStatistics();
   });
   function connectInstall() {
-    const button = document.getElementById('installApp');
-    const note = document.getElementById('installNote');
+    const buttons = ['installApp', 'setupInstall'].map(id => document.getElementById(id));
+    const notes = ['installNote', 'setupInstallNote'].map(id => document.getElementById(id));
+    const canInstall = location.protocol !== 'file:' && window.isSecureContext && 'serviceWorker' in navigator;
     let installPrompt;
-    function installed() {
-      button.hidden = true;
-      note.textContent = 'Punchly is running as an installed app.';
+    let installed = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    function refreshInstall() {
+      buttons.forEach(button => { button.hidden = installed || !installPrompt; });
+      let message = 'Use your browser’s Install or Add to Home Screen menu.';
+      if (installed) message = 'Punchly is installed.';
+      else if (!canInstall) message = 'Open Punchly over HTTPS or localhost to install it for offline use.';
+      else if (installPrompt) message = 'Install Punchly to open it from your home screen and use it offline.';
+      notes.forEach(note => { note.textContent = message; });
     }
-    if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) installed();
     window.addEventListener('beforeinstallprompt', event => {
       event.preventDefault();
       installPrompt = event;
-      button.hidden = false;
+      refreshInstall();
     });
-    button.addEventListener('click', async () => {
+    buttons.forEach(button => button.addEventListener('click', async () => {
       if (!installPrompt) return;
       const prompt = installPrompt;
       installPrompt = null;
-      button.hidden = true;
+      refreshInstall();
       try { await prompt.prompt(); } catch (error) { /* The browser menu remains available. */ }
+    }));
+    window.addEventListener('appinstalled', () => {
+      installed = true;
+      refreshInstall();
     });
-    window.addEventListener('appinstalled', installed);
+    refreshInstall();
   }
 
   function scheduleTrackingRefresh() {
@@ -415,7 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
       last = last !== null && absolute < last ? absolute + 1440 : absolute;
     }
     if (elapsed === null || (last !== null && elapsed < last)) {
-      toast('The current time is earlier than your previous punch. Check the times in Today.');
+      toast('The current time is earlier than your previous punch. Check the times in Today.', 'error');
       return;
     }
     input.value = formatClock(now.getHours() * 60 + now.getMinutes());
@@ -423,16 +472,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (result.error) {
       input.value = '';
       renderDay(now);
-      toast(result.error);
+      toast(result.error, 'error');
       return;
     }
     if (!updateDayDraft(now)) {
       restoreToday();
       renderDay(now);
+      UiSounds.play('error');
       return;
     }
-    if (field === 'eveningOut') saveDay(now);
-    else toast(`Punch saved at ${displayClock(Shift.parseTime(input.value))}.`);
+    if (field === 'eveningOut') saveDay(now, true);
+    else {
+      UiSounds.punch(Shift.dayPeriod(now));
+      toast(`Punch saved at ${displayClock(Shift.parseTime(input.value))}.`);
+    }
   }
 
   function saveGuidedShift(date) {
@@ -563,7 +616,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (date <= localDateKey(now)) return false;
     const existing = leaveRecord(date);
     if (Storage.getDraft(date) || (existing && existing.mode !== 'leave')) {
-      toast('This date already has an entry.');
+      toast('This date already has an entry.', 'blocked');
       return false;
     }
     const before = logInput(date, existing);
@@ -574,7 +627,7 @@ document.addEventListener('DOMContentLoaded', () => {
       id: existing?.id || `daily-${date}`, kind: 'daily', date, mode, notes, audit,
       punches: {}, in: '', out: '', totalMinutes: 0, targetMinutes: 0, extraMinutes: 0, targetMet: false
     });
-    toast(saved ? 'Leave reservation saved.' : 'Could not save the leave reservation.');
+    toast(saved ? 'Leave reservation saved.' : 'Could not save the leave reservation.', saved ? 'success' : 'error');
     return saved;
   }
 
@@ -583,7 +636,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const existing = leaveRecord(date);
     if (existing?.mode !== 'leave' || Storage.getDraft(date)) return false;
     const removed = Storage.deleteRecord(existing.id);
-    toast(removed ? 'Leave reservation canceled.' : 'Could not cancel the leave reservation.');
+    toast(removed ? 'Leave reservation canceled.' : 'Could not cancel the leave reservation.', removed ? 'delete' : 'error');
     return removed;
   }
 
@@ -616,7 +669,6 @@ document.addEventListener('DOMContentLoaded', () => {
         notes.textContent = entry.notes;
         details.append(notes);
       }
-      if (entry.audit) details.append(changeLog(entry.audit));
       const actions = document.createElement('div');
       actions.className = 'log-actions';
       if (entry.total !== null) {
@@ -667,12 +719,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function restoreToday() {
+    manualPunchSounds.clear();
     const date = selectedDay();
     const draft = Storage.getDraft(date);
     const record = Storage.getHistory().find(item => item.kind === 'daily' && item.date === date);
     loadDayFields(draft || (!record && legacyDraftOn(date, Storage.getToday())), record);
     renderDayHeading();
-    Audit.show(document.getElementById('todayAudit'), draft?.audit ?? record?.audit);
   }
 
   function readPunches() {
@@ -731,7 +783,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  function runReminders(now, justEdited = false) {
+  function runReminders(now, justEdited = false, audible = !justEdited) {
     if (![settings.reminderIn, settings.reminderLunchOut, settings.reminderLunchReturn, settings.reminderOut, settings.reminderTarget].some(Boolean)) return;
     const date = localDateKey(now);
     const today = dayForReminder(date);
@@ -747,7 +799,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       activeShift.result = Shift.measure({ ...activeShift, lunchLimit: settings.lunchLimit, now: elapsed });
     }
-    reminders.check(now, date, today, activeShift);
+    reminders.check(now, date, today, activeShift, audible);
   }
 
   function renderDay(now = new Date()) {
@@ -839,7 +891,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const ok = Storage.saveDraft(date, next);
     if (!ok) toast('Could not save the draft to browser storage.');
     else {
-      Audit.show(document.getElementById('todayAudit'), next.audit);
       refreshDayLogs(now);
       if (!document.getElementById('calendar-view').hidden) attendance.refresh();
     }
@@ -856,21 +907,21 @@ document.addEventListener('DOMContentLoaded', () => {
     return saved;
   }
 
-  function saveDay(now = new Date()) {
+  function saveDay(now = new Date(), punch = false) {
     workDate.max = localDateKey(now);
-    if (!workDate.reportValidity()) return;
+    if (!workDate.reportValidity()) { UiSounds.play('error'); return; }
     const mode = shiftMode.value;
     const punches = Shift.punchesForMode(readPunches(), mode);
     syncSaturdayNote();
     const result = measureDay(now, punches);
-    if (result.error) return toast(result.error);
+    if (result.error) return toast(result.error, 'error');
     if (!Shift.isHoliday(mode, punches)) {
-      if (result.target <= 0) return toast('Set a work target greater than zero.');
-      if (!result.started) return toast('Add a start punch before saving.');
+      if (result.target <= 0) return toast('Set a work target greater than zero.', 'error');
+      if (!result.started) return toast('Add a start punch before saving.', 'error');
     }
 
     const date = selectedDay();
-    if (!saveDayDraft(readPunches(), now)) return;
+    if (!saveDayDraft(readPunches(), now)) { UiSounds.play('error'); return; }
     const record = {
       id: `daily-${date}`, kind: 'daily', date, mode, punches,
       in: punches.morningIn || '', out: punches.eveningOut || '', notes: Shift.holidayNotes(dayNotes.value, date).trim(),
@@ -878,7 +929,7 @@ document.addEventListener('DOMContentLoaded', () => {
       totalMinutes: result.total, extraMinutes: result.extra, lunchMinutes: result.lunch, lunchLimitMinutes: settings.lunchLimit,
       targetMet: result.complete && result.total >= result.target, audit: Storage.getDraft(date)?.audit
     };
-    if (!Storage.saveRecord(record)) return toast('Could not save. Browser storage may be full or unavailable.');
+    if (!Storage.saveRecord(record)) return toast('Could not save. Browser storage may be full or unavailable.', 'error');
     renderDay(now);
     updateHistory();
     refreshDayLogs(now);
@@ -886,6 +937,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (Shift.isDayOff(mode)) toast(`${Shift.label(mode)} saved.`);
     else if (Shift.isSaturday(mode) && !Shift.hasPunches(punches)) toast(`${Shift.label(mode)} holiday saved.`);
     else toast('Shift saved.');
+    if (punch) UiSounds.punch(Shift.dayPeriod(now));
+    else UiSounds.play('success');
   }
 
   function rangeStart(range, now) {
@@ -1112,7 +1165,7 @@ document.addEventListener('DOMContentLoaded', () => {
       remove.addEventListener('click', () => {
         const question = record.hasDraft ? 'Delete this daily record and its draft?' : `Delete this ${record.kind} record?`;
         if (!confirm(question)) return;
-        if (!Storage.deleteRecord(record.id)) return toast('Could not delete the record.');
+        if (!Storage.deleteRecord(record.id)) return toast('Could not delete the record.', 'error');
         if (record.kind === 'daily') {
           const draft = Storage.getDraft(record.date);
           if (record.hasDraft || matchingDraft(record, draft)) Storage.deleteDraft(record.date);
@@ -1121,7 +1174,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         updateHistory();
         refreshDayLogs();
-        toast('Record deleted.');
+        toast('Record deleted.', 'delete');
       });
       if (record.kind === 'daily' && record.date <= today) actions.append(edit);
       if (!record.derived) actions.append(remove);
@@ -1139,7 +1192,14 @@ document.addEventListener('DOMContentLoaded', () => {
     activateTab(document.getElementById('tab-today'));
     toast(`Loaded ${formatDate(record.date)}. Save to update that record.`);
   }
-  function toast(message) { const el = document.getElementById('toast'); el.textContent = message; el.classList.add('visible'); clearTimeout(toast.timer); toast.timer = setTimeout(() => el.classList.remove('visible'), 3200); }
+  function toast(message, cue) {
+    const el = document.getElementById('toast');
+    el.textContent = message;
+    el.classList.add('visible');
+    clearTimeout(toast.timer);
+    toast.timer = setTimeout(() => el.classList.remove('visible'), 3200);
+    if (cue) UiSounds.play(cue);
+  }
   window.showPunchlyToast = toast;
   function toMinutes(value) { return Shift.parseTime(value) ?? 0; }
   function formatClock(minutes) { minutes = ((minutes % 1440) + 1440) % 1440; return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`; }
@@ -1152,5 +1212,5 @@ document.addEventListener('DOMContentLoaded', () => {
   function localDateKey(date) { return `${String(date.getFullYear()).padStart(4, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
   function formatDate(date) { return new Date(`${date}T12:00:00`).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); }
   document.documentElement.setAttribute('data-app-ready', '');
-  startup.finish(initialUpdate);
+  startup.finish(initialUpdate, setup.open);
 });
