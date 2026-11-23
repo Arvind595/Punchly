@@ -507,6 +507,10 @@ textarea { resize: vertical; }
 #setupForm fieldset > .btn-secondary, #setupForm .profile-fields { margin-top: .65rem; }
 .setup-brand { display: flex; align-items: center; gap: .6rem; margin-bottom: .8rem; font-size: 1.25rem; }
 .setup-brand img { border-radius: 12px; }
+.setup-brand strong {
+  color: var(--accent-color); font-weight: 800; letter-spacing: -.035em;
+  text-shadow: 0 1px 0 var(--surface-color), 0 2px 0 var(--accent-color), 0 4px 5px rgb(25 22 70 / 25%);
+}
 .install-note, #setupSkipDescription, #firstPunchForm { margin-top: .65rem; }
 .setup-welcome > p { margin-top: .65rem; color: var(--text-secondary); }
 .privacy-note {
@@ -519,6 +523,8 @@ textarea { resize: vertical; }
   color: var(--text-primary); font-size: 1rem; letter-spacing: normal;
 }
 .privacy-note .ui-icon { color: var(--accent-color); }
+.privacy-note .shield-lock-icon svg { fill: none; }
+.privacy-note .backup-reminder { color: var(--danger-color); }
 .setup-actions { justify-content: end; }
 .help-text { color: var(--text-secondary); font-size: .88rem; }
 .profile-heading { display: flex; align-items: center; gap: .7rem; }
@@ -546,6 +552,7 @@ kbd { padding: .12rem .35rem; border: 1px solid var(--border-color); border-radi
 .developer-contact dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
 .developer-contact a, .startup-notice a { color: var(--accent-color); text-underline-offset: .2em; }
 .support-action { display: inline-flex; align-items: center; text-decoration: none; }
+#inviteDialog .field { margin-top: .8rem; }
 .release-notes { color: var(--text-secondary); font-size: .88rem; }
 .release-notes h4 { margin: .75rem 0 .25rem; color: var(--text-primary); font-size: .94rem; }
 .release-notes ul { margin: 0; padding-inline-start: 1.2rem; }
@@ -660,7 +667,7 @@ dialog.app-dialog[open] { position: fixed; inset: 0; margin: auto; max-height: 9
 [data-compact="true"] .punch-card { padding: .65rem .85rem .85rem; }
 [data-compact="true"] .punch-grid { gap: .35rem; margin-block: .3rem .65rem; }
 
-@media screen and (max-width: 900px), screen and (max-width: 1024px) and (hover: none) and (pointer: coarse) {
+@media screen and (max-width: 680px), screen and (max-width: 1024px) and (hover: none) and (pointer: coarse) {
   #historyTable thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 }
 
@@ -706,21 +713,25 @@ dialog.app-dialog[open] { position: fixed; inset: 0; margin: auto; max-height: 9
 
   #historyTable, #historyTable tbody { display: block; }
   #historyTable tbody tr {
-    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: center;
-    gap: .25rem .5rem; margin-bottom: .55rem; padding: .65rem .7rem;
+    display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, auto);
+    grid-template-areas: "date hours status" "record record record" "actions actions actions";
+    align-items: center; gap: .15rem .55rem; margin-bottom: .55rem; padding: .65rem .75rem .35rem;
     border: 1px solid var(--border-color); border-radius: 12px;
   }
-  #historyTable td { padding: 0; border: 0; }
-  #historyTable td:nth-child(1) { color: var(--text-secondary); font-size: .82rem; }
-  #historyTable td:nth-child(2) { grid-area: 1 / 2; font-weight: 700; }
-  #historyTable td:nth-child(3) { font-weight: 750; }
-  #historyTable td:nth-child(4) { font-size: .85rem; }
-  #historyTable .action-cell { grid-column: 1 / -1; display: flex; gap: .4rem; }
+  #historyTable td { min-width: 0; padding: 0; border: 0; }
+  #historyTable td:nth-child(1) { grid-area: date; color: var(--text-secondary); font-size: .82rem; }
+  #historyTable td:nth-child(2) { grid-area: record; font-weight: 700; }
+  #historyTable td:nth-child(3) { grid-area: hours; font-weight: 750; white-space: nowrap; }
+  #historyTable td:nth-child(4) { grid-area: status; color: var(--text-secondary); font-size: .8rem; text-align: right; }
+  #historyTable .audit-log { margin-block: .1rem; font-weight: 400; }
+  #historyTable .audit-log summary { padding-block: .2rem; }
+  #historyTable .action-cell { grid-area: actions; display: flex; flex-wrap: wrap; gap: .2rem .5rem; }
   .toast { bottom: calc(var(--navigation-height) + env(safe-area-inset-bottom) + .65rem); }
 }
 @media screen and (max-width: 480px) {
   .app-header { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "brand actions" "status status"; column-gap: .2rem; row-gap: .05rem; padding-bottom: .45rem; }
   .header-actions { gap: .1rem; }
+  .header-actions .header-icon { width: 40px; }
   .brand { gap: .35rem; }
   .brand h1 { font-size: 1.04rem; }
   .brand-mark { width: 32px; height: 32px; font-size: 1.4rem; }

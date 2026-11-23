@@ -1,7 +1,8 @@
 (() => {
   const punchFields = Shift.fields;
-  const header = ['Date', 'Type', 'Title', 'Total minutes', 'Status', 'Morning in', 'Lunch out', 'Lunch return', 'Evening out', 'Notes', 'Schedule', 'Day type', 'Work target (minutes)', 'Lunch (minutes)', 'Extra worked (minutes)',
-    ...punchFields.map(field => Audit.labels[field] + ' recorded (UTC)'), 'First logged (UTC)', 'Last changed (UTC)'];
+  const header = ['Date', 'Type', 'Title', 'Total minutes', 'Status', 'Morning in', 'Lunch out', 'Lunch return', 'Evening out', 'Notes', 'Schedule', 'Day type', 'Work target (minutes)', 'Lunch (minutes)', 'Lunch deducted (minutes)', 'Extra worked (minutes)'];
+  const auditHeader = [...punchFields.map(field => Audit.labels[field] + ' recorded (UTC)'), 'First logged (UTC)', 'Last changed (UTC)'];
+  const includeChangeLogs = () => document.getElementById('exportChangeLogs').checked;
   const employeeFields = [
     ['employeeId', 'Employee ID'], ['employeeEmail', 'Employee email'], ['role', 'Role'], ['department', 'Department']
   ];
@@ -75,7 +76,7 @@
     return employeeFields.filter(([field]) => meta[field]).map(([field, label]) => `${label} · ${meta[field]}`);
   }
 
-  function recordRows(records) {
+  function recordRows(records, includeLogs) {
     return records.map(record => [
       record.date, record.kind === 'weekly' ? 'Weekly' : 'Daily', record.title || '', record.totalMinutes || 0,
       Shift.recordStatus(record),
@@ -83,22 +84,23 @@
       record.notes || '', record.schedule ? JSON.stringify(record.schedule) : '',
       record.kind === 'daily' ? Shift.label(record.mode) : '',
       record.kind === 'daily' ? record.targetMinutes : '',
-      record.lunchMinutes ?? '', record.extraMinutes ?? '',
-      ...punchFields.map(field => Audit.punchedAt(record.audit, field, record.punches?.[field])),
-      record.audit?.createdAt || '', record.audit?.updatedAt || ''
+      record.lunchMinutes ?? '', record.lunchDeductionMinutes ?? record.lunchMinutes ?? '', record.extraMinutes ?? '',
+      ...(includeLogs ? [...punchFields.map(field => Audit.punchedAt(record.audit, field, record.punches?.[field])),
+        record.audit?.createdAt || '', record.audit?.updatedAt || ''] : [])
     ]);
   }
   window.exportVisibleCSV = async () => {
     const records = visibleRecords();
     if (!records.length) return;
+    const includeLogs = includeChangeLogs();
     const profile = await chooseProfile();
     if (!profile) return;
     const respond = UiSounds.feedback();
     try {
       const meta = metaValues(metadata(profile));
-      const rows = recordRows(records).map((row, index) => [...row,
-        records[index].audit ? JSON.stringify(records[index].audit.events) : '', ...meta]);
-      download([[...header, 'Change log (JSON)', ...metaLabels], ...rows]
+      const rows = recordRows(records, includeLogs).map((row, index) => [...row,
+        ...(includeLogs ? [records[index].audit ? JSON.stringify(records[index].audit.events) : ''] : []), ...meta]);
+      download([[...header, ...(includeLogs ? [...auditHeader, 'Change log (JSON)'] : []), ...metaLabels], ...rows]
         .map(row => row.map(csvCell).join(',')).join('\r\n'), 'Punchly_filtered_history.csv', 'text/csv;charset=utf-8');
     } catch (error) { exportOutcome(respond, 'The CSV file could not be created.'); return; }
     exportOutcome(respond);
@@ -138,6 +140,7 @@
     if (button.disabled) return;
     const records = visibleRecords();
     if (!records.length) return;
+    const includeLogs = includeChangeLogs();
     const profile = await chooseProfile();
     if (!profile) return;
     const meta = metadata(profile);
@@ -151,32 +154,35 @@
     let failure = '';
     try {
       const xlsx = await loadSheetJs();
-      const rows = recordRows(records);
+      const columns = [...header, ...(includeLogs ? auditHeader : [])];
+      const rows = recordRows(records, includeLogs);
       rows.forEach(row => { row[0] = excelDate(row[0]); });
-      const sheet = xlsx.utils.aoa_to_sheet([header, ...rows]);
+      const sheet = xlsx.utils.aoa_to_sheet([columns, ...rows]);
       rows.forEach(([date], index) => {
         if (typeof date === 'number') sheet[`A${index + 2}`].z = 'yyyy-mm-dd';
       });
       sheet['!autofilter'] = { ref: sheet['!ref'] };
-      sheet['!cols'] = header.map(label => ({ wch: Math.max(14, label.length + 2) }));
+      sheet['!cols'] = columns.map(label => ({ wch: Math.max(14, label.length + 2) }));
       const workbook = xlsx.utils.book_new();
       xlsx.utils.book_append_sheet(workbook, sheet, 'Timesheet');
-      const log = [['Shift date', 'Record type', 'Record title', 'Recorded at (UTC)', 'Field', 'Previous value', 'New value']];
-      for (const record of records) {
-        for (const event of record.audit?.events || []) {
-          for (const change of event.changes) {
-            log.push([excelDate(record.date), record.kind, record.title || '', event.at,
-              Audit.labels[change.field], change.from, change.to]);
+      if (includeLogs) {
+        const log = [['Shift date', 'Record type', 'Record title', 'Recorded at (UTC)', 'Field', 'Previous value', 'New value']];
+        for (const record of records) {
+          for (const event of record.audit?.events || []) {
+            for (const change of event.changes) {
+              log.push([excelDate(record.date), record.kind, record.title || '', event.at,
+                Audit.labels[change.field], change.from, change.to]);
+            }
           }
         }
+        const auditSheet = xlsx.utils.aoa_to_sheet(log);
+        log.slice(1).forEach(([date], index) => {
+          if (typeof date === 'number') auditSheet[`A${index + 2}`].z = 'yyyy-mm-dd';
+        });
+        auditSheet['!autofilter'] = { ref: auditSheet['!ref'] };
+        auditSheet['!cols'] = [14, 14, 24, 26, 20, 40, 40].map(wch => ({ wch }));
+        xlsx.utils.book_append_sheet(workbook, auditSheet, 'Change log');
       }
-      const auditSheet = xlsx.utils.aoa_to_sheet(log);
-      log.slice(1).forEach(([date], index) => {
-        if (typeof date === 'number') auditSheet[`A${index + 2}`].z = 'yyyy-mm-dd';
-      });
-      auditSheet['!autofilter'] = { ref: auditSheet['!ref'] };
-      auditSheet['!cols'] = [14, 14, 24, 26, 20, 40, 40].map(wch => ({ wch }));
-      xlsx.utils.book_append_sheet(workbook, auditSheet, 'Change log');
       const info = xlsx.utils.aoa_to_sheet(metaLabels.map((label, index) => [label, metaValues(meta)[index]]));
       info['!cols'] = [{ wch: 24 }, { wch: 48 }];
       xlsx.utils.book_append_sheet(workbook, info, 'Export details');
@@ -214,14 +220,15 @@
   window.exportChartPNG = async () => {
     const records = visibleRecords();
     if (!records.length) return;
+    const includeLogs = includeChangeLogs();
     const profile = await chooseProfile();
     if (!profile) return;
     const respond = UiSounds.feedback();
     try {
       const meta = metadata(profile);
       const canvas = Charts.exportChart(records, window.getExportChartKind?.() || 'bar', [stamp(meta), ...employeeLines(meta)]);
-      const changeLog = records.filter(record => record.audit).map(({ date, kind, title, audit }) => ({ date, kind, title, audit }));
-      download(pngWithMetadata(canvas, { ...meta, changeLog }), 'Punchly_filtered_chart.png', 'image/png');
+      const changeLog = includeLogs ? records.filter(record => record.audit).map(({ date, kind, title, audit }) => ({ date, kind, title, audit })) : undefined;
+      download(pngWithMetadata(canvas, { ...meta, ...(includeLogs ? { changeLog } : {}) }), 'Punchly_filtered_chart.png', 'image/png');
     } catch (error) { exportOutcome(respond, 'The chart image could not be created.'); return; }
     exportOutcome(respond);
   };
@@ -260,7 +267,7 @@
     return new Blob(parts, { type: 'application/pdf' });
   }
 
-  function pdfTimesheet(records, meta) {
+  function pdfTimesheet(records, meta, includeLogs) {
     const canvas = document.createElement('canvas');
     canvas.width = 1000;
     canvas.height = 1415;
@@ -321,7 +328,7 @@
         if (row.from || row.to) line(`${row.day}: ${row.from || '—'} to ${row.to || '—'}${row.break || row.breakDeduction ? ` · Break ${row.break || row.breakDeduction}` : ''}`);
       }
       if (record.notes) notes(record.notes);
-      if (record.audit?.events.length) {
+      if (includeLogs && record.audit?.events.length) {
         line('Change log', true);
         for (const event of record.audit.events) {
           notes(`${Audit.format(event.at)} · ${event.changes.map(Audit.describe).join(' · ')}`);
@@ -336,10 +343,11 @@
   window.exportVisiblePDF = async () => {
     const records = visibleRecords();
     if (!records.length) return;
+    const includeLogs = includeChangeLogs();
     const profile = await chooseProfile();
     if (!profile) return;
     const respond = UiSounds.feedback();
-    try { download(pdfTimesheet(records, metadata(profile)), 'Punchly_timesheet.pdf', 'application/pdf'); }
+    try { download(pdfTimesheet(records, metadata(profile), includeLogs), 'Punchly_timesheet.pdf', 'application/pdf'); }
     catch (error) { exportOutcome(respond, 'The PDF could not be created.'); return; }
     exportOutcome(respond);
   };

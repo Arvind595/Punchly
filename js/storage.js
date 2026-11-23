@@ -23,6 +23,7 @@ const Storage = (() => {
     reminderOut: '',
     reminderTarget: false,
     lunchLimit: 45,
+    minimumLunch: true,
     theme: 'light',
     workdays: [1, 2, 3, 4, 5, 6],
     rounding: 'none',
@@ -88,6 +89,7 @@ const Storage = (() => {
     const settings = { ...defaults, ...(value && typeof value === 'object' ? value : {}) };
     if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(settings.targetShift) || settings.targetShift === '00:00') settings.targetShift = defaults.targetShift;
     if (!Number.isInteger(settings.lunchLimit) || settings.lunchLimit < 0 || settings.lunchLimit > 720) settings.lunchLimit = defaults.lunchLimit;
+    settings.minimumLunch = settings.minimumLunch === true;
     if (!['none', '5', '15', '30'].includes(settings.rounding)) settings.rounding = defaults.rounding;
     if (!['24', '12'].includes(settings.clockFormat)) settings.clockFormat = defaults.clockFormat;
     if (!['weekly', 'monthly', 'yearly', 'all'].includes(settings.historyRange)) settings.historyRange = defaults.historyRange;

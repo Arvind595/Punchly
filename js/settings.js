@@ -189,6 +189,7 @@ const Preferences = (() => {
       byId('reminderTarget').checked = settings.reminderTarget;
       byId('defaultTarget').value = settings.targetShift;
       byId('lunchLimit').value = settings.lunchLimit;
+      byId('minimumLunch').checked = settings.minimumLunch;
 
       byId('clockFormat').value = settings.clockFormat;
       byId('defaultRange').value = settings.historyRange;
@@ -273,6 +274,7 @@ const Preferences = (() => {
       save({
         targetShift: byId('defaultTarget').value,
         lunchLimit: byId('lunchLimit').valueAsNumber,
+        minimumLunch: byId('minimumLunch').checked,
 
         clockFormat: byId('clockFormat').value,
         historyRange: byId('defaultRange').value,

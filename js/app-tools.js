@@ -184,6 +184,33 @@ const AppTools = (() => {
     return check();
   }
 
+  function connectInvite(notify) {
+    const dialog = modal('inviteDialog');
+    const link = byId('inviteLink');
+    const url = 'https://arvind595.github.io/Punchly/';
+    async function invite() {
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: 'Punchly', text: 'Try Punchly, a private time tracker.', url });
+          return;
+        } catch (error) {
+          if (error.name === 'AbortError') return;
+        }
+      }
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+        await navigator.clipboard.writeText(url);
+        notify('Install link copied. Share it with a friend.');
+      } catch (error) {
+        dialog.open();
+        link.focus();
+        link.select();
+      }
+    }
+    byId('inviteFriend').addEventListener('click', invite);
+    byId('headerInvite').addEventListener('click', invite);
+  }
+
   function connectHelp(version) {
     const help = modal('helpDialog');
     byId('openHelp').addEventListener('click', help.open);
@@ -349,5 +376,5 @@ const AppTools = (() => {
     });
   }
 
-  return { modal, connectStartup, connectUpdates, connectHelp, connectPhoto, connectReset };
+  return { modal, connectStartup, connectUpdates, connectHelp, connectInvite, connectPhoto, connectReset };
 })();

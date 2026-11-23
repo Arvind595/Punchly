@@ -1,5 +1,24 @@
 # Punchly release notes
 
+## v29
+
+- Choose whether reports include change logs and recorded timestamps; full backups still retain them.
+- Matched the Data & backups privacy reminder to the welcome screen.
+
+## v28
+
+- Streamlined mobile History records and added an invite shortcut to the header.
+
+## v27
+
+- Minimum lunch deduction is enabled by default and can be changed during setup.
+- Updated the welcome screen and added an option to share the Punchly install link.
+
+## v26
+
+- Added an optional minimum lunch deduction for full days, including skipped lunch. Longer breaks deduct their full duration.
+- Saved shifts retain their original lunch calculation, and spreadsheet exports include the deducted lunch time.
+
 ## v25
 
 - New setups start in Compact mode, which keeps the Punch artwork.

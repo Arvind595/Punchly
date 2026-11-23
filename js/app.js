@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
   connectClientLayout();
   const initialUpdate = AppTools.connectUpdates(version, localDateKey, toast);
   AppTools.connectHelp(version);
+  AppTools.connectInvite(toast);
   const dayTypeDialog = AppTools.modal('firstPunchDialog', () => {
     if (firstPunchPane.hasAttribute('open')) return;
     pendingFirstPunch = null;
@@ -493,7 +494,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function readPunchShift(date, now) {
     const record = Storage.getHistory().find(row => row.kind === 'daily' && row.date === date);
     const draft = Storage.getDraft(date) || (!record && legacyDraftOn(date, Storage.getToday()));
-    const input = { ...logInput(date, record, draft), lunchLimit: settings.lunchLimit };
+    const input = logInput(date, record, draft);
     const elapsed = nowMinutesForDay(now, date);
     const result = Shift.measure({ ...input, now: elapsed });
     const saved = Boolean(record && (!draft || matchingDraft(record, draft)));
@@ -594,6 +595,14 @@ document.addEventListener('DOMContentLoaded', () => {
     return localDateKey(result);
   }
 
+  function lunchPolicy(record) {
+    // Completed records retain the rule and limit used when they were saved.
+    return record?.out ? {
+      lunchLimit: record.lunchLimitMinutes ?? settings.lunchLimit,
+      minimumLunch: record.minimumLunch === true
+    } : { lunchLimit: settings.lunchLimit, minimumLunch: settings.minimumLunch };
+  }
+
   function logInput(date, record, draft) {
     const source = draft || record?.punches || { morningIn: record?.in, eveningOut: record?.out === '--:--' ? '' : record?.out };
     const scheduled = Shift.nationalHoliday(date) && !Shift.hasPunches(source) ? 'holiday' : Shift.saturdayMode(date);
@@ -601,7 +610,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const punches = Shift.punchesForMode(source, mode);
     const savedTarget = record?.baseTargetMinutes ?? (record?.mode === 'half' ? record.targetMinutes * 2 : record?.targetMinutes);
     return {
-      mode, punches,
+      mode, punches, ...lunchPolicy(record),
       baseTarget: toMinutes(draft?.targetShift) || savedTarget || toMinutes(settings.targetShift),
       notes: Shift.holidayNotes(draft?.notes ?? record?.notes, date).trim()
     };
@@ -637,15 +646,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const entry = isDraft ? draftInput : logInput(date, record);
-    const result = Shift.measure({ ...entry, lunchLimit: settings.lunchLimit, now: nowMinutesForDay(now, date) });
+    const result = Shift.measure({ ...entry, now: nowMinutesForDay(now, date) });
     const dayOff = Shift.isHoliday(entry.mode, entry.punches);
     entry.notes = Shift.saturdayNotes(entry.notes, date, Shift.parseTime(entry.punches.morningIn) !== null);
     const status = isDraft
       ? (result.error ? 'Draft · Check punches' : dayOff ? `Draft · ${Shift.label(entry.mode)}` : 'Draft')
       : Shift.recordStatus(record);
-    const total = dayOff || (isDraft && result.error) ? null : isDraft ? result.total : record.totalMinutes;
-    return { date, ...entry, status, total, target: result.target, lunch: result.lunch,
-      extra: result.extra, isDraft, complete: result.complete, endDayOffset: result.endDayOffset,
+    const live = isDraft || !record?.out;
+    const total = dayOff || (live && result.error) ? null : live ? result.total : record.totalMinutes;
+    return { date, ...entry, status, total, target: result.target, lunch: live ? result.lunch : record.lunchMinutes,
+      lunchDeduction: live ? result.lunchDeduction : record.lunchDeductionMinutes,
+      extra: live ? result.extra : record.extraMinutes, isDraft, complete: result.complete, endDayOffset: result.endDayOffset,
       hasRecord: Boolean(record), audit: isDraft ? draft.audit ?? record?.audit : record?.audit };
   }
 
@@ -830,9 +841,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function measureDay(now = new Date(), punches = readPunches()) {
+    const record = Storage.getHistory().find(item => item.kind === 'daily' && item.date === selectedDay());
     return Shift.measure({
       mode: shiftMode.value, punches, baseTarget: toMinutes(shiftTarget.value),
-      lunchLimit: settings.lunchLimit, now: nowMinutesForDay(now, selectedDay())
+      ...lunchPolicy(record), now: nowMinutesForDay(now, selectedDay())
     });
   }
 
@@ -843,7 +855,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function dayForReminder(date) {
-    if (date === selectedDay()) return { date, mode: shiftMode.value, punches: readPunches(), baseTarget: toMinutes(shiftTarget.value) };
+    if (date === selectedDay()) {
+      const record = Storage.getHistory().find(item => item.kind === 'daily' && item.date === date);
+      return { date, mode: shiftMode.value, punches: readPunches(), baseTarget: toMinutes(shiftTarget.value), ...lunchPolicy(record) };
+    }
     const draft = Storage.getDraft(date);
     const record = Storage.getHistory().find(item => item.kind === 'daily' && item.date === date);
     return { date, ...logInput(date, record, draft) };
@@ -852,7 +867,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function timerSnapshot(now) {
     const today = localDateKey(now);
     let shift = dayForReminder(today);
-    const measure = day => Shift.measure({ ...day, lunchLimit: settings.lunchLimit, now: nowMinutesForDay(now, day.date) });
+    const measure = day => Shift.measure({ ...day, now: nowMinutesForDay(now, day.date) });
     let result = measure(shift);
     if (!shift.punches.morningIn) {
       const previous = dayForReminder(yesterdayKey(now));
@@ -888,7 +903,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elapsed - start >= 1440 || (completed && !includeCompleted)) {
       activeShift = null;
     } else {
-      activeShift.result = Shift.measure({ ...activeShift, lunchLimit: settings.lunchLimit, now: elapsed });
+      activeShift.result = Shift.measure({ ...activeShift, now: elapsed });
     }
     reminders.check(now, date, today, activeShift, audible);
   }
@@ -945,12 +960,17 @@ document.addEventListener('DOMContentLoaded', () => {
     setText(document.getElementById('todayStatus'), status);
 
     const lunch = document.getElementById('lunchStatus');
-    lunch.hidden = result.lunch === null;
-    if (result.lunch !== null) {
-      const overLimit = Math.max(0, result.lunch - settings.lunchLimit);
+    const savedRecord = Storage.getHistory().find(item => item.kind === 'daily' && item.date === selectedDay());
+    const policy = lunchPolicy(savedRecord);
+    const showMinimum = policy.minimumLunch && mode !== 'half' && result.started;
+    lunch.hidden = result.lunch === null && !showMinimum;
+    if (!lunch.hidden) {
+      const overLimit = Math.max(0, (result.lunch ?? 0) - policy.lunchLimit);
       const limitMessage = overLimit ? ` · ${overLimit} min over limit` : '';
       lunch.classList.toggle('lunch-over-limit', overLimit > 0);
-      setText(lunch, `Lunch${result.lunchOpen ? ' so far' : ''}: ${result.lunch} min / ${settings.lunchLimit} min${limitMessage}`);
+      const actual = result.lunch === null ? 'No lunch recorded' : `Lunch${result.lunchOpen ? ' so far' : ''}: ${result.lunch} min / ${policy.lunchLimit} min${limitMessage}`;
+      const deducted = showMinimum ? ` · ${result.lunchDeduction} min ${result.lunchOpen ? 'deducted so far' : 'deducted'}` : '';
+      setText(lunch, actual + deducted);
     }
   }
 
@@ -1012,12 +1032,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const date = selectedDay();
+    const policy = lunchPolicy(Storage.getHistory().find(item => item.kind === 'daily' && item.date === date));
     if (!saveDayDraft(readPunches(), now)) { UiSounds.play('error'); return; }
     const record = {
       id: `daily-${date}`, kind: 'daily', date, mode, punches,
       in: punches.morningIn || '', out: punches.eveningOut || '', notes: Shift.holidayNotes(dayNotes.value, date).trim(),
       baseTargetMinutes: toMinutes(shiftTarget.value), targetMinutes: result.target,
-      totalMinutes: result.total, extraMinutes: result.extra, lunchMinutes: result.lunch, lunchLimitMinutes: settings.lunchLimit,
+      totalMinutes: result.total, extraMinutes: result.extra, lunchMinutes: result.lunch, lunchDeductionMinutes: result.lunchDeduction,
+      lunchLimitMinutes: policy.lunchLimit, minimumLunch: policy.minimumLunch,
       targetMet: result.complete && result.total >= result.target, audit: Storage.getDraft(date)?.audit
     };
     if (!Storage.saveRecord(record)) return toast('Could not save. Browser storage may be full or unavailable.', 'error');
@@ -1065,7 +1087,8 @@ document.addEventListener('DOMContentLoaded', () => {
     return {
       id: `derived-${entry.date}`, kind: 'daily', date: entry.date, derived: true, mode: type,
       entryStatus: status, notes: entry.notes, totalMinutes: entry.total ?? 0, targetMinutes: entry.target ?? 0,
-      lunchMinutes: entry.lunch, extraMinutes: entry.extra, punches: entry.punches,
+      lunchMinutes: entry.lunch, lunchDeductionMinutes: entry.lunchDeduction, lunchLimitMinutes: entry.lunchLimit,
+      minimumLunch: entry.minimumLunch, extraMinutes: entry.extra, punches: entry.punches,
       in: entry.punches?.morningIn || '', out: entry.punches?.eveningOut || '', audit: entry.audit
     };
   }
@@ -1104,7 +1127,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const now = new Date();
     const today = localDateKey(now);
     const range = statsRange.value;
-    const records = inRange(all, range, now);
+    const records = withDailyEntries(inRange(all, range, now), range, now);
     const daily = records.filter(record => record.kind === 'daily' && !Shift.isHoliday(record.mode, record.punches));
     const sum = daily.reduce((acc, record) => acc + Math.max(0, Number(record.totalMinutes) || 0), 0);
     const over = daily.reduce((acc, record) => acc + (record.extraMinutes || 0), 0);
@@ -1149,9 +1172,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const draftDates = Object.keys(Storage.getDrafts());
     const start = periodStart(range, now, records, draftDates);
     const dates = new Set(draftDates.filter(date => date <= today && date >= start));
+    records.filter(record => record.kind === 'daily' && !record.out && Shift.hasPunches(record.punches))
+      .forEach(record => dates.add(record.date));
     const holidays = Shift.nationalHolidayDates(start, today);
     holidays.forEach(date => dates.add(date));
-    const entries = readDayEntries([...dates], now).filter(entry => entry.isDraft ||
+    const entries = readDayEntries([...dates], now).filter(entry => entry.isDraft || (entry.hasRecord && !entry.complete && Shift.hasPunches(entry.punches)) ||
       (entry.mode === 'holiday' && Shift.nationalHoliday(entry.date)));
     const byDate = new Map(entries.map(entry => [entry.date, entry]));
     const saved = records.map(record => {
@@ -1160,6 +1185,8 @@ document.addEventListener('DOMContentLoaded', () => {
       byDate.delete(record.date);
       if (entry?.isDraft) return { ...record, ...entryRecord(entry, entry.mode, entry.status),
         id: record.id, derived: false, hasDraft: true };
+      if (entry && !entry.complete && Shift.hasPunches(entry.punches)) return { ...record,
+        ...entryRecord(entry, entry.mode, entry.status), id: record.id, derived: false };
       const notes = Shift.holidayNotes(record.notes, record.date);
       return notes === record.notes ? record : { ...record, notes };
     });
@@ -1173,6 +1200,7 @@ document.addEventListener('DOMContentLoaded', () => {
     summary.textContent = 'Change log';
     details.append(summary);
     Audit.show(details, audit);
+    summary.textContent = 'Change log';
     return details;
   }
 
@@ -1236,6 +1264,12 @@ document.addEventListener('DOMContentLoaded', () => {
         notes.className = 'history-notes';
         notes.textContent = record.notes;
         label.append(notes);
+      }
+      if (record.kind === 'daily' && record.minimumLunch && record.lunchDeductionMinutes != null) {
+        const lunch = document.createElement('p');
+        lunch.className = 'history-notes';
+        lunch.textContent = `${record.lunchMinutes == null ? 'No lunch recorded' : `Lunch ${record.lunchMinutes} min`} · ${record.lunchDeductionMinutes} min deducted`;
+        label.append(lunch);
       }
       if (record.kind === 'weekly' && (record.notes || record.schedule?.length)) label.append(weeklyArchive(record));
       if (record.audit) label.append(changeLog(record.audit));

@@ -61,6 +61,7 @@ const Setup = (() => {
 
     function fill() {
       for (const field of fields) form.elements[field].value = settings[field];
+      form.elements.minimumLunch.checked = settings.minimumLunch;
       if (!form.elements.theme.value) form.elements.theme.value = 'light';
     }
 
@@ -168,7 +169,8 @@ const Setup = (() => {
         clockFormat: values.clockFormat,
         theme: values.theme,
         targetShift: values.targetShift,
-        lunchLimit: Number(values.lunchLimit)
+        lunchLimit: Number(values.lunchLimit),
+        minimumLunch: form.elements.minimumLunch.checked
       });
     });
 

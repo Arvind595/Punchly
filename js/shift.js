@@ -94,10 +94,10 @@ const Shift = (() => {
     return Object.fromEntries(included.map(field => [field, punches[field] || '']));
   }
 
-  function measure({ mode, punches, baseTarget, lunchLimit, now }) {
+  function measure({ mode, punches, baseTarget, lunchLimit, minimumLunch = false, now }) {
     const target = isHoliday(mode, punches) ? 0 : mode === 'half' ? Math.ceil(baseTarget / 2) : baseTarget;
     const result = {
-      target, total: 0, extra: 0, lunch: null, lunchOpen: false, started: false, complete: false,
+      target, total: 0, extra: 0, lunch: null, lunchDeduction: null, lunchOpen: false, started: false, complete: false,
       targetOut: null, endDayOffset: 0, estimatedLunch: false, error: '', timeline: null
     };
     if (isDayOff(mode)) return result;
@@ -147,14 +147,24 @@ const Shift = (() => {
       const activeStart = lunchReturn ?? (lunchOut === null ? start : null);
       if (activeStart !== null && activeNow >= activeStart) result.total += activeNow - activeStart;
     }
-    result.extra = target > 0 ? Math.max(0, result.total - target) : 0;
     if (lunchOut !== null) {
       result.lunchOpen = lunchReturn === null;
       result.lunch = Math.max(0, (lunchReturn ?? activeNow ?? lunchOut) - lunchOut);
     }
+    // Reserve any unused part of the minimum, including before lunch is recorded.
+    const enforceMinimum = minimumLunch && mode !== 'half';
+    const recordedLunch = result.lunch ?? 0;
+    const additionalDeduction = enforceMinimum ? Math.max(0, lunchLimit - recordedLunch) : 0;
+    result.total = Math.max(0, result.total - additionalDeduction);
+    result.lunchDeduction = enforceMinimum ? Math.max(lunchLimit, result.lunch ?? 0) : result.lunch;
+    result.extra = target > 0 ? Math.max(0, result.total - target) : 0;
     if (target <= 0) return result;
 
-    if (lunchOut !== null && firstSegment < target) {
+    if (enforceMinimum) {
+      const lunch = lunchOut === null ? lunchLimit : Math.max(lunchLimit, result.lunch ?? 0);
+      result.targetOut = start + target + lunch;
+      result.estimatedLunch = lunchOut !== null && lunchReturn === null;
+    } else if (lunchOut !== null && firstSegment < target) {
       const projectedReturn = lunchReturn ?? Math.max(lunchOut + lunchLimit, activeNow ?? lunchOut);
       result.targetOut = projectedReturn + target - firstSegment;
       result.estimatedLunch = lunchReturn === null;

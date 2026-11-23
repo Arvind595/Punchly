@@ -24,14 +24,14 @@ Punchly is a private time tracker for daily punches, weekly hours, and monthly a
 - **Week** shows shifts and drafts from Monday. Use **Edit** on an entry or **Log** on an empty date.
 - **Dates** shows a monthly attendance calendar. Tap the month heading, choose a year, and then choose a month. You can look ahead at holidays and reserve, update, or cancel future leave. Punchly marks the first and third Saturdays, plus Republic Day, Independence Day, and Gandhi Jayanti. Working on a scheduled Saturday adds a note automatically.
 - **History** can search dates and notes and filter leave, holidays, incomplete shifts, overtime, long lunches, and unpunched dates. Expand a record’s **Change log** to see when punches or other details were entered or edited. **Stats** offers bars, lines, an attendance pie chart, and a classic log.
-- **Export** offers PDF timesheets, PNG charts, Excel, and CSV. Reports include the export time, app version, and profile details you review before downloading. Excel uses native date cells and a separate **Change log** sheet.
+- **Export** offers PDF timesheets, PNG charts, Excel, and CSV. Reports include the export time, app version, and profile details you review before downloading. The **Include change logs** checkbox controls change history and recorded timestamps in reports; PNG stores them in image metadata. Excel uses native date cells and, when enabled, a separate **Change log** sheet. Full backups always include change logs.
 
 ### Customize Punchly
 
 - **Appearance** includes light and dark themes, thirteen fonts, Compact mode, mobile haptics, and in-app sound. New setups start in Compact mode with the Punch artwork visible. Use **Show shift details** in Today to expand the form. Audio defaults to 70%, and typing sounds are optional.
 - **Profile** stores your display name, employee ID, employee email, role, department, and avatar or cropped local photo.
-- **Tracking defaults** controls the daily target, lunch limit, workdays, clock format, and default date range. **Reminders** can prompt you to punch or tell you when you meet the target while Punchly is open. Device alerts require browser permission.
-- Open **?** for help or use **Settings → Developer & Support** to report an issue or request a feature. Device details are optional in the email draft.
+- **Tracking defaults** controls the daily target, lunch limit, workdays, clock format, and default date range. By default, full days require a minimum lunch deduction: a shorter or skipped lunch deducts the configured limit, while a longer lunch deducts its full duration. You can turn this option off in setup or settings. Half days are unaffected. Existing completed shifts retain their saved calculation; the setting applies to current unfinished and new shifts. While a shift is in progress, the unused portion of the minimum is reserved from worked time. **Reminders** can prompt you to punch or tell you when you meet the target while Punchly is open. Device alerts require browser permission.
+- Open **?** for help or use **Settings → Developer & Support** to report an issue, request a feature, or share the Punchly install link. Device details are optional in the email draft.
 
 ## Data and backups
 
