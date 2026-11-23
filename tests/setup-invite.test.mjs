@@ -86,3 +86,12 @@ test('setup shows the imported lunch choice and saves a changed choice', async (
   assert.equal(saved.minimumLunch, true)
   assert.equal(saved.lunchLimit, 45)
 })
+
+test('recognizes automatic device labels while respecting explicitly saved names', async () => {
+  const context = { navigator: { userAgent: 'Windows', platform: 'Win32' } }
+  runInNewContext(readFileSync('js/setup.js', 'utf8') + '\nthis.Setup = Setup', context)
+  assert.equal(await context.Setup.isDeviceProfile({ displayName: 'Windows PC' }), true)
+  assert.equal(await context.Setup.isDeviceProfile({ displayName: 'Windows PC', profileNameSource: 'user' }), false)
+  assert.equal(await context.Setup.isDeviceProfile({ displayName: 'Aravind' }), false)
+  assert.equal(await context.Setup.isDeviceProfile({ displayName: 'Device model', profileNameSource: 'device' }), true)
+})

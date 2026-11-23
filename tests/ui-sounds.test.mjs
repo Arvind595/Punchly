@@ -347,11 +347,13 @@ test('backup import sounds follow the committed restore, cancellation, invalid f
   }
   const storage = {
     validateBackup: () => {},
+    duplicateDates: () => ['2026-11-23'],
     importBackup() {
       log.push('write')
       return 2
     },
   }
+  const preview = {}
   runInNewContext(readFileSync('js/export.js', 'utf8'), {
     window,
     Shift: { fields: [] },
@@ -360,7 +362,7 @@ test('backup import sounds follow the committed restore, cancellation, invalid f
     CustomEvent: Event,
     UiSounds: { feedback: () => (cue) => log.push(cue) },
     document: {
-      getElementById: (id) => (id === 'restoreDialog' ? dialog : {}),
+      getElementById: (id) => (id === 'restoreDialog' ? dialog : id === 'restorePreview' ? preview : {}),
     },
   })
   const notify = () => log.push('status')
@@ -386,6 +388,7 @@ test('backup import sounds follow the committed restore, cancellation, invalid f
   resolve('{"history":[]}')
   await decide('replace')
   assert.equal(await success, true)
+  assert.match(preview.textContent, /1 attendance date already exists/)
   assert.deepEqual(log.splice(0), [
     'shown',
     'open',

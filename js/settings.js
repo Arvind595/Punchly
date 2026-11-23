@@ -102,6 +102,7 @@ const Preferences = (() => {
     preview.style.setProperty('--swatch-bg', theme.colors[0]);
     preview.style.setProperty('--swatch-accent', theme.colors[1]);
     preview.style.setProperty('--swatch-secondary', theme.colors[3] || theme.colors[2]);
+    preview.innerHTML = '<svg viewBox="0 0 100 30" preserveAspectRatio="none" focusable="false"><rect width="100" height="30" fill="var(--swatch-bg)"/><path d="M47 0H79L68 30H36Z" fill="var(--swatch-accent)"/><path d="M78 0H100V30H67Z" fill="var(--swatch-secondary)"/></svg>';
     const name = document.createElement('span');
     name.textContent = theme.name;
     tile.append(preview, name);
@@ -211,7 +212,7 @@ const Preferences = (() => {
       const next = { ...settings, ...changes };
       if (!Storage.saveSettings(next)) {
         refresh();
-        notify('Browser storage is unavailable. Settings could not be saved.');
+        notify(Storage.lastError() || 'Browser storage is unavailable. Settings could not be saved.');
         UiSounds.play('error');
         return;
       }
@@ -254,8 +255,10 @@ const Preferences = (() => {
     });
     function saveProfile(photo, message) {
       if (!profileForm.reportValidity()) return;
+      const profile = Storage.profileDetails(Object.fromEntries(new FormData(profileForm)));
       save({
-        ...Storage.profileDetails(Object.fromEntries(new FormData(profileForm))),
+        ...profile,
+        profileNameSource: profile.displayName !== settings.displayName ? (profile.displayName ? 'user' : '') : settings.profileNameSource,
         avatar: avatarInputs.find(input => input.checked).value,
         profilePhoto: photo
       }, 'profile', message, photo === '' && settings.profilePhoto ? 'delete' : 'success');

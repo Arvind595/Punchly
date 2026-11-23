@@ -28,6 +28,14 @@ const Setup = (() => {
     return legacyDeviceName();
   }
 
+  async function isDeviceProfile(settings) {
+    const name = (settings.displayName || '').trim();
+    if (!name || settings.profileNameSource === 'device') return true;
+    if (settings.profileNameSource === 'user') return false;
+    if (/^(?:Android device|iPhone|iPad|Windows PC|Mac|ChromeOS device|Linux device|This device)$/i.test(name)) return true;
+    return name === await defaultProfileName();
+  }
+
   function connect(settings, onDone) {
     const setupDialog = document.getElementById('setupDialog');
     const form = document.getElementById('setupForm');
@@ -93,6 +101,9 @@ const Setup = (() => {
         back.disabled = next.disabled = skip.disabled = restore.disabled = true;
         const name = await defaultProfileName();
         chosen.displayName = Storage.profileDetails({ displayName: name }).displayName;
+        chosen.profileNameSource = 'device';
+      } else if (changes.displayName && changes.displayName !== settings.displayName) {
+        chosen.profileNameSource = 'user';
       }
       onDone(chosen, Storage.finishSetup(chosen), respond);
       dialog.close();
@@ -184,5 +195,5 @@ const Setup = (() => {
     };
   }
 
-  return { connect };
+  return { connect, isDeviceProfile };
 })();

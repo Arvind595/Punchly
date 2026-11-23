@@ -1,5 +1,15 @@
 # Punchly release notes
 
+## v31
+
+- Added backup validation, duplicate-date warnings, recovery diagnostics, quota handling, and the last backup export time.
+- Added report round-trip and reminder tests, and changed theme previews to vector color strips.
+
+## v30
+
+- Added miniature theme previews, expanded About and privacy information, and a live mini timer countdown.
+- Exports use saved profile details when available, label user notes, and include the version, export type, and date in filenames.
+
 ## v29
 
 - Choose whether reports include change logs and recorded timestamps; full backups still retain them.

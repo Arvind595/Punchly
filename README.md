@@ -17,18 +17,18 @@ Punchly is a private time tracker for daily punches, weekly hours, and monthly a
 1. Open **Punch** and tap the dial. Before the day’s first punch, choose **Full day** or **Half day** and confirm to punch in. Choose **Leave**, **Holiday**, or a scheduled Saturday holiday to save the day without a punch.
 2. Return to the dial for each remaining punch. Full days use morning in, lunch out, lunch return, and evening out. Use **Punch out without lunch** if you skipped your break. Half days use two punches and half the daily work target. Each punch saves locally, and the final punch saves the shift to **History**.
 3. Open **Today** to enter or correct punches, change the day type, or edit notes. The work target excludes lunch. The lunch limit defaults to 45 minutes and drives the checkout estimate and long-break warning. For overnight work, use the shift’s start date. Punch can resume an unfinished overnight shift.
-4. On desktop, **Alt + 1** through **Alt + 4** enter punches. The desktop mini timer shows elapsed work and estimated checkout. A separate always-on-top window is available in browsers that support Document Picture-in-Picture.
+4. On desktop, **Alt + 1** through **Alt + 4** enter punches. The desktop mini timer shows elapsed work, estimated checkout, and a live countdown in the selected theme. A separate always-on-top window is available in browsers that support Document Picture-in-Picture.
 
 ### Review attendance and export
 
 - **Week** shows shifts and drafts from Monday. Use **Edit** on an entry or **Log** on an empty date.
 - **Dates** shows a monthly attendance calendar. Tap the month heading, choose a year, and then choose a month. You can look ahead at holidays and reserve, update, or cancel future leave. Punchly marks the first and third Saturdays, plus Republic Day, Independence Day, and Gandhi Jayanti. Working on a scheduled Saturday adds a note automatically.
 - **History** can search dates and notes and filter leave, holidays, incomplete shifts, overtime, long lunches, and unpunched dates. Expand a record’s **Change log** to see when punches or other details were entered or edited. **Stats** offers bars, lines, an attendance pie chart, and a classic log.
-- **Export** offers PDF timesheets, PNG charts, Excel, and CSV. Reports include the export time, app version, and profile details you review before downloading. The **Include change logs** checkbox controls change history and recorded timestamps in reports; PNG stores them in image metadata. Excel uses native date cells and, when enabled, a separate **Change log** sheet. Full backups always include change logs.
+- **Export** offers PDF timesheets, PNG charts, Excel, and CSV. Reports include the export time, app version, and saved profile details. If the profile has no name or uses an automatic device name, Punchly asks for a name and saves it for later exports. Filenames include the app version, export type, and local date. The **Include change logs** checkbox controls change history and recorded timestamps in reports; PNG stores them in image metadata. Excel uses native date cells and, when enabled, a separate **Change log** sheet. Full backups always include change logs.
 
 ### Customize Punchly
 
-- **Appearance** includes light and dark themes, thirteen fonts, Compact mode, mobile haptics, and in-app sound. New setups start in Compact mode with the Punch artwork visible. Use **Show shift details** in Today to expand the form. Audio defaults to 70%, and typing sounds are optional.
+- **Appearance** includes light and dark themes with vector color previews, thirteen fonts, Compact mode, mobile haptics, and in-app sound. New setups start in Compact mode with the Punch artwork visible. Use **Show shift details** in Today to expand the form. Audio defaults to 70%, and typing sounds are optional.
 - **Profile** stores your display name, employee ID, employee email, role, department, and avatar or cropped local photo.
 - **Tracking defaults** controls the daily target, lunch limit, workdays, clock format, and default date range. By default, full days require a minimum lunch deduction: a shorter or skipped lunch deducts the configured limit, while a longer lunch deducts its full duration. You can turn this option off in setup or settings. Half days are unaffected. Existing completed shifts retain their saved calculation; the setting applies to current unfinished and new shifts. While a shift is in progress, the unused portion of the minimum is reserved from worked time. **Reminders** can prompt you to punch or tell you when you meet the target while Punchly is open. Device alerts require browser permission.
 - Open **?** for help or use **Settings → Developer & Support** to report an issue, request a feature, or share the Punchly install link. Device details are optional in the email draft.
@@ -38,7 +38,9 @@ Punchly is a private time tracker for daily punches, weekly hours, and monthly a
 Punchly stores records and settings in this browser. They stay on this device unless you export and transfer a backup. Clearing browser data can remove them.
 
 - **Settings → Data & backups → Export backup** saves records, drafts, change logs, and preferences in a `.json` file. Export backups regularly.
+- The last backup timestamp records when the browser started the download; check your downloads to confirm the file was saved. If damaged data or an interrupted import is detected, **Data & backups** offers recovery diagnostics and a download of the original stored data.
 - **Export settings** saves your preferences and profile without shift records. **Import backup** reads either kind of Punchly file. For a full backup, **Merge** adds entries and **Replace** restores the backup’s data and preferences.
+- Imports validate the backup and flag duplicate attendance dates. Merge keeps existing dates; Replace creates a temporary recovery copy before changing data. An import cannot proceed if the browser cannot store that recovery copy.
 - **Delete profile** removes saved profile details and its picture. **Reset Punchly** clears the app’s local data. Both actions offer a backup before confirmation.
 
 ## Run and build

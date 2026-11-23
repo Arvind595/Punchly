@@ -95,6 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
       Object.assign(settings, Storage.getSettings());
       preferences.refresh();
     }
+    if (!event.key || Object.values(Storage.keys).includes(event.key)) refreshStorageStatus();
     if (!event.key || [Storage.keys.DRAFTS, Storage.keys.HISTORY, Storage.keys.TODAY].includes(event.key)) refreshGuided();
   });
   updateHistory();
@@ -381,6 +382,40 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('settingsExport').addEventListener('click', () => window.downloadPunchlySettings?.());
   document.getElementById('backupImportBtn').addEventListener('click', () => document.getElementById('backupImport').click());
   document.getElementById('backupImport').addEventListener('change', event => window.importBackupFile?.(event.target));
+  function refreshStorageStatus() {
+    const state = Storage.diagnostics();
+    const show = state.issues.length > 0 || state.recovery;
+    document.getElementById('storageAlert').hidden = !show;
+    document.getElementById('storageDiagnostics').hidden = !show;
+    document.getElementById('restoreRecovery').hidden = !state.recovery;
+    document.getElementById('storageDiagnosticMessage').textContent = [
+      ...state.issues.map(issue => `${issue.key}: ${issue.message}`),
+      state.recovery ? 'A pre-import recovery copy is available. Download it before restoring if you need another copy.' : '',
+      state.issues.length ? 'The original stored data has been preserved. Download recovery data before making changes.' : ''
+    ].filter(Boolean).join(' ');
+    const timestamp = Storage.lastBackup();
+    document.getElementById('lastBackupStatus').textContent = timestamp && Number.isFinite(Date.parse(timestamp))
+      ? `Last backup export started: ${new Date(timestamp).toLocaleString()}. Check your downloads to confirm the file was saved.`
+      : 'No backup export recorded on this device.';
+  }
+  document.getElementById('downloadRecovery').addEventListener('click', () => window.downloadRecoveryData());
+  document.getElementById('restoreRecovery').addEventListener('click', () => {
+    if (!confirm('Restore the saved pre-import data? Current records and settings will be replaced.')) return;
+    try {
+      Storage.recoverPrevious();
+      window.dispatchEvent(new Event('punchly:backup-imported'));
+      toast('Recovery copy restored.');
+    } catch (error) { toast(error.message, 'error'); }
+    refreshStorageStatus();
+  });
+  window.addEventListener('punchly:backup-exported', refreshStorageStatus);
+  window.addEventListener('punchly:storage-diagnostics', refreshStorageStatus);
+  window.addEventListener('punchly:storage-error', event => toast(event.detail, 'error'));
+  refreshStorageStatus();
+  window.addEventListener('punchly:profile-updated', () => {
+    Object.assign(settings, Storage.getSettings());
+    preferences.refresh();
+  });
   window.addEventListener('punchly:backup-imported', () => {
     Object.assign(settings, Storage.getSettings());
     preferences.refresh();
@@ -729,7 +764,7 @@ document.addEventListener('DOMContentLoaded', () => {
       id: existing?.id || `daily-${date}`, kind: 'daily', date, mode, notes, audit,
       punches: {}, in: '', out: '', totalMinutes: 0, targetMinutes: 0, extraMinutes: 0, targetMet: false
     });
-    toast(saved ? 'Leave reservation saved.' : 'Could not save the leave reservation.', saved ? 'success' : 'error');
+    toast(saved ? 'Leave reservation saved.' : Storage.lastError() || 'Could not save the leave reservation.', saved ? 'success' : 'error');
     return saved;
   }
 
@@ -881,9 +916,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     const nextDay = result.targetOut !== null && result.targetOut >= 1440 ? ' +1d' : '';
+    const elapsed = nowMinutesForDay(now, shift.date);
     return {
       worked: formatDuration(result.total),
       target: result.targetOut === null ? '—' : `${displayClock(result.targetOut)}${nextDay}`,
+      countdown: MiniTimer.countdown(result, elapsed, now),
       note: result.error || (Shift.isDayOff(shift.mode) ? Shift.label(shift.mode) :
         shift.date !== today ? `Overnight shift · ${formatDate(shift.date)}` : !result.started ? 'No shift started.' : '')
     };
@@ -1000,7 +1037,7 @@ document.addEventListener('DOMContentLoaded', () => {
     next.audit = Audit.track(previous?.audit ?? record?.audit, snapshot(before),
       snapshot(logInput(date, record, next)), now, editingNotes);
     const ok = Storage.saveDraft(date, next);
-    if (!ok) toast('Could not save the draft to browser storage.');
+    if (!ok) toast(Storage.lastError() || 'Could not save the draft to browser storage.');
     else {
       refreshDayLogs(now);
       if (!document.getElementById('calendar-view').hidden) attendance.refresh();
@@ -1042,7 +1079,7 @@ document.addEventListener('DOMContentLoaded', () => {
       lunchLimitMinutes: policy.lunchLimit, minimumLunch: policy.minimumLunch,
       targetMet: result.complete && result.total >= result.target, audit: Storage.getDraft(date)?.audit
     };
-    if (!Storage.saveRecord(record)) return toast('Could not save. Browser storage may be full or unavailable.', 'error');
+    if (!Storage.saveRecord(record)) return toast(Storage.lastError() || 'Could not save. Browser storage may be full or unavailable.', 'error');
     renderDay(now);
     updateHistory();
     refreshDayLogs(now);
@@ -1290,7 +1327,7 @@ document.addEventListener('DOMContentLoaded', () => {
       remove.addEventListener('click', () => {
         const question = record.hasDraft ? 'Delete this daily record and its draft?' : `Delete this ${record.kind} record?`;
         if (!confirm(question)) return;
-        if (!Storage.deleteRecord(record.id)) return toast('Could not delete the record.', 'error');
+        if (!Storage.deleteRecord(record.id)) return toast(Storage.lastError() || 'Could not delete the record.', 'error');
         if (record.kind === 'daily') {
           const draft = Storage.getDraft(record.date);
           if (record.hasDraft || matchingDraft(record, draft)) Storage.deleteDraft(record.date);

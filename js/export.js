@@ -9,6 +9,12 @@
   const metaLabels = ['Profile name', 'Punchly version', 'Exported at (UTC)', 'Export time zone', ...employeeFields.map(([, label]) => label)];
   let sheetJs;
   let requestProfile;
+  function filename(field, extension) {
+    const now = new Date();
+    const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const version = document.querySelector('meta[name="punchly-release"]').content;
+    return `Punchly_v${version}_${field}_${date}.${extension}`;
+  }
   function download(content, filename, type) {
     const url = URL.createObjectURL(new Blob([content], { type }));
     const link = document.createElement('a'); link.href = url; link.download = filename; link.click();
@@ -35,7 +41,14 @@
     });
     form.addEventListener('submit', event => {
       event.preventDefault();
-      answer = Storage.profileDetails(Object.fromEntries(new FormData(form)));
+      const profile = Storage.profileDetails(Object.fromEntries(new FormData(form)));
+      if (!profile.displayName) { window.showPunchlyToast?.('Enter a display name for exports.', 'error'); return; }
+      if (!Storage.saveSettings({ ...Storage.getSettings(), ...profile, profileNameSource: 'user' })) {
+        window.showPunchlyToast?.('Could not save the profile. Check browser storage.', 'error');
+        return;
+      }
+      answer = profile;
+      window.dispatchEvent(new Event('punchly:profile-updated'));
       dialog.close();
     });
     return () => {
@@ -43,13 +56,16 @@
       answer = null;
       const profile = Storage.profileDetails(Storage.getSettings());
       for (const [field, value] of Object.entries(profile)) form.elements[field].value = value;
+      form.elements.displayName.value = '';
       return new Promise(done => {
         resolve = done;
         dialog.open();
       });
     };
   }
-  function chooseProfile() {
+  async function chooseProfile() {
+    const settings = Storage.getSettings();
+    if (!await Setup.isDeviceProfile(settings)) return Storage.profileDetails(settings);
     if (!requestProfile) requestProfile = createProfilePrompt();
     return requestProfile();
   }
@@ -81,7 +97,7 @@
       record.date, record.kind === 'weekly' ? 'Weekly' : 'Daily', record.title || '', record.totalMinutes || 0,
       Shift.recordStatus(record),
       record.punches?.morningIn || record.in || '', record.punches?.lunchOut || '', record.punches?.lunchReturn || '', record.punches?.eveningOut || record.out || '',
-      record.notes || '', record.schedule ? JSON.stringify(record.schedule) : '',
+      record.notes ? `User notes: ${record.notes}` : '', record.schedule ? JSON.stringify(record.schedule) : '',
       record.kind === 'daily' ? Shift.label(record.mode) : '',
       record.kind === 'daily' ? record.targetMinutes : '',
       record.lunchMinutes ?? '', record.lunchDeductionMinutes ?? record.lunchMinutes ?? '', record.extraMinutes ?? '',
@@ -101,7 +117,7 @@
       const rows = recordRows(records, includeLogs).map((row, index) => [...row,
         ...(includeLogs ? [records[index].audit ? JSON.stringify(records[index].audit.events) : ''] : []), ...meta]);
       download([[...header, ...(includeLogs ? [...auditHeader, 'Change log (JSON)'] : []), ...metaLabels], ...rows]
-        .map(row => row.map(csvCell).join(',')).join('\r\n'), 'Punchly_filtered_history.csv', 'text/csv;charset=utf-8');
+        .map(row => row.map(csvCell).join(',')).join('\r\n'), filename('history', 'csv'), 'text/csv;charset=utf-8');
     } catch (error) { exportOutcome(respond, 'The CSV file could not be created.'); return; }
     exportOutcome(respond);
   };
@@ -186,7 +202,7 @@
       const info = xlsx.utils.aoa_to_sheet(metaLabels.map((label, index) => [label, metaValues(meta)[index]]));
       info['!cols'] = [{ wch: 24 }, { wch: 48 }];
       xlsx.utils.book_append_sheet(workbook, info, 'Export details');
-      xlsx.writeFile(workbook, 'Punchly_history.xlsx');
+      xlsx.writeFile(workbook, filename('history', 'xlsx'));
     } catch (error) { failure = 'The Excel file could not be created.'; }
     finally {
       stopLoading();
@@ -228,7 +244,7 @@
       const meta = metadata(profile);
       const canvas = Charts.exportChart(records, window.getExportChartKind?.() || 'bar', [stamp(meta), ...employeeLines(meta)]);
       const changeLog = includeLogs ? records.filter(record => record.audit).map(({ date, kind, title, audit }) => ({ date, kind, title, audit })) : undefined;
-      download(pngWithMetadata(canvas, { ...meta, ...(includeLogs ? { changeLog } : {}) }), 'Punchly_filtered_chart.png', 'image/png');
+      download(pngWithMetadata(canvas, { ...meta, ...(includeLogs ? { changeLog } : {}) }), filename('chart', 'png'), 'image/png');
     } catch (error) { exportOutcome(respond, 'The chart image could not be created.'); return; }
     exportOutcome(respond);
   };
@@ -327,7 +343,7 @@
       for (const row of record.schedule || []) {
         if (row.from || row.to) line(`${row.day}: ${row.from || '—'} to ${row.to || '—'}${row.break || row.breakDeduction ? ` · Break ${row.break || row.breakDeduction}` : ''}`);
       }
-      if (record.notes) notes(record.notes);
+      if (record.notes) notes(`User notes: ${record.notes}`);
       if (includeLogs && record.audit?.events.length) {
         line('Change log', true);
         for (const event of record.audit.events) {
@@ -347,7 +363,7 @@
     const profile = await chooseProfile();
     if (!profile) return;
     const respond = UiSounds.feedback();
-    try { download(pdfTimesheet(records, metadata(profile), includeLogs), 'Punchly_timesheet.pdf', 'application/pdf'); }
+    try { download(pdfTimesheet(records, metadata(profile), includeLogs), filename('timesheet', 'pdf'), 'application/pdf'); }
     catch (error) { exportOutcome(respond, 'The PDF could not be created.'); return; }
     exportOutcome(respond);
   };
@@ -355,29 +371,45 @@
     const profile = await chooseProfile();
     if (!profile) return false;
     const respond = UiSounds.feedback();
+    let recorded = true;
     try {
       const backup = Storage.exportBackup();
       const settings = { ...backup.settings, ...profile };
-      download(JSON.stringify({ ...backup, settings, ...metadata(profile) }, null, 2), 'Punchly_backup.json', 'application/json');
-    } catch (error) { exportOutcome(respond, 'The backup could not be downloaded.'); throw error; }
+      const content = JSON.stringify({ ...backup, settings, ...metadata(profile) }, null, 2);
+      Storage.validateBackup(JSON.parse(content));
+      download(content, filename('backup', 'json'), 'application/json');
+      recorded = Storage.markBackup();
+      window.dispatchEvent(new Event('punchly:backup-exported'));
+    } catch (error) { exportOutcome(respond, error.message || 'The backup could not be downloaded.'); throw error; }
     exportOutcome(respond);
+    if (!recorded) window.showPunchlyToast?.('Backup download started, but its timestamp could not be saved.');
     return true;
   };
-  window.downloadPunchlySettings = () => {
+  window.downloadRecoveryData = () => {
     try {
-      download(JSON.stringify({ format: 'punchly-settings', version: 1, ...metadata(), settings: Storage.getSettings() },
-        null, 2), 'Punchly_settings.json', 'application/json');
+      download(JSON.stringify(Storage.recoveryData(), null, 2), filename('recovery', 'json'), 'application/json');
+      window.showPunchlyToast?.('Recovery data download started. Keep this file private.');
+    } catch (error) { window.showPunchlyToast?.('Could not download recovery data.', 'error'); }
+  };
+  window.downloadPunchlySettings = async () => {
+    const profile = await chooseProfile();
+    if (!profile) return;
+    try {
+      download(JSON.stringify({ format: 'punchly-settings', version: 1, ...metadata(profile), settings: Storage.getSettings() },
+        null, 2), filename('settings', 'json'), 'application/json');
     } catch (error) { exportOutcome(UiSounds.play, 'The settings file could not be created.'); return; }
     exportOutcome(UiSounds.play);
   };
   function chooseRestoreMode(backup, respond) {
     const dialog = document.getElementById('restoreDialog');
     const count = backup.history.length;
+    const duplicates = Storage.duplicateDates?.(backup) || [];
+    const conflict = duplicates.length ? ` ${duplicates.length} attendance ${duplicates.length === 1 ? 'date already exists' : 'dates already exist'}; Merge keeps existing records for those dates.` : '';
     if (typeof dialog.showModal !== 'function') {
-      const choice = prompt(`Import ${count} records. Type MERGE to keep existing data or REPLACE to restore the backup.`);
+      const choice = prompt(`Import ${count} records.${conflict} Type MERGE to keep existing data or REPLACE to restore the backup.`);
       return Promise.resolve(choice?.trim().toLowerCase());
     }
-    document.getElementById('restorePreview').textContent = `This backup contains ${count} saved ${count === 1 ? 'record' : 'records'}.`;
+    document.getElementById('restorePreview').textContent = `This backup contains ${count} saved ${count === 1 ? 'record' : 'records'}.${conflict}`;
     return new Promise(resolve => {
       dialog.returnValue = 'cancel';
       dialog.showModal();
@@ -420,6 +452,9 @@
       respond('error');
       return false;
     }
-    finally { input.value = ''; }
+    finally {
+      input.value = '';
+      if (Storage.diagnostics) window.dispatchEvent(new Event('punchly:storage-diagnostics'));
+    }
   };
 })();

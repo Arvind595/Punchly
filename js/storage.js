@@ -6,12 +6,17 @@ const Storage = (() => {
   const migrationKey = 'punchly_legacy_weekly_migrated_v1';
   const resetKey = 'punchly_last_reset';
   const setupKey = 'punchly_setup_complete';
+  const recoveryKey = 'punchly_restore_recovery_v1';
+  const lastBackupKey = 'punchly_last_backup_export';
+  const issues = new Map();
+  let lastWriteFailure = '';
   const profileLengths = { displayName: 48, employeeId: 40, employeeEmail: 254, role: 60, department: 60 };
   const defaults = {
     targetShift: '08:20',
     font: 'manrope',
     avatar: avatarOptions[0][0],
     profilePhoto: '',
+    profileNameSource: '',
     compactMode: true,
     mobileHaptics: true,
     punchAudio: true,
@@ -35,15 +40,27 @@ const Storage = (() => {
   function read(key, fallback) {
     try {
       const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : fallback;
+      if (!raw) { issues.delete(key); return fallback; }
+      const result = JSON.parse(raw);
+      issues.delete(key);
+      return result;
     } catch (error) {
+      issues.set(key, 'Stored data could not be read or is not valid JSON.');
       console.warn(`Punchly could not read ${key}; using an empty value.`, error);
       return fallback;
     }
   }
   function write(key, value) {
-    try { localStorage.setItem(key, JSON.stringify(value)); return true; }
-    catch (error) { console.error(`Punchly could not save ${key}.`, error); return false; }
+    if (issues.has(key)) { lastWriteFailure = 'Saved data is damaged. Open Data & backups to download recovery data.'; return false; }
+    try { localStorage.setItem(key, JSON.stringify(value)); lastWriteFailure = ''; return true; }
+    catch (error) {
+      console.error(`Punchly could not save ${key}.`, error);
+      lastWriteFailure = error.name === 'QuotaExceededError' ? 'Browser storage is full. Export a backup and free space before saving.' : 'Browser storage is unavailable. Your changes could not be saved.';
+      if (typeof window !== 'undefined' && typeof CustomEvent !== 'undefined') window.dispatchEvent(new CustomEvent('punchly:storage-error', {
+        detail: lastWriteFailure
+      }));
+      return false;
+    }
   }
   function isoDate(value) {
     if (!value) return new Date().toISOString().slice(0, 10);
@@ -51,8 +68,33 @@ const Storage = (() => {
     const parsed = new Date(value);
     return Number.isNaN(parsed.getTime()) ? new Date().toISOString().slice(0, 10) : `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`;
   }
-  function normalizeHistory() {
+  function normalizeHistory(persist = true) {
     const current = read(keys.HISTORY, []);
+    if (!Array.isArray(current) || current.some(record => !record || typeof record !== 'object' || Array.isArray(record) ||
+      (typeof record.date !== 'string' || !Number.isFinite(Date.parse(record.date)) ||
+        (/^\d{4}-\d{2}-\d{2}$/.test(record.date) && new Date(record.date).toISOString().slice(0, 10) !== record.date)) ||
+      (record.punches != null && (typeof record.punches !== 'object' || Array.isArray(record.punches))) ||
+      (record.punches && Shift.fields.some(field => record.punches[field] != null && record.punches[field] !== '' && Shift.parseTime(record.punches[field]) === null)) ||
+      (record.mode != null && !['full', 'half', 'leave', 'holiday', 'sat1', 'sat3'].includes(record.mode)) ||
+      ['totalMinutes', 'targetMinutes', 'extraMinutes', 'lunchMinutes', 'lunchLimitMinutes', 'lunchDeductionMinutes', 'baseTargetMinutes'].some(key =>
+        record[key] != null && (!Number.isFinite(record[key]) || record[key] < 0)) ||
+      (record.notes != null && typeof record.notes !== 'string') || (record.audit != null && !Audit.valid(record.audit)))) {
+      issues.set(keys.HISTORY, 'Saved history contains malformed records.');
+      return [];
+    }
+    const dailyDates = new Set();
+    const recordIds = new Set();
+    if (current.some(record => {
+      if (record.id && recordIds.has(record.id)) return true;
+      if (record.id) recordIds.add(record.id);
+      if (record.kind && record.kind !== 'daily' || !record.date) return false;
+      if (dailyDates.has(record.date)) return true;
+      dailyDates.add(record.date);
+      return false;
+    })) {
+      issues.set(keys.HISTORY, 'Saved history contains duplicate dates or record IDs.');
+      return [];
+    }
     const history = Array.isArray(current) ? current.filter(record => record && typeof record === 'object').map((record, index) => {
       const totalMinutes = Number.isFinite(record.totalMinutes) ? record.totalMinutes : parseDuration(record.total);
       const targetMinutes = Number.isFinite(record.targetMinutes) ? record.targetMinutes : 500;
@@ -75,8 +117,8 @@ const Storage = (() => {
         schedule: Array.isArray(record.schedule) ? record.schedule : [], rounding: 'none', legacy: true
       });
     });
-    if (JSON.stringify(history) !== JSON.stringify(current)) write(keys.HISTORY, history);
-    if (!migrationDone) write(migrationKey, true);
+    if (persist && !issues.has(keys.HISTORY) && JSON.stringify(history) !== JSON.stringify(current)) write(keys.HISTORY, history);
+    if (persist && !migrationDone) write(migrationKey, true);
     return history;
   }
   function parseDuration(value) {
@@ -85,7 +127,11 @@ const Storage = (() => {
     return match ? Number(match[1]) * 60 + Number(match[2]) : 0;
   }
   function getSettings() {
-    const value = read(keys.SETTINGS, {});
+    let value = read(keys.SETTINGS, {});
+    if (!validSettings(value)) {
+      issues.set(keys.SETTINGS, 'Saved settings are malformed.');
+      value = {};
+    }
     const settings = { ...defaults, ...(value && typeof value === 'object' ? value : {}) };
     if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(settings.targetShift) || settings.targetShift === '00:00') settings.targetShift = defaults.targetShift;
     if (!Number.isInteger(settings.lunchLimit) || settings.lunchLimit < 0 || settings.lunchLimit > 720) settings.lunchLimit = defaults.lunchLimit;
@@ -100,6 +146,7 @@ const Storage = (() => {
     if (typeof settings.profilePhoto !== 'string' || settings.profilePhoto.length > 200000 ||
         !/^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/i.test(settings.profilePhoto)) settings.profilePhoto = '';
     if (typeof settings.compactMode !== 'boolean') settings.compactMode = defaults.compactMode;
+    if (!['', 'device', 'user'].includes(settings.profileNameSource)) settings.profileNameSource = '';
     settings.mobileHaptics = settings.mobileHaptics !== false;
     settings.punchAudio = settings.punchAudio !== false;
     if (!Number.isInteger(settings.soundVolume) || settings.soundVolume < 0 || settings.soundVolume > 100) {
@@ -129,7 +176,27 @@ const Storage = (() => {
 
   function getDrafts() {
     const drafts = read(keys.DRAFTS, {});
-    return drafts && typeof drafts === 'object' && !Array.isArray(drafts) ? drafts : {};
+    if (!drafts || typeof drafts !== 'object' || Array.isArray(drafts) ||
+        Object.values(drafts).some(draft => !draft || typeof draft !== 'object' || Array.isArray(draft) ||
+          (draft.notes != null && typeof draft.notes !== 'string') || (draft.audit != null && !Audit.valid(draft.audit)) ||
+          Shift.fields.some(field => draft[field] != null && draft[field] !== '' && Shift.parseTime(draft[field]) === null))) {
+      issues.set(keys.DRAFTS, 'Saved drafts are malformed.');
+      return {};
+    }
+    return drafts;
+  }
+
+  function validSettings(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+    return Object.entries(value).every(([key, item]) => {
+      if (!(key in defaults) || item == null) return true;
+      if (key === 'workdays') return Array.isArray(item) && item.every(day => Number.isInteger(day) && day >= 0 && day <= 6);
+      if (typeof item !== typeof defaults[key] || (typeof item === 'number' && !Number.isFinite(item))) return false;
+      if (key === 'lunchLimit') return Number.isInteger(item) && item >= 0 && item <= 720;
+      if (key === 'soundVolume') return Number.isInteger(item) && item >= 0 && item <= 100;
+      if (key === 'targetShift') return /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(item) && item !== '00:00';
+      return true;
+    });
   }
 
   function validateBackup(data) {
@@ -138,23 +205,38 @@ const Storage = (() => {
       Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
     const schedule = value => Array.isArray(value) && value.every(row => object(row) &&
       ['from', 'to', 'break', 'breakDeduction'].every(key => row[key] == null || typeof row[key] === 'string'));
+    const time = value => value == null || value === '' || (typeof value === 'string' && Shift.parseTime(value) !== null);
+    const punches = value => object(value) && Shift.fields.every(key => time(value[key]));
+    const validDay = value => object(value) && (value.mode == null || ['full', 'half', 'leave', 'holiday', 'sat1', 'sat3'].includes(value.mode)) &&
+      (value.notes == null || typeof value.notes === 'string') && (value.punches == null || punches(value.punches)) &&
+      Shift.fields.every(key => time(value[key])) && time(value.in) && (value.out === '--:--' || time(value.out)) &&
+      (value.targetShift == null || time(value.targetShift)) && (value.audit == null || Audit.valid(value.audit));
     if (!object(data) || data.format !== 'punchly-backup' || data.version !== 1 || !Array.isArray(data.history) ||
-        !data.history.every(record => object(record) && typeof record.id === 'string' && date(record.date) &&
-          (record.audit == null || Audit.valid(record.audit)) &&
+        !data.history.every(record => validDay(record) && typeof record.id === 'string' && record.id && date(record.date) &&
+          ['totalMinutes', 'targetMinutes', 'extraMinutes', 'lunchMinutes', 'lunchLimitMinutes', 'lunchDeductionMinutes', 'baseTargetMinutes']
+            .every(key => record[key] == null || (Number.isFinite(record[key]) && record[key] >= 0)) &&
           (record.kind === 'daily' || (record.kind === 'weekly' && schedule(record.schedule)))) ||
-        (data.settings != null && !object(data.settings)) || (data.today != null && !object(data.today)) ||
+        (data.settings != null && !validSettings(data.settings)) || (data.today != null && !validDay(data.today)) ||
         (data.week != null && (!object(data.week) || !schedule(data.week.rows))) ||
         (data.drafts != null && (!object(data.drafts) || !Object.entries(data.drafts).every(([key, draft]) =>
-          date(key) && object(draft) && (draft.audit == null || Audit.valid(draft.audit)))))) {
+          date(key) && validDay(draft))))) {
       throw new Error('This file is not a supported Punchly backup.');
+    }
+    const dates = new Set();
+    const ids = new Set();
+    for (const record of data.history) {
+      if (record.kind === 'daily' && dates.has(record.date)) throw new Error(`The backup contains duplicate attendance dates: ${record.date}.`);
+      if (ids.has(record.id)) throw new Error(`The backup contains a duplicate record ID: ${record.id}.`);
+      if (record.kind === 'daily') dates.add(record.date);
+      ids.add(record.id);
     }
   }
 
   function importSettings(data) {
     if (data?.format !== 'punchly-settings' || data.version !== 1 || !data.settings ||
-        typeof data.settings !== 'object' || Array.isArray(data.settings)) throw new Error('This file is not a supported Punchly settings export.');
+        !validSettings(data.settings)) throw new Error('This file is not a supported Punchly settings export.');
     const settings = Object.fromEntries(Object.entries(defaults).map(([key, value]) => [key, data.settings[key] ?? value]));
-    if (!write(keys.SETTINGS, settings)) throw new Error('The browser could not save these settings.');
+    if (!write(keys.SETTINGS, settings)) throw new Error(lastWriteFailure || 'The browser could not save these settings.');
   }
 
   function restoreKeys(entries) {
@@ -167,21 +249,81 @@ const Storage = (() => {
         changed.push(previous[index]);
       });
     } catch (error) {
-      changed.reverse().forEach(([key, value]) => {
-        if (value === null) localStorage.removeItem(key);
-        else localStorage.setItem(key, value);
-      });
+      changed.forEach(([key]) => localStorage.removeItem(key));
+      changed.forEach(([key, value]) => { if (value !== null) localStorage.setItem(key, value); });
       throw error;
     }
   }
 
+  const recoveryKeys = [...Object.values(keys), migrationKey];
+  function recoverySnapshot() {
+    const raw = Object.fromEntries(recoveryKeys.map(key => [key, localStorage.getItem(key)]));
+    return { format: 'punchly-recovery', version: 1, capturedAt: new Date().toISOString(), raw };
+  }
+  function beginRecovery() {
+    if (localStorage.getItem(recoveryKey)) throw new Error('A previous recovery snapshot is still available. Restore or download it before importing again.');
+    const snapshot = recoverySnapshot();
+    try { localStorage.setItem(recoveryKey, JSON.stringify(snapshot)); }
+    catch (error) {
+      throw new Error(error.name === 'QuotaExceededError' ? 'Storage is full. Free space before importing so Punchly can create a recovery copy.' : 'Punchly could not create a recovery copy. Check browser storage access.');
+    }
+    return snapshot;
+  }
+  function applyRecovery(snapshot) {
+    if (!snapshot || snapshot.format !== 'punchly-recovery' || snapshot.version !== 1 || !snapshot.raw ||
+        !recoveryKeys.every(key => Object.hasOwn(snapshot.raw, key) && (snapshot.raw[key] === null || typeof snapshot.raw[key] === 'string'))) {
+      throw new Error('The recovery copy is invalid.');
+    }
+    recoveryKeys.forEach(key => localStorage.removeItem(key));
+    recoveryKeys.forEach(key => { if (snapshot.raw[key] !== null) localStorage.setItem(key, snapshot.raw[key]); });
+    issues.clear();
+  }
+  function recoverPrevious() {
+    const raw = localStorage.getItem(recoveryKey);
+    if (!raw) throw new Error('No recovery copy is available.');
+    try { applyRecovery(JSON.parse(raw)); localStorage.removeItem(recoveryKey); }
+    catch (error) { throw new Error('Recovery could not be completed. The recovery copy is still available to download.'); }
+  }
+  function diagnostics() {
+    normalizeHistory(false);
+    getDrafts();
+    getSettings();
+    const today = read(keys.TODAY, null);
+    const week = read(keys.WEEK, null);
+    if (today !== null && (!today || typeof today !== 'object' || Array.isArray(today) ||
+      (today.punches != null && (typeof today.punches !== 'object' || Array.isArray(today.punches))) ||
+      Shift.fields.some(field => {
+        const value = today.punches?.[field] ?? today[field];
+        return value != null && value !== '' && Shift.parseTime(value) === null;
+      }))) issues.set(keys.TODAY, 'Saved day data is malformed.');
+    if (week !== null && (!week || typeof week !== 'object' || Array.isArray(week) || !Array.isArray(week.rows) ||
+      week.rows.some(row => !row || typeof row !== 'object' || Array.isArray(row)))) issues.set(keys.WEEK, 'Saved weekly data is malformed.');
+    let recovery = false;
+    try { recovery = !!localStorage.getItem(recoveryKey); } catch (error) { issues.set(recoveryKey, 'Browser storage is unavailable.'); }
+    return { issues: [...issues].map(([key, message]) => ({ key, message })), recovery };
+  }
+  function recoveryData() {
+    const raw = localStorage.getItem(recoveryKey);
+    if (!raw) return recoverySnapshot();
+    try { return JSON.parse(raw); }
+    catch (error) { return { ...recoverySnapshot(), damagedRecovery: raw }; }
+  }
+  function lastBackup() {
+    try { return localStorage.getItem(lastBackupKey) || ''; } catch (error) { return ''; }
+  }
+  function markBackup() {
+    try { localStorage.setItem(lastBackupKey, new Date().toISOString()); return true; } catch (error) { return false; }
+  }
+
   function deleteProfile() {
-    const { avatar, profilePhoto, ...settings } = getSettings();
+    const { avatar, profilePhoto, profileNameSource, ...settings } = getSettings();
     Object.keys(profileLengths).forEach(field => delete settings[field]);
     return write(keys.SETTINGS, settings);
   }
 
   function needsSetup() {
+    const state = diagnostics();
+    if (state.issues.length || state.recovery) return false;
     const history = read(keys.HISTORY, []);
     const legacy = read(legacyWeekKey, []);
     return !read(setupKey, false) && !read(keys.SETTINGS, null) && !read(keys.TODAY, null) &&
@@ -200,7 +342,7 @@ const Storage = (() => {
   }
 
   function reset() {
-    const entries = [...Object.values(keys), setupKey, legacyWeekKey, migrationKey, 'punchly_reminder_log'].map(key => [key, null]);
+    const entries = [...Object.values(keys), setupKey, legacyWeekKey, migrationKey, lastBackupKey, 'punchly_reminder_log'].map(key => [key, null]);
     try {
       restoreKeys([...entries, [resetKey, new Date().toISOString()]]);
       return true;
@@ -213,29 +355,46 @@ const Storage = (() => {
   function importBackup(data, merge = true) {
     validateBackup(data);
     const identity = record => record.kind === 'daily' ? `daily:${record.date}` : `weekly:${record.id}`;
-    const history = new Map(merge ? normalizeHistory().map(record => [identity(record), record]) : []);
-    let added = 0;
-    for (const record of data.history) {
-      const key = identity(record);
-      if (!history.has(key)) {
-        history.set(key, record);
-        added++;
+    if (merge && diagnostics().issues.length) throw new Error('Existing stored data is damaged. Download recovery data or use Replace with a valid backup.');
+    const snapshot = beginRecovery();
+    try {
+      const history = new Map(merge ? normalizeHistory().map(record => [identity(record), record]) : []);
+      let added = 0;
+      for (const record of data.history) {
+        const key = identity(record);
+        if (!history.has(key)) {
+          history.set(key, record);
+          added++;
+        }
       }
-    }
-    const drafts = { ...data.drafts, ...(merge ? read(keys.DRAFTS, {}) : {}) };
-    const entries = [
-      [keys.HISTORY, [...history.values()]],
-      [keys.DRAFTS, drafts],
-      [keys.TODAY, (merge && read(keys.TODAY, null)) || data.today || null],
-      [keys.WEEK, (merge && read(keys.WEEK, null)) || data.week || null]
-    ];
-    if (!merge) entries.push([keys.SETTINGS, { ...defaults, ...data.settings }]);
-    try { restoreKeys(entries); }
-    catch (error) {
+      const drafts = { ...data.drafts, ...(merge ? read(keys.DRAFTS, {}) : {}) };
+      const entries = [
+        [keys.HISTORY, [...history.values()]],
+        [keys.DRAFTS, drafts],
+        [keys.TODAY, (merge && read(keys.TODAY, null)) || data.today || null],
+        [keys.WEEK, (merge && read(keys.WEEK, null)) || data.week || null]
+      ];
+      if (!merge) entries.push([keys.SETTINGS, { ...defaults, ...data.settings }], [migrationKey, true]);
+      restoreKeys(entries);
+      issues.clear();
+      localStorage.removeItem(recoveryKey);
+      return added;
+    } catch (error) {
       console.warn('Punchly backup restore could not be completed.', error);
-      throw new Error('The browser could not save the backup. Check available storage and try again.');
+      let restored = false;
+      try { applyRecovery(snapshot); localStorage.removeItem(recoveryKey); restored = true; } catch (recoveryError) { /* Keep the recovery copy. */ }
+      const reason = error.name === 'QuotaExceededError' ? 'Browser storage is full.' : 'The browser could not save the backup.';
+      throw new Error(`${reason} ${restored ? 'Your original data was restored.' : 'Automatic recovery failed; download the recovery copy in Settings → Data & backups.'}`);
     }
-    return added;
+  }
+  function duplicateDates(data) {
+    validateBackup(data);
+    try {
+      const current = JSON.parse(localStorage.getItem(keys.HISTORY) || '[]');
+      if (!Array.isArray(current)) return [];
+      const dates = new Set(current.filter(record => record && (record.kind === 'daily' || !record.kind)).map(record => record.date));
+      return data.history.filter(record => record.kind === 'daily' && dates.has(record.date)).map(record => record.date);
+    } catch (error) { return []; }
   }
   return {
     keys, resetKey, avatarOptions, profileDetails,
@@ -248,7 +407,13 @@ const Storage = (() => {
     getHistory: normalizeHistory, getSettings, saveSettings: value => write(keys.SETTINGS, value),
     saveRecord,
     deleteRecord(id) { return write(keys.HISTORY, normalizeHistory().filter(item => item.id !== id)); },
-    exportBackup() { return { format: 'punchly-backup', version: 1, exportedAt: new Date().toISOString(), settings: getSettings(), today: read(keys.TODAY, null), drafts: read(keys.DRAFTS, {}), week: read(keys.WEEK, null), history: normalizeHistory() }; },
-    validateBackup, importBackup, importSettings, needsSetup, finishSetup, deleteProfile, reset
+    exportBackup() {
+      const state = diagnostics();
+      if (state.issues.length || state.recovery) throw new Error('Stored data needs recovery. Download recovery data from Settings → Data & backups before exporting a normal backup.');
+      return { format: 'punchly-backup', version: 1, exportedAt: new Date().toISOString(), settings: getSettings(), today: read(keys.TODAY, null), drafts: read(keys.DRAFTS, {}), week: read(keys.WEEK, null), history: normalizeHistory() };
+    },
+    validateBackup, importBackup, importSettings, needsSetup, finishSetup, deleteProfile, reset,
+    diagnostics, recoveryData, recoverPrevious, lastBackup, markBackup, duplicateDates,
+    lastError: () => lastWriteFailure
   };
 })();

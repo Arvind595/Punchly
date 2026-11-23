@@ -1,14 +1,22 @@
 const MiniTimer = (() => {
+  function countdown(result, elapsed, now) {
+    if (!result.started || result.complete || result.error || result.targetOut === null || elapsed === null) return '—';
+    const seconds = Math.max(0, (result.targetOut - elapsed) * 60 - now.getSeconds());
+    return `${Math.floor(seconds / 3600)}h ${String(Math.floor(seconds / 60) % 60).padStart(2, '0')}m ${String(seconds % 60).padStart(2, '0')}s`;
+  }
+
   function connect({ desktop, snapshot }) {
     const button = document.getElementById('miniTimerToggle');
     const panel = document.getElementById('miniTimer');
     const closeButton = document.getElementById('miniTimerClose');
     const worked = document.getElementById('miniTimerWorked');
     const target = document.getElementById('miniTimerTarget');
+    const countdown = document.getElementById('miniTimerCountdown');
     const note = document.getElementById('miniTimerNote');
     const home = panel.parentNode;
     let popup;
     let opening = false;
+    let ticker;
 
     function refresh(now = new Date()) {
       if (panel.hidden) return;
@@ -16,16 +24,19 @@ const MiniTimer = (() => {
       const data = snapshot(now);
       worked.textContent = data.worked;
       target.textContent = data.target;
+      countdown.textContent = data.countdown;
       note.textContent = popup ? data.note : [data.note, 'Floats inside Punchly.'].filter(Boolean).join(' ');
       if (popup) {
         const styles = getComputedStyle(document.documentElement);
-        for (const color of ['--surface-color', '--text-primary', '--text-secondary', '--accent-color']) {
+        for (const color of ['--bg-color', '--surface-color', '--text-primary', '--text-secondary', '--accent-color', '--border-color', '--app-font']) {
           popup.document.documentElement.style.setProperty(color, styles.getPropertyValue(color));
         }
       }
     }
 
     function hide() {
+      clearInterval(ticker);
+      ticker = null;
       home.append(panel);
       panel.hidden = true;
       button.setAttribute('aria-pressed', 'false');
@@ -44,14 +55,14 @@ const MiniTimer = (() => {
       const style = page.createElement('style');
       style.textContent = `
         * { box-sizing: border-box; }
-        body { margin: 0; padding: 12px; background: var(--surface-color, #fff); color: var(--text-primary, #202039); font: 14px/1.35 system-ui, sans-serif; }
+        body { margin: 0; padding: 12px; background: var(--surface-color, #fff); color: var(--text-primary, #202039); font: 14px/1.35 var(--app-font, system-ui, sans-serif); }
         .mini-timer-heading, dl { display: flex; justify-content: space-between; align-items: start; gap: 8px; }
         h2 { font-size: 14px; margin: 5px 0; }
         button { border: 0; background: transparent; color: var(--accent-color, #5546cc); font-size: 18px; min-width: 36px; min-height: 32px; cursor: pointer; }
         .ui-icon svg { width: 1.2em; height: 1.2em; fill: currentColor; vertical-align: middle; }
-        dl { margin: 6px 0; }
+        dl { margin: 6px 0; gap: 10px; flex-wrap: wrap; }
         dt, p { color: var(--text-secondary, #59596e); font-size: 12px; }
-        dd { margin: 2px 0 0; font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; }
+        dd { margin: 2px 0 0; font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
         p { margin: 8px 0 0; }
       `;
       page.head.append(style);
@@ -70,7 +81,7 @@ const MiniTimer = (() => {
       opening = true;
       let pip;
       try {
-        if (typeof api?.requestWindow === 'function') pip = await api.requestWindow({ width: 275, height: 150 });
+        if (typeof api?.requestWindow === 'function') pip = await api.requestWindow({ width: 360, height: 170 });
       } catch (error) {
         // Show the timer within Punchly if the browser cannot open the window.
       } finally {
@@ -89,6 +100,7 @@ const MiniTimer = (() => {
       panel.hidden = false;
       button.setAttribute('aria-pressed', 'true');
       refresh();
+      ticker = setInterval(() => refresh(), 1000);
     });
 
     closeButton.addEventListener('click', () => { close(); if (desktop()) button.focus(); });
@@ -96,5 +108,5 @@ const MiniTimer = (() => {
     return { close, refresh };
   }
 
-  return { connect };
+  return { connect, countdown };
 })();
