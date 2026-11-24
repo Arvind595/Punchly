@@ -63,10 +63,18 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   const reminders = Reminders.connect(settings);
   const attendance = Attendance.connect({
-    todayKey: () => localDateKey(new Date()), localDateKey, entriesFor: readDayEntries,
+    todayKey: () => localDateKey(new Date()), localDateKey, workdays: () => settings.workdays, entriesFor: readDayEntries,
     openDay: openDailyLog, describePunches, reserveLeave, cancelLeave
   });
-  miniTimer = MiniTimer.connect({ desktop: () => !handheld.matches, snapshot: timerSnapshot });
+  miniTimer = MiniTimer.connect({
+    desktop: () => !handheld.matches, snapshot: timerSnapshot, preferences: () => settings,
+    openMain() {
+      window.focus();
+      activateTab(document.getElementById('tab-punch'));
+      const next = document.getElementById('guidedNext');
+      (next.hidden ? document.getElementById('guidedEdit') : next).focus();
+    }
+  });
   const guidedPunch = GuidedPunch.connect({
     getShift: guidedShift,
     recordPunch(date, field, now) {
@@ -95,9 +103,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (event.key === Storage.keys.SETTINGS) {
       Object.assign(settings, Storage.getSettings());
       preferences.refresh();
+      updateStatistics();
     }
     if (!event.key || Object.values(Storage.keys).includes(event.key)) refreshStorageStatus();
-    if (!event.key || [Storage.keys.DRAFTS, Storage.keys.HISTORY, Storage.keys.TODAY].includes(event.key)) refreshGuided();
+    if (!event.key || [Storage.keys.DRAFTS, Storage.keys.HISTORY, Storage.keys.TODAY].includes(event.key)) {
+      refreshGuided();
+      updateStatistics();
+    }
   });
   updateHistory();
   connectInstall();
@@ -235,6 +247,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function applyPreferences(section) {
+    if (section === 'miniTimerOnTop') {
+      miniTimer.applyOnTop();
+      return;
+    }
     if (section === 'tracking') {
       if (!hasShiftTarget && !dayInputs.some(input => input.value)) shiftTarget.value = settings.targetShift;
       historyRange.value = settings.historyRange;
@@ -243,10 +259,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (section === 'tracking' || section === 'reminders') runReminders(new Date(), false, false);
     if (section === 'appearance' || section === 'tracking') updateHistory();
+    if (section === 'appearance' || section === 'tracking') updateStatistics();
     refreshGuided();
     miniTimer.refresh();
   }
   function punchNow(field) {
+    if (guidedPunch.isGuarded()) return;
     const now = new Date();
     if (field === 'morningIn' && requestFirstPunch(selectedDay(), now)) return;
     if (Shift.isDayOff(shiftMode.value) || (shiftMode.value === 'half' && (field === 'lunchOut' || field === 'lunchReturn'))) {
@@ -255,12 +273,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const input = document.getElementById(field);
     const previous = input.value;
+    const date = selectedDay();
+    const before = Storage.punchState(date);
     input.value = formatClock(now.getHours() * 60 + now.getMinutes());
     manualPunchSounds.delete(input);
-    if (!updateDayDraft(now)) { UiSounds.play('error'); return; }
+    if (!updateDayDraft(now)) { restoreToday(); renderDay(now); UiSounds.play('error'); return; }
     if (previous === input.value) return;
     if (measureDay(now).error) UiSounds.play('error');
     else UiSounds.punch(Shift.dayPeriod(now));
+    guidedPunch.guard();
+    offerPunchUndo(date, field, input.value, before, input);
   }
   document.querySelectorAll('.btn-now').forEach((button, index) => {
     button.setAttribute('aria-keyshortcuts', `Alt+${index + 1}`);
@@ -368,9 +390,22 @@ document.addEventListener('DOMContentLoaded', () => {
   exportRange.addEventListener('change', updateExport);
   window.getExportRecords = exportRecords;
   window.getExportChartKind = () => statsView.value === 'log' ? 'bar' : statsView.value;
+  window.getExportChartData = records => {
+    const now = new Date();
+    const today = localDateKey(now);
+    const daily = records.filter(record => record.kind === 'daily');
+    const first = daily.reduce((oldest, record) => record.date < oldest ? record.date : oldest, today);
+    const range = exportRange.value === 'history' ? historyRange.value : exportRange.value;
+    const period = Statistics.period(range, today, first);
+    const days = daily.map(record => logEntry(record.date, record, null, now))
+      .map(entry => ({ ...entry, state: Statistics.classify(entry, settings.workdays) }));
+    const trailing = range === 'weekly' || range === 'monthly' ?
+      [...statisticsDays(Statistics.shiftDate(period.start, -6), Statistics.shiftDate(period.start, -1), now), ...days] : days;
+    return Statistics.buckets(period, days, trailing);
+  };
   if ('ResizeObserver' in window) {
     const chart = document.getElementById('analyticsChart');
-    new ResizeObserver(() => { if (chart.clientWidth && statsView.value !== 'log') updateStatistics(); }).observe(chart);
+    new ResizeObserver(() => { if (chart.clientWidth && statsView.value !== 'log') Charts.resize(); }).observe(chart);
   }
   document.fonts?.addEventListener?.('loadingdone', () => {
     if (!document.getElementById('stats-view').hidden) updateStatistics();
@@ -422,7 +457,8 @@ document.addEventListener('DOMContentLoaded', () => {
     preferences.refresh();
     historyRange.value = settings.historyRange;
     statsRange.value = settings.historyRange;
-    restoreToday(); renderDay(); updateHistory(); refreshDayLogs(); miniTimer.refresh(); refreshGuided();
+    restoreToday(); renderDay(); updateHistory(); refreshDayLogs(); miniTimer.refresh(); refreshGuided(); updateStatistics();
+    reminders.checkBackup(new Date());
   });
   window.addEventListener('punchly:settings-imported', () => {
     Object.assign(settings, Storage.getSettings());
@@ -495,6 +531,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function refreshTracking() {
     const now = new Date();
+    reminders.checkBackup(now);
     const nextDay = localDateKey(now);
     if (nextDay !== todayKey) {
       const wasToday = workDate.value === todayKey;
@@ -510,6 +547,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       updateHistory();
       if (!document.getElementById('calendar-view').hidden) attendance.refresh();
+      updateStatistics();
     }
 
     const minute = Math.floor(now.getTime() / 60000);
@@ -579,6 +617,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function recordGuidedPunch(date, field, now, mode, enteredTime) {
+    const before = Storage.punchState(date);
     selectPunchDate(date);
     if (mode) shiftMode.value = mode;
     const input = document.getElementById(field);
@@ -609,11 +648,11 @@ document.addEventListener('DOMContentLoaded', () => {
       UiSounds.play('error');
       return;
     }
-    if (field === 'eveningOut') saveDay(now, true);
-    else {
-      UiSounds.punch(Shift.dayPeriod(now));
-      toast(`Punch saved at ${displayClock(Shift.parseTime(input.value))}.`);
-    }
+    guidedPunch.guard();
+    const saved = field !== 'eveningOut' || saveDay(now, true);
+    if (field !== 'eveningOut') UiSounds.punch(Shift.dayPeriod(now));
+    offerPunchUndo(date, field, input.value, before, document.getElementById('guidedNext'),
+      saved ? '' : 'Checkout kept as a draft. History could not be saved.');
   }
 
   function saveGuidedShift(date) {
@@ -690,7 +729,8 @@ document.addEventListener('DOMContentLoaded', () => {
       : Shift.recordStatus(record);
     const live = isDraft || !record?.out;
     const total = dayOff || (live && result.error) ? null : live ? result.total : record.totalMinutes;
-    return { date, ...entry, status, total, target: result.target, lunch: live ? result.lunch : record.lunchMinutes,
+    return { date, ...entry, status, total, target: result.target, analyticsTarget: isDraft ? result.target : record.targetMinutes,
+      lunch: live ? result.lunch : record.lunchMinutes,
       lunchDeduction: live ? result.lunchDeduction : record.lunchDeductionMinutes,
       extra: live ? result.extra : record.extraMinutes, isDraft, complete: result.complete, endDayOffset: result.endDayOffset,
       hasRecord: Boolean(record), audit: isDraft ? draft.audit ?? record?.audit : record?.audit };
@@ -919,12 +959,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const nextDay = result.targetOut !== null && result.targetOut >= 1440 ? ' +1d' : '';
     const elapsed = nowMinutesForDay(now, shift.date);
+    const attendance = Statistics.classify(shift, settings.workdays);
     return {
       worked: formatDuration(result.total),
       target: result.targetOut === null ? '—' : `${displayClock(result.targetOut)}${nextDay}`,
-      countdown: MiniTimer.countdown(result, elapsed, now),
+      ...MiniTimer.timing(result, elapsed, now, ['day-off', 'holiday', 'leave'].includes(attendance)),
       note: result.error || (Shift.isDayOff(shift.mode) ? Shift.label(shift.mode) :
-        shift.date !== today ? `Overnight shift · ${formatDate(shift.date)}` : !result.started ? 'No shift started.' : '')
+        shift.date !== today ? `Overnight shift · ${formatDate(shift.date)}` : '')
     };
   }
 
@@ -1086,11 +1127,14 @@ document.addEventListener('DOMContentLoaded', () => {
     updateHistory();
     refreshDayLogs(now);
     refreshGuided(now);
-    if (Shift.isDayOff(mode)) toast(`${Shift.label(mode)} saved.`);
-    else if (Shift.isSaturday(mode) && !Shift.hasPunches(punches)) toast(`${Shift.label(mode)} holiday saved.`);
-    else toast('Shift saved.');
     if (punch) UiSounds.punch(Shift.dayPeriod(now));
-    else UiSounds.play('success');
+    else {
+      if (Shift.isDayOff(mode)) toast(`${Shift.label(mode)} saved.`);
+      else if (Shift.isSaturday(mode) && !Shift.hasPunches(punches)) toast(`${Shift.label(mode)} holiday saved.`);
+      else toast('Shift saved.');
+      UiSounds.play('success');
+    }
+    return true;
   }
 
   function rangeStart(range, now) {
@@ -1147,7 +1191,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const today = localDateKey(now);
     const byDate = new Map(records.filter(record => record.kind === 'daily').map(record => [record.date, record]));
     return periodEntries(all, range, now).flatMap(entry => {
-      const state = Attendance.stateFor(entry.date, today, entry);
+      const state = Attendance.stateFor(entry.date, today, entry, settings.workdays);
       const punches = Shift.hasPunches(entry.punches);
       if (filter === 'no-punch' && state === 'no-punch') return [entryRecord(entry, entry.mode || 'full', 'No punch')];
       if (filter === 'holiday' && (state === 'holiday' || Shift.isSaturday(state) && !punches)) {
@@ -1161,25 +1205,86 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function statisticsDays(start, end, now) {
+    return readDayEntries(Statistics.datesBetween(start, end), now).map(entry => ({
+      ...entry, target: entry.analyticsTarget, state: Statistics.classify(entry, settings.workdays)
+    }));
+  }
+
+  function statsList(id, rows) {
+    const items = rows.flatMap(([label, value]) => {
+      const term = document.createElement('dt');
+      const detail = document.createElement('dd');
+      term.textContent = label;
+      detail.textContent = value;
+      return [term, detail];
+    });
+    document.getElementById(id).replaceChildren(...items);
+  }
+
+  function showAttendanceBreakdown(counts) {
+    const segments = document.createDocumentFragment();
+    const legend = document.createDocumentFragment();
+    for (const [state, count] of Object.entries(counts)) {
+      if (!count) continue;
+      const segment = document.createElement('span');
+      segment.dataset.attendance = state;
+      segment.style.flexGrow = count;
+      segments.append(segment);
+      const label = document.createElement('li');
+      label.dataset.attendance = state;
+      label.textContent = `${Statistics.labels[state]} ${count}`;
+      legend.append(label);
+    }
+    document.getElementById('statsAttendanceBar').replaceChildren(segments);
+    document.getElementById('statsAttendanceLegend').replaceChildren(legend);
+  }
+
+  function showStatisticsDetails(period, current, previous) {
+    const dateRange = (start, end) => start === end ? formatDate(start) : `${formatDate(start)} – ${formatDate(end)}`;
+    setText(document.getElementById('statsPeriod'), dateRange(period.start, period.through));
+    const delta = (a, b, format) => a === b ? 'No change' : `${a > b ? '+' : '−'}${format(Math.abs(a - b))}`;
+    const points = value => `${(value * 100).toFixed(1).replace(/\.0$/, '')} pp`;
+    setText(document.getElementById('statsComparisonNote'), previous
+      ? `Compared with ${dateRange(period.previous.start, period.previous.end)}.`
+      : 'All time has no previous equivalent period.');
+    statsList('statsComparison', previous ? [
+      ['Total worked', delta(current.total, previous.total, formatDuration)],
+      ['Overtime', delta(current.overtime, previous.overtime, formatDuration)],
+      ['Target achievement', current.rate == null || previous.rate == null ? 'Not enough target data' : delta(current.rate, previous.rate, points)]
+    ] : []);
+    const datedHours = row => row ? `${formatDuration(row.total)} · ${formatDate(row.date)}` : '—';
+    statsList('statsInsights', [
+      ['Completed shifts', current.completed],
+      ['Average daily working hours', current.average == null ? '—' : formatDuration(current.average)],
+      ['Longest shift', datedHours(current.longest)], ['Shortest shift', datedHours(current.shortest)],
+      ['Best week', current.bestWeek ? `${formatDuration(current.bestWeek.total)} · Week of ${formatDate(current.bestWeek.date)}` : '—'],
+      ['Worst week', current.worstWeek ? `${formatDuration(current.worstWeek.total)} · Week of ${formatDate(current.worstWeek.date)}` : '—'],
+      ['Highest overtime day', current.highestOvertime ? datedHours({ ...current.highestOvertime, total: current.highestOvertime.extra }) : '—'],
+      ['Incomplete shifts', current.counts.incomplete], ['No-punch days', current.counts['no-punch']],
+      ['Leave days', current.counts.leave], ['Holidays', current.counts.holiday]
+    ]);
+  }
+
   function updateStatistics() {
-    const all = Storage.getHistory();
+    if (document.getElementById('stats-view').hidden) return;
     const now = new Date();
     const today = localDateKey(now);
     const range = statsRange.value;
-    const records = withDailyEntries(inRange(all, range, now), range, now);
-    const daily = records.filter(record => record.kind === 'daily' && !Shift.isHoliday(record.mode, record.punches));
-    const sum = daily.reduce((acc, record) => acc + Math.max(0, Number(record.totalMinutes) || 0), 0);
-    const over = daily.reduce((acc, record) => acc + (record.extraMinutes || 0), 0);
-    setText(document.getElementById('summaryHours'), formatDuration(sum));
-    setText(document.getElementById('summaryAverage'), formatDuration(daily.length ? Math.round(sum / daily.length) : 0));
-    setText(document.getElementById('summaryOvertime'), formatDuration(over));
-    setText(document.getElementById('summaryTargets'), `${daily.filter(record => record.targetMet).length} / ${daily.length}`);
-    setText(document.getElementById('summaryLeave'), String(records.filter(record => record.kind === 'daily' && record.mode === 'leave').length));
-    const entries = periodEntries(all, range, now);
-    const days = entries.map(entry => ({ ...entry, state: Attendance.stateFor(entry.date, today, entry) }));
-    const holidays = days.filter(day => day.state === 'holiday' && !day.isDraft ||
-      Shift.isSaturday(day.state) && !Shift.hasPunches(day.punches)).length;
-    setText(document.getElementById('summaryHolidays'), String(holidays));
+    const first = range === 'all' ? [
+      ...Storage.getHistory().filter(record => record.kind === 'daily').map(record => record.date), ...Object.keys(Storage.getDrafts())
+    ].filter(date => /^\d{4}-\d{2}-\d{2}$/.test(date) && date <= today && Number.isFinite(Date.parse(date))).sort()[0] || today : today;
+    const period = Statistics.period(range, today, first);
+    const days = statisticsDays(period.start, period.through, now);
+    const current = Statistics.summarize(days);
+    const previous = period.previous ? Statistics.summarize(statisticsDays(period.previous.start, period.previous.end, now)) : null;
+    setText(document.getElementById('summaryHours'), formatDuration(current.total));
+    setText(document.getElementById('summaryAverage'), current.average == null ? '—' : formatDuration(current.average));
+    setText(document.getElementById('summaryOvertime'), formatDuration(current.overtime));
+    setText(document.getElementById('summaryTargets'), current.rate === null ? '—' : `${Math.round(current.rate * 100)}%`);
+    setText(document.getElementById('statsTargetCount'), current.eligible ? `${current.met} of ${current.eligible} shifts` : 'No eligible shifts');
+    showAttendanceBreakdown(current.counts);
+    showStatisticsDetails(period, current, previous);
 
     const log = statsView.value === 'log';
     document.getElementById('statsLog').hidden = !log;
@@ -1188,14 +1293,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const fragment = document.createDocumentFragment();
       for (const day of [...days].reverse()) {
         const row = document.createElement('tr');
-        for (const value of [formatDate(day.date), Attendance.labels[day.state], day.total == null ? '—' : formatDuration(day.total)]) {
+        for (const value of [formatDate(day.date), Statistics.labels[day.state], Statistics.isWorkedDay(day.state) ? formatDuration(day.total) : '—']) {
           row.insertCell().textContent = value;
         }
         fragment.append(row);
       }
       document.getElementById('statsLogRows').replaceChildren(fragment);
     } else {
-      Charts.update(records, all, statsView.value, days.map(day => day.state));
+      const trailing = range === 'weekly' || range === 'monthly' ?
+        [...statisticsDays(Statistics.shiftDate(period.start, -6), Statistics.shiftDate(period.start, -1), now), ...days] : days;
+      Charts.update(Statistics.buckets(period, days, trailing), statsView.value, formatDuration);
     }
   }
 
@@ -1364,12 +1471,45 @@ document.addEventListener('DOMContentLoaded', () => {
     activateTab(document.getElementById('tab-today'));
     toast(`Loaded ${formatDate(record.date)}. Save to update that record.`);
   }
-  function toast(message, cue) {
+  function offerPunchUndo(date, field, value, before, focus, message = '') {
+    const after = Storage.punchState(date);
+    toast(message || `${Audit.labels[field]} saved at ${displayClock(Shift.parseTime(value))}.`, null, () => {
+      try {
+        if (!Storage.undoPunch(date, before, after)) {
+          toast('This shift changed after the punch. Review it in Today.', 'blocked');
+          return;
+        }
+      } catch (error) {
+        toast('Could not undo the punch. Review the shift in Today.', 'error');
+        return;
+      }
+      guidedPunch.guard();
+      if (selectedDay() === date) { restoreToday(); renderDay(); }
+      updateHistory();
+      refreshDayLogs();
+      if (!document.getElementById('calendar-view').hidden) attendance.refresh();
+      updateStatistics();
+      refreshGuided();
+      miniTimer.refresh();
+      toast(`${Audit.labels[field]} undone.`);
+      if (!focus.closest('[hidden]')) focus.focus();
+    });
+  }
+
+  function toast(message, cue, undo) {
     const el = document.getElementById('toast');
-    el.textContent = message;
+    const action = document.getElementById('toastUndo');
+    setText(document.getElementById('toastMessage'), message);
+    action.hidden = !undo;
+    action.onclick = undo || null;
+    el.classList.toggle('has-action', Boolean(undo));
     el.classList.add('visible');
     clearTimeout(toast.timer);
-    toast.timer = setTimeout(() => el.classList.remove('visible'), 3200);
+    toast.timer = setTimeout(() => {
+      el.classList.remove('visible');
+      action.hidden = true;
+      action.onclick = null;
+    }, undo ? 12000 : 3200);
     if (cue) UiSounds.play(cue);
   }
   window.showPunchlyToast = toast;

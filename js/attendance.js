@@ -9,15 +9,17 @@ const Attendance = (() => {
   const monthTitle = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' });
   const monthLabel = new Intl.DateTimeFormat(undefined, { month: 'short' });
   const fullDate = new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  const compactDate = new Intl.DateTimeFormat(undefined, { weekday: 'short', month: 'short', day: '2-digit', year: 'numeric' });
 
-  function stateFor(date, today, entry) {
+  function stateFor(date, today, entry, workdays) {
     const saturday = Shift.saturdayMode(date);
     if (entry?.mode === 'leave' || entry?.mode === 'holiday') return entry.mode;
-    if (date > today) return Shift.nationalHoliday(date) ? 'holiday' : saturday || 'upcoming';
+    const sundayHoliday = Shift.isSundayHoliday(date, workdays);
+    if (date > today) return sundayHoliday || Shift.nationalHoliday(date) ? 'holiday' : saturday || 'upcoming';
     const hasPunches = Shift.hasPunches(entry?.punches);
     if (entry?.mode === 'half' && hasPunches) return 'half';
     if (saturday) return saturday;
-    if (!hasPunches) return 'no-punch';
+    if (!hasPunches) return sundayHoliday ? 'holiday' : 'no-punch';
     if (entry?.isDraft) return 'draft';
     if (entry?.complete) return 'completed';
     return 'incomplete';
@@ -110,7 +112,7 @@ const Attendance = (() => {
     });
   }
 
-  function connect({ todayKey, localDateKey, entriesFor, openDay, describePunches, reserveLeave, cancelLeave }) {
+  function connect({ todayKey, localDateKey, workdays, entriesFor, openDay, describePunches, reserveLeave, cancelLeave }) {
     const grid = byId('calendarDays');
     const next = byId('calendarNext');
     const previous = byId('calendarPrevious');
@@ -127,11 +129,15 @@ const Attendance = (() => {
     function showSelection() {
       const today = todayKey();
       const entry = entries.get(selected);
-      const status = stateFor(selected, today, entry);
+      const status = stateFor(selected, today, entry, workdays());
       const future = selected > today;
       const reserved = future && entry?.hasRecord && entry.mode === 'leave';
       const detail = Shift.isSaturday(status) ? (Shift.hasPunches(entry?.punches) ? ' · Worked' : ' · Scheduled holiday') : '';
-      byId('calendarSelection').textContent = `${fullDate.format(asDate(selected))} · ${reserved ? 'Leave reserved' : labels[status]}${detail}`;
+      const date = asDate(selected);
+      const parts = Object.fromEntries(compactDate.formatToParts(date).map(({ type, value }) => [type, value]));
+      byId('calendarSelectedDate').textContent = fullDate.format(date);
+      byId('calendarSelectedDateCompact').textContent = `${parts.weekday}, ${parts.day}-${parts.month}-${parts.year}`;
+      byId('calendarSelectedStatus').textContent = ` · ${reserved ? 'Leave reserved' : labels[status]}${detail}`;
       const punches = entry?.mode ? describePunches(entry).join(' · ') : '';
       const punchLine = byId('calendarPunches');
       punchLine.hidden = !punches;
@@ -167,7 +173,9 @@ const Attendance = (() => {
       byId('calendarMonth').textContent = monthTitle.format(first);
       previous.disabled = month === '0001-01';
       next.disabled = month === '9999-12';
-      const gridKey = JSON.stringify([month, today, dates.map(date => stateFor(date, today, entries.get(date)))]);
+      const scheduled = workdays();
+      const states = dates.map(date => stateFor(date, today, entries.get(date), scheduled));
+      const gridKey = JSON.stringify([month, today, states]);
       if (gridKey === renderedGrid) { showSelection(); return; }
 
       const fragment = document.createDocumentFragment();
@@ -176,8 +184,8 @@ const Attendance = (() => {
         spacer.setAttribute('aria-hidden', 'true');
         fragment.append(spacer);
       }
-      for (const date of dates) {
-        const status = stateFor(date, today, entries.get(date));
+      for (const [index, date] of dates.entries()) {
+        const status = states[index];
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'calendar-day';

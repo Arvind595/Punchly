@@ -354,8 +354,14 @@ const AppTools = (() => {
 
   function connectReset({ onProfileDeleted, onReset }) {
     const confirmDialog = modal('resetDialog');
+    const dialog = byId('resetDialog');
+    const form = byId('resetForm');
     const status = byId('resetStatus');
     const confirm = byId('confirmReset');
+    const phrase = byId('resetPhrase');
+    const finalActions = byId('resetFinalActions');
+    const apply = byId('applyReset');
+    const cancel = byId('cancelFullReset');
     let resetAll;
 
     function open(all) {
@@ -365,11 +371,22 @@ const AppTools = (() => {
       byId('resetDescription').textContent = all ?
         'This erases your profile, preferences, punches, drafts, reports, and change logs from this browser.' :
         'This removes your name, employee details, and profile picture from this browser. Your punches, reports, and other preferences are kept.';
-      byId('resetActionLabel').textContent = action;
-      Icons.draw(byId('resetActionIcon'), all ? 'delete_forever' : 'person_remove');
+      byId('resetPhraseField').hidden = phrase.disabled = !all;
+      phrase.value = '';
+      confirm.textContent = all ? 'Continue' : action;
       status.hidden = true;
       confirm.disabled = false;
+      apply.disabled = false;
+      form.hidden = false;
+      finalActions.hidden = true;
       confirmDialog.open();
+    }
+
+    function showWriteError(button) {
+      status.textContent = 'Browser storage is unavailable. The changes could not be saved.';
+      status.hidden = false;
+      button.disabled = false;
+      UiSounds.play('error');
     }
 
     byId('deleteProfile').addEventListener('click', () => open(false));
@@ -383,21 +400,35 @@ const AppTools = (() => {
       }
       status.hidden = false;
     });
-    confirm.addEventListener('click', () => {
-      confirm.disabled = true;
-      if (!(resetAll ? Storage.reset() : Storage.deleteProfile())) {
-        status.textContent = 'Browser storage is unavailable. The changes could not be saved.';
-        status.hidden = false;
-        confirm.disabled = false;
-        UiSounds.play('error');
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      if (!dialog.hasAttribute('open') || form.hidden) return;
+      if (resetAll) {
+        if (phrase.value !== 'CONFIRM') return;
+        byId('resetHeading').textContent = 'Reset Punchly now?';
+        byId('resetDescription').textContent = 'Permanently erase Punchly’s records and settings from this browser?';
+        status.hidden = true;
+        form.hidden = true;
+        finalActions.hidden = false;
+        cancel.focus();
         return;
       }
+      confirm.disabled = true;
+      if (!Storage.deleteProfile()) { showWriteError(confirm); return; }
       confirmDialog.close();
-      if (resetAll) onReset();
-      else {
-        onProfileDeleted();
-        UiSounds.play('delete');
-      }
+      onProfileDeleted();
+      UiSounds.play('delete');
+    });
+    cancel.addEventListener('click', () => {
+      confirmDialog.close();
+      UiSounds.play('close');
+    });
+    apply.addEventListener('click', () => {
+      if (!dialog.hasAttribute('open') || !resetAll || finalActions.hidden || phrase.value !== 'CONFIRM') return;
+      apply.disabled = true;
+      if (!Storage.reset()) { showWriteError(apply); return; }
+      confirmDialog.close();
+      onReset();
     });
   }
 

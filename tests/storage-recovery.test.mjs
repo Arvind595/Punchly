@@ -24,6 +24,50 @@ function browser(initial = {}) {
   return { Storage: ctx.Storage, Audit: ctx.Audit, data, events, setFailure: callback => { fail = callback } }
 }
 
+test('undoing checkout restores the previous draft and record without touching other dates', () => {
+  const { Storage } = browser()
+  const date = '2026-11-24'
+  Storage.saveDraft(date, { morningIn: '09:00', notes: 'Before checkout' })
+  Storage.saveRecord({ kind: 'daily', date, in: '09:00', totalMinutes: 120, targetMinutes: 500 })
+  const before = Storage.punchState(date)
+  Storage.saveDraft(date, { morningIn: '09:00', eveningOut: '18:00' })
+  Storage.saveRecord({ kind: 'daily', date, in: '09:00', out: '18:00', totalMinutes: 495, targetMinutes: 500 })
+  const after = Storage.punchState(date)
+  Storage.saveDraft('2026-11-23', { notes: 'Other date' })
+  assert.equal(Storage.undoPunch(date, before, after), true)
+  assert.equal(Storage.getDaily(date).out, undefined)
+  assert.equal(Storage.getDaily(date).id, before.record.id)
+  assert.equal(Storage.getDraft(date).notes, 'Before checkout')
+  assert.equal(Storage.getDraft('2026-11-23').notes, 'Other date')
+})
+
+test('undo handles an unsaved first punch and refuses to overwrite a newer edit', () => {
+  const { Storage } = browser()
+  const date = '2026-11-24'
+  const before = Storage.punchState(date)
+  Storage.saveDraft(date, { morningIn: '09:00' })
+  const after = Storage.punchState(date)
+  Storage.saveDraft(date, { morningIn: '09:10' })
+  assert.equal(Storage.undoPunch(date, before, after), false)
+  assert.equal(Storage.getDraft(date).morningIn, '09:10')
+  assert.equal(Storage.undoPunch(date, before, Storage.punchState(date)), true)
+  assert.equal(Storage.getDraft(date), null)
+})
+
+test('undo restores the checkout draft if reverting the History entry fails', () => {
+  const b = browser()
+  const date = '2026-11-24'
+  b.Storage.saveDraft(date, { morningIn: '09:00' })
+  const before = b.Storage.punchState(date)
+  b.Storage.saveDraft(date, { morningIn: '09:00', eveningOut: '18:00' })
+  b.Storage.saveRecord({ kind: 'daily', date, in: '09:00', out: '18:00', totalMinutes: 495 })
+  const after = b.Storage.punchState(date)
+  b.setFailure(key => key === 'punchly_history')
+  assert.throws(() => b.Storage.undoPunch(date, before, after), /full/)
+  assert.equal(b.Storage.getDraft(date).eveningOut, '18:00')
+  assert.equal(b.Storage.getDaily(date).out, '18:00')
+})
+
 test('valid backup survives export and replace round trip, including drafts and change logs', () => {
   const first = browser()
   assert.equal(first.Storage.importBackup(example, false), example.history.length)

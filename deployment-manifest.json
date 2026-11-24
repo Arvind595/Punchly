@@ -1,6 +1,6 @@
 {
-  "version": 32,
-  "cache": "punchly-static-v32-bea4d3275c57",
+  "version": 33,
+  "cache": "punchly-static-v33-17923c2a1b14",
   "assets": {
     "LICENSE": {
       "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
@@ -87,64 +87,68 @@
       "bytes": 289644
     },
     "css/style.css": {
-      "sha256": "7657e2ba76b6dd0d5881db54589c8a90e7035f4de7c0bd023d307c9cab43faf9",
-      "bytes": 50465
+      "sha256": "7a5dc49c5e2d39df327840986dcab897beeecaa1047a0d68e4b5aeff4d63de1b",
+      "bytes": 53650
     },
     "js/app-tools.js": {
-      "sha256": "bfef889ffa4456ee8641c15c977b872917a5ba277f9668b79ac7162f0dfdc616",
-      "bytes": 16098
+      "sha256": "c48a0c2b78a4e462d33882338b72204bcf4f68017764d566f5c94ca3bf7dd1f8",
+      "bytes": 17313
     },
     "js/app.js": {
-      "sha256": "7d7e673f7cf408f1d678d40249391192c76b7a98e0eb7b1e2a6af37232900af1",
-      "bytes": 67331
+      "sha256": "e9c726832fdf3d47da81d6128428f506176a94806f4425aafa958da9e1af5733",
+      "bytes": 74351
     },
     "js/attendance.js": {
-      "sha256": "3097a9895a1a2d1b8888daa0340e1ceecb1144b87a7291fe8310c39951c7e93e",
-      "bytes": 10433
+      "sha256": "13ab0023d157aafcb7da4be529bb4d3183f9b23c71493aa690efcada94d3b7d8",
+      "bytes": 11082
     },
     "js/audit.js": {
       "sha256": "752164cdd9776591e87f8612cc63507eb84399b340bf53b8dd869a60f8802250",
       "bytes": 3487
     },
     "js/charts.js": {
-      "sha256": "3f318c0d760bebfb45e7778396bee8e2da7ac7f6913549a294007d65c757f629",
-      "bytes": 7565
+      "sha256": "2bfe4ffaf06f06c247f4e33f6565c627dbd798d73e5f3f65a3240a2f4acc3cd9",
+      "bytes": 9279
     },
     "js/export.js": {
-      "sha256": "e8b500d7e005e9d9afeeb0f111ad2db0cd500badb3bb479df0c550b7aae2b9ad",
-      "bytes": 22406
+      "sha256": "420bae8bc23d7059cef3247e500759eaa9b020d1a33cdd79547afb58eba27df5",
+      "bytes": 22571
     },
     "js/guided-punch.js": {
-      "sha256": "ea34e9e7182d1eceb1c108d2892f6c441688f3f7ae6d7eab2faec0851d9608b2",
-      "bytes": 10011
+      "sha256": "7ade12da661a02b7a70d37a57f9e9c6c0c3f617d02dee6858d2afd1319b9f810",
+      "bytes": 10108
     },
     "js/icons.js": {
       "sha256": "74e70b32813fb993b824ad59454cf5226fa7ae2062001ad44cf44d5eb6a6e2ce",
       "bytes": 21690
     },
     "js/mini-timer.js": {
-      "sha256": "b7e165ac5c70c33de38815bc748f774f6cad62d73892f101182501815f734540",
-      "bytes": 4544
+      "sha256": "60179a89f2b256fc2ff520c292ebe35ff05e379580fb6ae7f796a9f04d246ff3",
+      "bytes": 7109
     },
     "js/reminders.js": {
-      "sha256": "fe928f88bbebe0820f93905fb016c4de6a67119c38330615321b741d1a15b940",
-      "bytes": 5155
+      "sha256": "ad70c3dec1728dbb573d483abf7ebbd1b1686a364128da61976ef19df0f918c2",
+      "bytes": 6428
     },
     "js/settings.js": {
-      "sha256": "8037eb6423b1d3784e11c04ee31e68055125599e2e70c0a90ef1ebbfb4704834",
-      "bytes": 14894
+      "sha256": "6967c43f3396a07451ae4dc9369ee4f7f1bdd61a6651f3e9c726d6014f14da15",
+      "bytes": 15702
     },
     "js/setup.js": {
       "sha256": "8a09ae3dfd491023892a790f55660124248ff48412cfd05be27d2ce8dd0822c1",
       "bytes": 8709
     },
     "js/shift.js": {
-      "sha256": "53f923395d39ce929fdaf9e59b04d68621f8bcb6169c4211935db1106891379d",
-      "bytes": 7772
+      "sha256": "49dd3a3ba9606b03b704bb4689fad1af659b1045339b46c208942f3193517935",
+      "bytes": 7924
+    },
+    "js/statistics.js": {
+      "sha256": "f27d970ed32174a63c8e4d0b0b455a92c14dd82668dc79e7b6dd22653efb6172",
+      "bytes": 6722
     },
     "js/storage.js": {
-      "sha256": "a41e9fa3d107b7e984ca329d84ed6262e94e3ed448ad1e6a806558f623edd168",
-      "bytes": 25621
+      "sha256": "209d51b33819d2e20c09bf055b3aa9414757263625e242fd968eb57fbf9e88e3",
+      "bytes": 27947
     },
     "manifest.webmanifest": {
       "sha256": "2558bca903f1cfa6939701ddba28b2fa7bc99f1c5b86fa3cf2feef2f2bcf436e",
@@ -159,12 +163,12 @@
       "bytes": 279523
     },
     "index.html": {
-      "sha256": "b62bf4cf1b265fbd1c4e7b3a8fa0d1a4227e1d04a48ecde7191c47e62e9646b2",
-      "bytes": 56691
+      "sha256": "400c97ec0dcec40b069d7d6ff0bb7aabce0d717a300cecb5e1b0a2bddd394b50",
+      "bytes": 58701
     },
     "service-worker.js": {
-      "sha256": "267a3f5344ee2e504eb7144cdcdf202e08baac121c2bc538771cc0cbb9bc4ab7",
-      "bytes": 4827
+      "sha256": "2ca36a14f4217c1a8c3810937cecba0786ef14d0e2f62cc966b0fe33969acb28",
+      "bytes": 4866
     }
   }
 }

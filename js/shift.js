@@ -44,6 +44,10 @@ const Shift = (() => {
     return mode === 'sat1' || mode === 'sat3';
   }
 
+  function isSundayHoliday(date, workdays) {
+    return !workdays.includes(0) && new Date(date + 'T12:00:00Z').getUTCDay() === 0;
+  }
+
   function nationalHoliday(date) {
     return nationalHolidays.get(date.slice(5));
   }
@@ -185,6 +189,6 @@ const Shift = (() => {
     return record.out ? 'Below target' : 'In progress';
   }
 
-  return { fields, label, normalizeMode, dayPeriod, isDayOff, isSaturday, saturdayMode, saturdayNotes, nationalHoliday,
+  return { fields, label, normalizeMode, dayPeriod, isDayOff, isSaturday, saturdayMode, saturdayNotes, isSundayHoliday, nationalHoliday,
     nationalHolidayDates, holidayNotes, hasPunches, isHoliday, parseTime, punchesForMode, measure, recordStatus };
 })();

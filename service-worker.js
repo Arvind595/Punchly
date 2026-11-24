@@ -1,6 +1,6 @@
 // BEGIN GENERATED ASSETS
-const RELEASE = 32;
-const CACHE_NAME = 'punchly-static-v32-bea4d3275c57';
+const RELEASE = 33;
+const CACHE_NAME = 'punchly-static-v33-17923c2a1b14';
 const APP_ASSETS = [
   "./LICENSE",
   "./assets/avatar-coffee.svg",
@@ -23,21 +23,22 @@ const APP_ASSETS = [
   "./assets/logo.svg",
   "./assets/punch-countryside.jpg",
   "./assets/punch-holiday.jpg",
-  "./css/style.css?v=7657e2ba76b6",
-  "./js/app-tools.js?v=bfef889ffa44",
-  "./js/app.js?v=7d7e673f7cf4",
-  "./js/attendance.js?v=3097a9895a1a",
+  "./css/style.css?v=7a5dc49c5e2d",
+  "./js/app-tools.js?v=c48a0c2b78a4",
+  "./js/app.js?v=e9c726832fdf",
+  "./js/attendance.js?v=13ab0023d157",
   "./js/audit.js?v=752164cdd977",
-  "./js/charts.js?v=3f318c0d760b",
-  "./js/export.js?v=e8b500d7e005",
-  "./js/guided-punch.js?v=ea34e9e7182d",
+  "./js/charts.js?v=2bfe4ffaf06f",
+  "./js/export.js?v=420bae8bc23d",
+  "./js/guided-punch.js?v=7ade12da661a",
   "./js/icons.js?v=74e70b32813f",
-  "./js/mini-timer.js?v=b7e165ac5c70",
-  "./js/reminders.js?v=fe928f88bbeb",
-  "./js/settings.js?v=8037eb6423b1",
+  "./js/mini-timer.js?v=60179a89f2b2",
+  "./js/reminders.js?v=ad70c3dec172",
+  "./js/settings.js?v=6967c43f3396",
   "./js/setup.js?v=8a09ae3dfd49",
-  "./js/shift.js?v=53f923395d39",
-  "./js/storage.js?v=a41e9fa3d107",
+  "./js/shift.js?v=49dd3a3ba960",
+  "./js/statistics.js?v=f27d970ed321",
+  "./js/storage.js?v=209d51b33819",
   "./manifest.webmanifest?v=2558bca903f1",
   "./vendor/punchly-sounds.js?v=6428b26e6b88",
   "./vendor/xlsx-0.20.3.mini.js"

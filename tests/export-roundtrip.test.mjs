@@ -53,6 +53,8 @@ function environment() {
 
 test('CSV and Excel reports can be read back with their records and change logs', async () => {
   const e = environment()
+  const profile = { displayName: 'Nila Demo', employeeId: '00142', employeeEmail: 'nila@example.com', role: '=Supervisor', department: 'Operations' }
+  e.context.Storage.saveSettings({ ...e.context.Storage.getSettings(), ...profile })
   await e.context.window.exportVisibleCSV()
   const rows = csvRows(await e.blobs.at(-1).text())
   assert.equal(rows.length, 3)
@@ -61,8 +63,26 @@ test('CSV and Excel reports can be read back with their records and change logs'
   assert.equal(JSON.parse(rows[1][rows[0].indexOf('Change log (JSON)')])[0].at, backup.history[0].audit.events[0].at)
   await e.context.window.exportVisibleExcel()
   const book = XLSX.read(e.workbook(), { type: 'buffer', cellDates: true })
-  assert.deepEqual(book.SheetNames, ['Timesheet', 'Change log', 'Export details'])
-  const sheet = XLSX.utils.sheet_to_json(book.Sheets.Timesheet, { defval: '' })
+  assert.deepEqual(book.SheetNames, ['Timesheet', 'Change log'])
+  const timesheet = book.Sheets.Timesheet
+  const raw = XLSX.utils.sheet_to_json(timesheet, { header: 1, defval: '' })
+  const header = raw.findIndex(row => row[0] === 'Date')
+  assert.equal(raw[0][0], 'Punchly timesheet')
+  const details = Object.fromEntries(raw.slice(1, header).filter(row => row[0]).map(row => row.slice(0, 2)))
+  assert.deepEqual(details, {
+    'Profile name': profile.displayName,
+    'Punchly version': 'v30',
+    'Exported at (UTC)': details['Exported at (UTC)'],
+    'Export time zone': Intl.DateTimeFormat().resolvedOptions().timeZone,
+    'Employee ID': profile.employeeId,
+    'Employee email': profile.employeeEmail,
+    Role: profile.role,
+    Department: profile.department,
+  })
+  assert.ok(Number.isFinite(Date.parse(details['Exported at (UTC)'])))
+  assert.equal(timesheet[`B${raw.findIndex(row => row[0] === 'Role') + 1}`].t, 's')
+  assert.equal(XLSX.utils.decode_range(timesheet['!autofilter'].ref).s.r, header)
+  const sheet = XLSX.utils.sheet_to_json(timesheet, { range: header, defval: '' })
   assert.equal(sheet.length, 2)
   assert.equal(sheet[0]['Total minutes'], backup.history[0].totalMinutes)
   assert.ok(sheet[0]['Date'] instanceof Date)

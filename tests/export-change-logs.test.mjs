@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import test from 'node:test'
 import { runInNewContext } from 'node:vm'
+
+const XLSX = createRequire(import.meta.url)('../vendor/xlsx-0.20.3.mini.js')
 
 const at = '2026-11-23T09:30:00.000Z'
 const record = {
@@ -28,11 +31,7 @@ function environment(includeLogs, initialSettings = { displayName: 'Demo', profi
     },
   }
   const xlsx = {
-    utils: {
-      aoa_to_sheet: rows => ({ rows, A2: {}, '!ref': 'A1:Z2' }),
-      book_new: () => ({ sheets: {} }),
-      book_append_sheet(book, sheet, name) { book.sheets[name] = sheet },
-    },
+    utils: XLSX.utils,
     writeFile(book, name) { workbook = book; names.push(name) },
   }
   const ctx = {
@@ -77,11 +76,12 @@ for (const enabled of [true, false]) {
     assert.match(env.names.at(-1), /^Punchly_v30_history_\d{4}-\d{2}-\d{2}\.csv$/)
 
     await env.window.exportVisibleExcel()
-    const sheets = env.workbook().sheets
+    const { SheetNames, Sheets: sheets } = env.workbook()
     assert.match(env.names.at(-1), /^Punchly_v30_history_\d{4}-\d{2}-\d{2}\.xlsx$/)
     assert.equal('Change log' in sheets, enabled)
-    assert.equal(sheets.Timesheet.rows[0].includes('First logged (UTC)'), enabled)
-    assert.ok('Export details' in sheets)
+    const header = XLSX.utils.sheet_to_json(sheets.Timesheet, { header: 1 }).find(row => row[0] === 'Date')
+    assert.equal(header.includes('First logged (UTC)'), enabled)
+    assert.deepEqual(SheetNames, enabled ? ['Timesheet', 'Change log'] : ['Timesheet'])
 
     await env.window.exportVisiblePDF()
     assert.match(env.names.at(-1), /^Punchly_v30_timesheet_\d{4}-\d{2}-\d{2}\.pdf$/)

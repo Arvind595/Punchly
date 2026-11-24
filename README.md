@@ -15,15 +15,15 @@ Punchly is a private time tracker for daily punches, weekly hours, and monthly a
 ### Record a shift
 
 1. Open **Punch** and tap the dial. Before the day’s first punch, choose **Full day** or **Half day** and confirm to punch in. Choose **Leave**, **Holiday**, or a scheduled Saturday holiday to save the day without a punch.
-2. Return to the dial for each remaining punch. Full days use morning in, lunch out, lunch return, and evening out. Use **Punch out without lunch** if you skipped your break. Half days use two punches and half the daily work target. Each punch saves locally, and the final punch saves the shift to **History**.
+2. Return to the dial for each remaining punch. Full days use morning in, lunch out, lunch return, and evening out. Use **Punch out without lunch** if you skipped your break. Half days use two punches and half the daily work target. Each punch saves locally, and the final punch saves the shift to **History**. Choose **Undo** within 12 seconds to reverse a punch, including checkout.
 3. Open **Today** to enter or correct punches, change the day type, or edit notes. The work target excludes lunch. The lunch limit defaults to 45 minutes and drives the checkout estimate and long-break warning. For overnight work, use the shift’s start date. Punch can resume an unfinished overnight shift.
-4. On desktop, **Alt + 1** through **Alt + 4** enter punches. The desktop mini timer shows elapsed work, estimated checkout, and a live countdown in the selected theme. A separate always-on-top window is available in browsers that support Document Picture-in-Picture.
+4. On desktop, **Alt + 1** through **Alt + 4** enter punches. The desktop mini timer shows elapsed work, estimated checkout, and a live countdown or overtime counter in the selected theme. Desktop Settings has controls for opacity and an always-on-top window on browsers with Document Picture-in-Picture support.
 
 ### Review attendance and export
 
 - **Week** shows shifts and drafts from Monday. Use **Edit** on an entry or **Log** on an empty date.
-- **Dates** shows a monthly attendance calendar. Tap the month heading, choose a year, and then choose a month. You can look ahead at holidays and reserve, update, or cancel future leave. Punchly marks the first and third Saturdays, plus Republic Day, Independence Day, and Gandhi Jayanti. Working on a scheduled Saturday adds a note automatically.
-- **History** can search dates and notes and filter leave, holidays, incomplete shifts, overtime, long lunches, and unpunched dates. Expand a record’s **Change log** to see when punches or other details were entered or edited. **Stats** offers bars, lines, an attendance pie chart, and a classic log.
+- **Dates** shows a monthly attendance calendar. Tap the month heading, choose a year, and then choose a month. You can look ahead at holidays and reserve, update, or cancel future leave. Punchly marks unscheduled Sundays without punches, the first and third Saturdays, and the built-in national holidays. Working on a scheduled Saturday adds a note automatically.
+- **History** can search dates and notes and filter leave, holidays, incomplete shifts, overtime, long lunches, and unpunched dates. Expand a record’s **Change log** to see when punches or other details were entered or edited. **Stats** shows worked-hour charts, an attendance breakdown, previous-period comparisons, and work insights.
 - **Export** offers PDF timesheets, PNG charts, Excel, and CSV. Reports include the export time, app version, and saved profile details. If the profile has no name or uses an automatic device name, Punchly asks for a name and saves it for later exports. Filenames include the app version, export type, and local date. The **Include change logs** checkbox controls change history and recorded timestamps in reports; PNG stores them in image metadata. Excel uses native date cells and, when enabled, a separate **Change log** sheet. Full backups always include change logs.
 
 ### Customize Punchly
@@ -37,11 +37,11 @@ Punchly is a private time tracker for daily punches, weekly hours, and monthly a
 
 Punchly stores records and settings in this browser. They stay on this device unless you export and transfer a backup. Clearing browser data can remove them.
 
-- **Settings → Data & backups → Export backup** saves records, drafts, change logs, and preferences in a `.json` file. Export backups regularly.
+- **Settings → Data & backups → Export backup** saves records, drafts, change logs, and preferences in a `.json` file. Punchly shows a weekly reminder in the open app when there are records to back up.
 - The last backup timestamp records when the browser started the download; check your downloads to confirm the file was saved. If damaged data or an interrupted import is detected, **Data & backups** offers recovery diagnostics and a download of the original stored data.
 - **Export settings** saves your preferences and profile without shift records. **Import backup** reads either kind of Punchly file. For a full backup, **Merge** adds entries and **Replace** restores the backup’s data and preferences.
 - Imports validate the backup and flag duplicate attendance dates. Merge keeps existing dates; Replace creates a temporary recovery copy before changing data. An import cannot proceed if the browser cannot store that recovery copy.
-- **Delete profile** removes saved profile details and its picture. **Reset Punchly** clears the app’s local data. Both actions offer a backup before confirmation.
+- **Delete profile** removes saved profile details and its picture. **Reset Punchly** clears the app’s local data after you type `CONFIRM` and choose **Yes, reset**. Both actions offer a backup before confirmation.
 
 ## Run and build
 

@@ -1,5 +1,14 @@
 # Punchly release notes
 
+## v33
+
+- Added immediate punch undo, including reopening an accidental checkout, and a short guard against double taps.
+- Redesigned Statistics around full calendar periods with comparisons, an attendance breakdown, and work insights based on completed shifts. PNG charts use the same period aggregation. Dates marks unscheduled Sundays as holidays when they have no punches and shows a compact selected date on mobile.
+- Added mini timer settings for always-on-top and opacity, shift status, an overtime counter, and a shortcut back to Punch. Always on top moves the open timer immediately.
+- Kept desktop tabs visible while scrolling and limited mini timer controls to the desktop layout.
+- Put profile and export details in the Excel Timesheet header and kept the optional Change log as its own sheet. Added a weekly backup reminder and typed and final confirmations before resetting Punchly.
+- Limited What’s New to the latest five versions.
+
 ## v32
 
 - Added a setup completion screen, safer profile-image limits, and more efficient history and calendar updates.

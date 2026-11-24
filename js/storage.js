@@ -8,6 +8,7 @@ const Storage = (() => {
   const setupKey = 'punchly_setup_complete';
   const recoveryKey = 'punchly_restore_recovery_v1';
   const lastBackupKey = 'punchly_last_backup_export';
+  const backupReminderKey = 'punchly_last_backup_reminder';
   const issues = new Map();
   let lastWriteFailure = '';
   let historyCache;
@@ -23,6 +24,8 @@ const Storage = (() => {
     punchAudio: true,
     soundVolume: 70,
     typingSounds: false,
+    miniTimerOnTop: true,
+    miniTimerOpacity: 100,
     reminderIn: '',
     reminderLunchOut: '',
     reminderLunchReturn: '',
@@ -176,6 +179,8 @@ const Storage = (() => {
       settings.soundVolume = defaults.soundVolume;
     }
     settings.typingSounds = settings.typingSounds === true;
+    settings.miniTimerOnTop = settings.miniTimerOnTop !== false;
+    settings.miniTimerOpacity ??= defaults.miniTimerOpacity;
     settings.reminderTarget = settings.reminderTarget === true;
     ['reminderIn', 'reminderLunchOut', 'reminderLunchReturn', 'reminderOut'].forEach(key => {
       if (Shift.parseTime(settings[key]) === null) settings[key] = '';
@@ -217,6 +222,7 @@ const Storage = (() => {
       if (typeof item !== typeof defaults[key] || (typeof item === 'number' && !Number.isFinite(item))) return false;
       if (key === 'lunchLimit') return Number.isInteger(item) && item >= 0 && item <= 720;
       if (key === 'soundVolume') return Number.isInteger(item) && item >= 0 && item <= 100;
+      if (key === 'miniTimerOpacity') return Number.isInteger(item) && item >= 50 && item <= 100;
       if (key === 'targetShift') return /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(item) && item !== '00:00';
       return true;
     });
@@ -278,6 +284,37 @@ const Storage = (() => {
     }
   }
 
+  function punchState(date) {
+    const history = normalizeHistory();
+    const record = historyCache ? historyCache.daily.get(date) : history.find(item => item.kind === 'daily' && item.date === date);
+    const draft = getDrafts()[date];
+    return { record, draft };
+  }
+
+  function undoPunch(date, before, after) {
+    const current = punchState(date);
+    if (issues.has(keys.HISTORY) || issues.has(keys.DRAFTS)) throw new Error('Undo is unavailable while stored records need recovery.');
+    const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    if (!same(current, after)) return false;
+    const changes = [];
+    if (!same(before.draft, after.draft)) {
+      const drafts = getDrafts();
+      if (before.draft) drafts[date] = before.draft;
+      else delete drafts[date];
+      changes.push([keys.DRAFTS, drafts]);
+    }
+    if (!same(before.record, after.record)) {
+      const history = normalizeHistory().slice();
+      const index = history.findIndex(item => item.kind === 'daily' && item.date === date);
+      if (before.record && index >= 0) history[index] = before.record;
+      else if (before.record) history.push(before.record);
+      else if (index >= 0) history.splice(index, 1);
+      changes.push([keys.HISTORY, history]);
+    }
+    if (changes.length) restoreKeys(changes);
+    return true;
+  }
+
   const recoveryKeys = [...Object.values(keys), migrationKey];
   function recoverySnapshot() {
     const raw = Object.fromEntries(recoveryKeys.map(key => [key, localStorage.getItem(key)]));
@@ -331,11 +368,18 @@ const Storage = (() => {
     try { return JSON.parse(raw); }
     catch (error) { return { ...recoverySnapshot(), damagedRecovery: raw }; }
   }
-  function lastBackup() {
-    try { return localStorage.getItem(lastBackupKey) || ''; } catch (error) { return ''; }
+  function storedStamp(key) {
+    try { return localStorage.getItem(key) || ''; } catch (error) { return ''; }
   }
-  function markBackup() {
-    try { localStorage.setItem(lastBackupKey, new Date().toISOString()); return true; } catch (error) { return false; }
+  function markStamp(key, value) {
+    try { localStorage.setItem(key, value); return true; } catch (error) { return false; }
+  }
+
+  function hasBackupRecords() {
+    const hasDayData = draft => Shift.hasPunches(draft?.punches ?? draft) ||
+      Shift.isDayOff(draft?.mode) || (typeof draft?.notes === 'string' && Boolean(draft.notes.trim()));
+    return normalizeHistory().length > 0 || Object.values(getDrafts()).some(hasDayData) ||
+      hasDayData(read(keys.TODAY, null)) || Boolean(read(keys.WEEK, null)?.rows?.length);
   }
 
   function deleteProfile() {
@@ -365,7 +409,7 @@ const Storage = (() => {
   }
 
   function reset() {
-    const entries = [...Object.values(keys), setupKey, legacyWeekKey, migrationKey, lastBackupKey, 'punchly_reminder_log'].map(key => [key, null]);
+    const entries = [...Object.values(keys), setupKey, legacyWeekKey, migrationKey, lastBackupKey, backupReminderKey, 'punchly_reminder_log'].map(key => [key, null]);
     try {
       restoreKeys([...entries, [resetKey, new Date().toISOString()]]);
       return true;
@@ -438,7 +482,7 @@ const Storage = (() => {
       return new Map(dates.map(date => [date, index.get(date)]));
     },
     getSettings, saveSettings: value => write(keys.SETTINGS, value),
-    saveRecord,
+    saveRecord, punchState, undoPunch,
     deleteRecord(id) { return write(keys.HISTORY, normalizeHistory().filter(item => item.id !== id)); },
     exportBackup() {
       const state = diagnostics();
@@ -446,7 +490,9 @@ const Storage = (() => {
       return { format: 'punchly-backup', version: 1, exportedAt: new Date().toISOString(), settings: getSettings(), today: read(keys.TODAY, null), drafts: read(keys.DRAFTS, {}), week: read(keys.WEEK, null), history: normalizeHistory() };
     },
     validateBackup, importBackup, importSettings, needsSetup, finishSetup, deleteProfile, reset,
-    diagnostics, recoveryData, recoverPrevious, lastBackup, markBackup, duplicateDates,
+    diagnostics, recoveryData, recoverPrevious, duplicateDates, hasBackupRecords,
+    lastBackup: () => storedStamp(lastBackupKey), markBackup: () => markStamp(lastBackupKey, new Date().toISOString()),
+    lastBackupReminder: () => storedStamp(backupReminderKey), markBackupReminder: stamp => markStamp(backupReminderKey, stamp),
     lastError: () => lastWriteFailure
   };
 })();

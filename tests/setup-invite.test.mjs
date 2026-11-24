@@ -50,6 +50,50 @@ test('invite copies the link or exposes it for manual copying when unavailable',
   assert.equal(unavailable.nodes.inviteLink.selected, true)
 })
 
+test('app reset requires CONFIRM and a separate Yes while profile deletion uses its own confirmation', () => {
+  const ids = ['resetDialog', 'resetForm', 'resetHeading', 'resetDescription', 'resetStatus', 'resetApp',
+    'resetBackup', 'deleteProfile', 'confirmReset', 'resetPhrase', 'resetPhraseField',
+    'resetFinalActions', 'applyReset', 'cancelFullReset']
+  const nodes = Object.fromEntries(ids.map(id => [id, element()]))
+  Object.assign(nodes.resetDialog, {
+    hasAttribute() { return this.opened },
+    close() { this.opened = false; this.handlers.close() },
+  })
+  let resets = 0
+  let profiles = 0
+  const context = {
+    document: { getElementById: id => nodes[id] }, UiSounds: { play() {} },
+    Storage: { reset() { resets++; return true }, deleteProfile() { profiles++; return true } },
+  }
+  runInNewContext(readFileSync('js/app-tools.js', 'utf8') + '\nthis.AppTools = AppTools', context)
+  context.AppTools.connectReset({ onReset() {}, onProfileDeleted() {} })
+  const submit = () => nodes.resetForm.handlers.submit({ preventDefault() {} })
+  nodes.resetApp.handlers.click()
+  nodes.resetPhrase.value = 'confirm'
+  submit()
+  assert.equal(nodes.resetFinalActions.hidden, true)
+  nodes.applyReset.handlers.click()
+  assert.equal(resets, 0)
+  nodes.resetPhrase.value = 'CONFIRM'
+  submit()
+  assert.equal(nodes.cancelFullReset.focused, true)
+  assert.equal(resets, 0)
+  nodes.cancelFullReset.handlers.click()
+  nodes.applyReset.handlers.click()
+  assert.equal(resets, 0)
+  nodes.resetApp.handlers.click()
+  assert.equal(nodes.resetPhrase.value, '')
+  nodes.resetPhrase.value = 'CONFIRM'
+  submit()
+  nodes.applyReset.handlers.click()
+  assert.equal(resets, 1)
+  nodes.deleteProfile.handlers.click()
+  assert.equal(nodes.resetPhrase.disabled, true)
+  submit()
+  assert.equal(profiles, 1)
+  assert.equal(resets, 1)
+})
+
 test('setup shows the imported lunch choice and saves a changed choice', async () => {
   const ids = ['setupDialog', 'setupForm', 'setupSkipPane', 'keepSetup', 'confirmSetupSkip',
     'setupHeading', 'setupWelcome', 'setupPosition', 'setupBack', 'setupContinue', 'setupSkip',

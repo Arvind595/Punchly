@@ -1,6 +1,7 @@
 const Reminders = (() => {
   const logKey = 'punchly_reminder_log';
   const memoryLog = new Set();
+  const backupInterval = 7 * 86400000;
 
   function claim(key, today) {
     if (memoryLog.has(key)) return false;
@@ -35,6 +36,9 @@ const Reminders = (() => {
     const statuses = ['notificationStatus', 'setupNotificationStatus'].map(id => document.getElementById(id));
     const banner = document.getElementById('reminderBanner');
     const message = document.getElementById('reminderMessage');
+    const backupBanner = document.getElementById('backupReminder');
+    const backupButton = document.getElementById('reminderExportBackup');
+    let lastBackupReminder = 0;
     const supported = 'Notification' in window && window.isSecureContext;
     function showPermission() {
       const permission = supported ? Notification.permission : 'unsupported';
@@ -61,6 +65,15 @@ const Reminders = (() => {
       }
     }));
     document.getElementById('dismissReminder').addEventListener('click', () => { banner.hidden = true; });
+    const hideBackupReminder = () => { backupBanner.hidden = true; };
+    document.getElementById('dismissBackupReminder').addEventListener('click', hideBackupReminder);
+    window.addEventListener('punchly:backup-exported', hideBackupReminder);
+    backupButton.addEventListener('click', async () => {
+      backupButton.disabled = true;
+      try { await window.downloadBackup(); }
+      catch (error) { /* The export flow shows the error. */ }
+      finally { backupButton.disabled = false; }
+    });
     window.addEventListener('focus', showPermission);
     showPermission();
 
@@ -96,7 +109,17 @@ const Reminders = (() => {
       if (audible) UiSounds.play('notification', { cooldownMs: 2000 });
       sendDeviceAlert(message.textContent);
     }
-    return { check };
+    function checkBackup(now) {
+      if (document.hidden) return;
+      const exported = Date.parse(Storage.lastBackup()) || 0;
+      if (exported >= lastBackupReminder && exported > 0) hideBackupReminder();
+      const latest = Math.max(exported, lastBackupReminder, Date.parse(Storage.lastBackupReminder()) || 0);
+      if (now.getTime() - latest < backupInterval || !Storage.hasBackupRecords()) return;
+      lastBackupReminder = now.getTime();
+      Storage.markBackupReminder(now.toISOString());
+      backupBanner.hidden = false;
+    }
+    return { check, checkBackup };
   }
 
   return { connect };

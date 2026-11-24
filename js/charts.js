@@ -1,26 +1,9 @@
 const Charts = (() => {
   const attendanceColors = {
     completed: '#29975d', 'no-punch': '#c53f52', leave: '#b88c13', holiday: '#397aca',
-    sat1: '#8666cf', sat3: '#368d8c', half: '#aa5b24', draft: '#747891', incomplete: '#c67432'
+    half: '#aa672a', incomplete: '#b34e83', 'day-off': '#747891'
   };
-
-  function workdays(records) {
-    return records.filter(row => row.kind === 'daily' && !Shift.isHoliday(row.mode, row.punches) &&
-      row.entryStatus !== 'No punch').sort((a, b) => a.date.localeCompare(b.date));
-  }
-
-  function rollingHours(records) {
-    const rows = workdays(records).map(row => ({ ...row, time: Date.parse(row.date), hours: (row.totalMinutes || 0) / 60 }));
-    const averages = new Map();
-    let first = 0;
-    let total = 0;
-    rows.forEach((row, index) => {
-      total += row.hours;
-      while (rows[first].time < row.time - 6 * 86400000) total -= rows[first++].hours;
-      averages.set(row.date, total / (index - first + 1));
-    });
-    return averages;
-  }
+  let interactive;
 
   function path(ctx, points, color) {
     ctx.strokeStyle = color;
@@ -32,7 +15,7 @@ const Charts = (() => {
     points.forEach(([x, y]) => { ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill(); });
   }
 
-  function draw(canvas, records, history, kind, states, width, height, exportImage = false) {
+  function draw(canvas, model, kind, width, height, exportImage = false, selected = -1) {
     if (!width || !height) return null;
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
@@ -49,7 +32,9 @@ const Charts = (() => {
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     ctx.fillStyle = color('--surface-color');
     ctx.fillRect(0, 0, width, height);
-    const title = kind === 'pie' ? 'Attendance breakdown' : kind === 'line' ? 'Hours over time' : 'Daily hours worked';
+    const { rows, grain, states } = model;
+    const interval = { day: 'Daily', month: 'Monthly', year: 'Yearly' }[grain];
+    const title = kind === 'pie' ? 'Attendance breakdown' : `${interval} hours worked`;
     if (exportImage) {
       ctx.fillStyle = text;
       ctx.font = `700 20px ${font}`;
@@ -59,6 +44,7 @@ const Charts = (() => {
     const bottom = height - (exportImage ? 85 : 36);
     let note = '';
     let legend = [];
+    let hit = null;
     if (kind === 'pie' && states.length) {
       const counts = new Map();
       states.forEach(state => counts.set(state, (counts.get(state) || 0) + 1));
@@ -72,43 +58,52 @@ const Charts = (() => {
         ctx.fillStyle = fill;
         ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, radius, angle, next); ctx.closePath(); ctx.fill();
         angle = next;
-        legend.push([`${Attendance.labels[state]} (${count})`, fill]);
+        legend.push([`${Statistics.labels[state]} (${count})`, fill]);
       }
       note = 'Each slice represents the number of dates with that attendance status.';
-    } else if (kind !== 'pie' && workdays(records).length) {
-      const daily = workdays(records);
-      const shown = daily.slice(-14);
-      const rolling = rollingHours(history);
-      const max = Math.max(10, Math.ceil(Math.max(...shown.map(row => Math.max((row.totalMinutes || 0) / 60, rolling.get(row.date) || 0))) / 2) * 2);
-      const left = 38, right = width - 12;
+    } else if (kind !== 'pie' && rows.length) {
+      const peak = rows.reduce((high, row) => Math.max(high, row.minutes / 60, row.average / 60), 0);
+      const step = Math.max(1, Math.ceil(peak / 5));
+      const max = step * 5;
+      const left = Math.max(40, String(max).length * 7 + 20), right = width - 12;
       const yFor = value => bottom - (bottom - top) * value / max;
       ctx.font = `11px ${font}`;
       ctx.textAlign = 'right';
-      for (let hour = 0; hour <= max; hour += Math.ceil(max / 5)) {
+      for (let hour = 0; hour <= max; hour += step) {
         const y = yFor(hour);
         ctx.strokeStyle = color('--border-color'); ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
         ctx.fillStyle = muted; ctx.fillText(`${hour}h`, left - 7, y + 4);
       }
-      const slot = (right - left) / shown.length;
-      const labelsEvery = Math.max(1, Math.ceil(44 / slot));
+      const slot = (right - left) / rows.length;
+      const labelsEvery = Math.max(1, Math.ceil((grain === 'day' ? 40 : 52) / slot));
+      hit = { left, right, slot, width };
       const points = [];
       const averages = [];
-      shown.forEach((row, index) => {
+      rows.forEach((row, index) => {
         const x = left + (index + .5) * slot;
-        const y = yFor((row.totalMinutes || 0) / 60);
-        const bar = Math.min(34, slot * .62);
-        if (kind === 'line') points.push([x, y]);
-        else { ctx.fillStyle = accent; ctx.fillRect(x - bar / 2, y, bar, bottom - y); }
-        if (rolling.has(row.date)) averages.push([x, yFor(rolling.get(row.date))]);
+        const y = yFor(row.minutes / 60);
+        const bar = Math.min(40, slot * .68);
+        if (!row.future && kind === 'line') points.push([x, y]);
+        else if (!row.future) {
+          ctx.fillStyle = accent;
+          ctx.fillRect(x - bar / 2, y, bar, Math.max(1, bottom - y));
+        }
+        if (row.average !== null) averages.push([x, yFor(row.average / 60)]);
+        if (index === selected) {
+          ctx.strokeStyle = accent; ctx.lineWidth = 1;
+          ctx.strokeRect(x - slot / 2, top, slot, bottom - top);
+        }
         if (index % labelsEvery === 0) {
           ctx.fillStyle = muted; ctx.textAlign = 'center';
-          ctx.fillText(new Date(`${row.date}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), x, bottom + 18);
+          ctx.fillText(row.label, x, bottom + 18, Math.min(slot * labelsEvery - 2, (x - 2) * 2, (width - x - 2) * 2));
         }
       });
       if (kind === 'line') path(ctx, points, accent);
-      path(ctx, averages, trend);
-      legend = [['Daily hours', accent], ['7-day average', trend]];
-      note = `${daily.length > shown.length ? 'Showing the latest 14 logged workdays. ' : ''}The average uses logged workdays in the preceding seven calendar days.`;
+      if (averages.length) path(ctx, averages, trend);
+      legend = [[`${interval} hours`, accent]];
+      if (averages.length) legend.push(['7-day average', trend]);
+      note = model.hasWork ? (averages.length ? 'The trend averages completed shifts over the preceding seven calendar days.' : '') :
+        'No completed shifts in this period.';
     } else {
       ctx.fillStyle = muted;
       ctx.font = `14px ${font}`;
@@ -129,14 +124,50 @@ const Charts = (() => {
         x += needed;
       }
     }
-    return { title, note, legend };
+    return { title, note, legend, hit };
   }
 
-  function update(records, history, kind, states) {
+  function update(model, kind, formatDuration) {
     const canvas = document.getElementById('analyticsChart');
-    const chart = draw(canvas, records, history, kind, states, canvas.clientWidth, canvas.clientHeight);
+    const selection = document.getElementById('chartSelection');
+    if (!interactive) {
+      interactive = { selected: -1 };
+      const select = index => {
+        const state = interactive;
+        if (!state.hit || index < 0 || index >= state.model.rows.length) return;
+        state.selected = index;
+        const row = state.model.rows[index];
+        selection.textContent = `${row.description} · ${row.future ? 'Upcoming' : state.formatDuration(row.minutes) + ' worked'}`;
+        draw(canvas, state.model, state.kind, canvas.clientWidth, canvas.clientHeight, false, index);
+      };
+      canvas.addEventListener('click', event => {
+        const hit = interactive.hit;
+        if (!hit) return;
+        const bounds = canvas.getBoundingClientRect();
+        const x = (event.clientX - bounds.left) * hit.width / bounds.width;
+        select(Math.floor((x - hit.left) / hit.slot));
+      });
+      canvas.addEventListener('keydown', event => {
+        if (!interactive.hit || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault();
+        const last = interactive.model.rows.length - 1;
+        const next = event.key === 'Home' ? 0 : event.key === 'End' ? last :
+          Math.max(0, Math.min(last, interactive.selected + (event.key === 'ArrowLeft' ? -1 : 1)));
+        select(next);
+      });
+    }
+    if (interactive.kind !== kind || interactive.model?.rows[0]?.description !== model.rows[0]?.description ||
+        interactive.model?.rows.length !== model.rows.length) interactive.selected = -1;
+    Object.assign(interactive, { model, kind, formatDuration });
+    const chart = draw(canvas, model, kind, canvas.clientWidth, canvas.clientHeight, false, interactive.selected);
     if (!chart) return;
-    canvas.setAttribute('aria-label', chart.title);
+    interactive.hit = chart.hit;
+    canvas.tabIndex = chart.hit ? 0 : -1;
+    canvas.setAttribute('aria-label', chart.hit ? chart.title + '. Use left and right arrows to inspect values.' : chart.title);
+    const selected = model.rows[interactive.selected];
+    selection.hidden = !chart.hit;
+    selection.textContent = selected ? `${selected.description} · ${selected.future ? 'Upcoming' : formatDuration(selected.minutes) + ' worked'}` :
+      'Tap the chart or use the arrow keys to see a value.';
     document.getElementById('chartNote').textContent = chart.note;
     const legend = chart.legend.map(([label, fill]) => {
       const item = document.createElement('li');
@@ -147,12 +178,9 @@ const Charts = (() => {
     document.getElementById('chartLegend').replaceChildren(...legend);
   }
 
-  function exportChart(records, kind, details) {
+  function exportChart(model, kind, details) {
     const chart = document.createElement('canvas');
-    const states = records.filter(row => row.kind === 'daily').map(row => Attendance.stateFor(row.date, row.date, {
-      ...row, complete: Boolean(row.out)
-    }));
-    draw(chart, records, records, kind, states, 860, 430, true);
+    draw(chart, model, kind, 860, 430, true);
     const canvas = document.createElement('canvas');
     canvas.width = chart.width;
     canvas.height = chart.height + 42 + (details.length - 1) * 21;
@@ -166,5 +194,9 @@ const Charts = (() => {
     return canvas;
   }
 
-  return { update, exportChart };
+  function resize() {
+    if (interactive?.model) update(interactive.model, interactive.kind, interactive.formatDuration);
+  }
+
+  return { update, exportChart, resize };
 })();

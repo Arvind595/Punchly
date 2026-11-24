@@ -173,12 +173,16 @@
       const columns = [...header, ...(includeLogs ? auditHeader : [])];
       const rows = recordRows(records, includeLogs);
       rows.forEach(row => { row[0] = excelDate(row[0]); });
-      const sheet = xlsx.utils.aoa_to_sheet([columns, ...rows]);
+      const values = metaValues(meta);
+      const timesheetHeader = [['Punchly timesheet'], ...metaLabels.map((label, index) => [label, values[index] || '']), []];
+      const sheet = xlsx.utils.aoa_to_sheet([...timesheetHeader, columns, ...rows]);
       rows.forEach(([date], index) => {
-        if (typeof date === 'number') sheet[`A${index + 2}`].z = 'yyyy-mm-dd';
+        if (typeof date === 'number') sheet[`A${timesheetHeader.length + index + 2}`].z = 'yyyy-mm-dd';
       });
-      sheet['!autofilter'] = { ref: sheet['!ref'] };
-      sheet['!cols'] = columns.map(label => ({ wch: Math.max(14, label.length + 2) }));
+      const range = xlsx.utils.decode_range(sheet['!ref']);
+      range.s.r = timesheetHeader.length;
+      sheet['!autofilter'] = { ref: xlsx.utils.encode_range(range) };
+      sheet['!cols'] = columns.map((label, index) => ({ wch: Math.max([22, 28][index] ?? 14, label.length + 2) }));
       const workbook = xlsx.utils.book_new();
       xlsx.utils.book_append_sheet(workbook, sheet, 'Timesheet');
       if (includeLogs) {
@@ -199,9 +203,6 @@
         auditSheet['!cols'] = [14, 14, 24, 26, 20, 40, 40].map(wch => ({ wch }));
         xlsx.utils.book_append_sheet(workbook, auditSheet, 'Change log');
       }
-      const info = xlsx.utils.aoa_to_sheet(metaLabels.map((label, index) => [label, metaValues(meta)[index]]));
-      info['!cols'] = [{ wch: 24 }, { wch: 48 }];
-      xlsx.utils.book_append_sheet(workbook, info, 'Export details');
       xlsx.writeFile(workbook, filename('history', 'xlsx'));
     } catch (error) { failure = 'The Excel file could not be created.'; }
     finally {
@@ -242,7 +243,7 @@
     const respond = UiSounds.feedback();
     try {
       const meta = metadata(profile);
-      const canvas = Charts.exportChart(records, window.getExportChartKind?.() || 'bar', [stamp(meta), ...employeeLines(meta)]);
+      const canvas = Charts.exportChart(window.getExportChartData?.(records) ?? records, window.getExportChartKind?.() || 'bar', [stamp(meta), ...employeeLines(meta)]);
       const changeLog = includeLogs ? records.filter(record => record.audit).map(({ date, kind, title, audit }) => ({ date, kind, title, audit })) : undefined;
       download(pngWithMetadata(canvas, { ...meta, ...(includeLogs ? { changeLog } : {}) }), filename('chart', 'png'), 'image/png');
     } catch (error) { exportOutcome(respond, 'The chart image could not be created.'); return; }

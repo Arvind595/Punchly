@@ -118,6 +118,9 @@ const Preferences = (() => {
     const soundVolume = byId('soundVolume');
     const soundVolumeLabel = byId('soundVolumeLabel');
     const typingSounds = byId('typingSounds');
+    const timerOnTop = byId('miniTimerOnTop');
+    const timerOpacity = byId('miniTimerOpacity');
+    const timerOpacityValue = byId('miniTimerOpacityValue');
     for (const [id, name, stack] of fonts) {
       const option = document.createElement('option');
       option.value = id;
@@ -188,6 +191,9 @@ const Preferences = (() => {
       byId('reminderLunchReturn').value = settings.reminderLunchReturn;
       byId('reminderOut').value = settings.reminderOut;
       byId('reminderTarget').checked = settings.reminderTarget;
+      timerOnTop.checked = settings.miniTimerOnTop;
+      timerOpacity.value = settings.miniTimerOpacity;
+      timerOpacityValue.value = `${settings.miniTimerOpacity}%`;
       byId('defaultTarget').value = settings.targetShift;
       byId('lunchLimit').value = settings.lunchLimit;
       byId('minimumLunch').checked = settings.minimumLunch;
@@ -272,6 +278,14 @@ const Preferences = (() => {
     });
     byId('profilePhotoRemove').addEventListener('click', () => saveProfile('', 'Profile photo removed.'));
     AppTools.connectPhoto(photo => saveProfile(photo, 'Profile photo saved.'), notify);
+    timerOnTop.addEventListener('change', () => {
+      save({ miniTimerOnTop: timerOnTop.checked }, 'miniTimerOnTop', null, toggleCue(timerOnTop.checked));
+    });
+    timerOpacity.addEventListener('input', () => { timerOpacityValue.value = `${timerOpacity.value}%`; });
+    byId('miniTimerForm').addEventListener('submit', event => {
+      event.preventDefault();
+      save({ miniTimerOpacity: timerOpacity.valueAsNumber }, 'miniTimer', 'Mini timer opacity saved.');
+    });
     byId('trackingForm').addEventListener('submit', event => {
       event.preventDefault();
       save({

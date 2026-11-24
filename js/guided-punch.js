@@ -111,6 +111,8 @@ const GuidedPunch = (() => {
     const status = byId('guidedStatus');
     let displayed;
     let lastAction = -Infinity;
+    const isGuarded = () => performance.now() - lastAction < 600;
+    const guard = () => { lastAction = performance.now(); };
 
     function refresh(now = new Date()) {
       const shift = getShift(now);
@@ -198,7 +200,7 @@ const GuidedPunch = (() => {
     }
 
     function advance(skip = false) {
-      if (performance.now() - lastAction < 500) return;
+      if (isGuarded()) return;
       const now = new Date();
       const shift = getShift(now);
       const next = nextAction(shift);
@@ -206,7 +208,7 @@ const GuidedPunch = (() => {
         refresh();
         return;
       }
-      lastAction = performance.now();
+      guard();
       if (next === 'save') save(shift.date);
       else recordPunch(shift.date, skip ? 'eveningOut' : next, now);
       refresh();
@@ -215,7 +217,7 @@ const GuidedPunch = (() => {
     primary.addEventListener('click', () => advance());
     skipLunch.addEventListener('click', () => advance(true));
     byId('guidedEdit').addEventListener('click', () => edit(getShift(new Date()).date));
-    return { refresh };
+    return { refresh, guard, isGuarded };
   }
 
   return { connect };

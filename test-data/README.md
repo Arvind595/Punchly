@@ -1,6 +1,16 @@
-# Punchly v18 test data
+# Punchly test data
 
 Use an empty browser profile or a private window so the test records stay separate from your own punches. If you want to test on a browser that already has records, export its backup first.
+
+## Large Statistics backup
+
+Import [the Statistics backup](Punchly_v33_statistics_test_backup_2026-11-24.json) using **Settings → Data & backups → Import backup → Replace** in a test profile. It loads **1,089 saved records and 12 drafts** from January 2023 through November 24, 2026.
+
+- **This month** in November 2026 shows 16 completed shifts, 127h 38m worked, a 7h 59m average, 3h 24m of overtime, and 4 of 15 targets met. November 13 is a completed shift without a recorded target.
+- **This year** in 2026 shows 12 monthly slots. **All time** groups the fixture into four yearly totals, from 2023 to 2026.
+- The November calendar in **Dates** includes leave on the 6th, a holiday on the 7th, no punch on the 14th, an overnight shift on the 17th, a missing checkout on the 18th, and an open draft on the 24th.
+
+## v18 compatibility backup
 
 1. Open **Settings → Data & backups → Import backup** and select [Punchly_v18_test_backup.json](Punchly_v18_test_backup.json). Choose **Replace** in the test profile to load 23 daily records, two archived weekly reports, three drafts, and the **Nila Demo** profile with the Lagoon theme.
 2. Import the same file with **Merge** to check for duplicates. The existing punches and profile should be kept.
