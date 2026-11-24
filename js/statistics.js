@@ -1,6 +1,9 @@
 const Statistics = (() => {
   const date = key => new Date(`${key}T12:00:00Z`);
   const key = value => value.toISOString().slice(0, 10);
+  const daysInRange = (start, end) => (date(end) - date(start)) / 86400000 + 1;
+  const monthsInRange = (start, end) => (Number(end.slice(0, 4)) - Number(start.slice(0, 4))) * 12 +
+    Number(end.slice(5, 7)) - Number(start.slice(5, 7)) + 1;
   const shiftDate = (value, days) => {
     const next = date(value);
     next.setUTCDate(next.getUTCDate() + days);
@@ -49,6 +52,20 @@ const Statistics = (() => {
     return { range, start: first, end: today, through: today, previous: null };
   }
 
+  function customPeriod(start, end, today) {
+    const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(value) && value >= '0001-01-01' &&
+      Number.isFinite(date(value).getTime()) && key(date(value)) === value;
+    if (!validDate(start) || !validDate(end) || start > end || end > today) return null;
+    const previousStart = shiftDate(start, -daysInRange(start, end));
+    const previous = previousStart >= '0001-01-01' ? { start: previousStart, end: shiftDate(start, -1) } : null;
+    return { range: 'custom', start, end, through: end, previous };
+  }
+
+  function chartGrain({ range, start, end }) {
+    if (range === 'weekly' || range === 'monthly' || (range === 'custom' && daysInRange(start, end) <= 31)) return 'day';
+    return monthsInRange(start, end) > 24 ? 'year' : 'month';
+  }
+
   function classify(entry, workdays) {
     const punched = Shift.hasPunches(entry.punches);
     if (entry.mode === 'leave') return 'leave';
@@ -95,10 +112,9 @@ const Statistics = (() => {
 
   function buckets(selection, days, trailing = days) {
     const { range, start, end, through } = selection;
-    const daily = range === 'weekly' || range === 'monthly';
-    const months = (Number(end.slice(0, 4)) - Number(start.slice(0, 4))) * 12 + Number(end.slice(5, 7)) - Number(start.slice(5, 7)) + 1;
-    const yearly = range === 'all' && months > 24;
-    const grain = daily ? 'day' : yearly ? 'year' : 'month';
+    const grain = chartGrain(selection);
+    const daily = grain === 'day';
+    const yearly = grain === 'year';
     const bucketKey = value => value.slice(0, daily ? 10 : yearly ? 4 : 7);
     const completed = days.filter(day => isWorkedDay(day.state));
     const totals = new Map();
@@ -109,7 +125,7 @@ const Statistics = (() => {
     const byDate = new Map(trailing.filter(day => isWorkedDay(day.state)).map(day => [day.date, day.total]));
     const anchors = daily ? datesBetween(start, end) : yearly
       ? Array.from({ length: Number(end.slice(0, 4)) - Number(start.slice(0, 4)) + 1 }, (_, i) => String(Number(start.slice(0, 4)) + i).padStart(4, '0') + '-01-01')
-      : Array.from({ length: months }, (_, i) => monthAt(start, i));
+      : Array.from({ length: monthsInRange(start, end) }, (_, i) => monthAt(start, i));
     const rows = anchors.map(anchor => {
       let average = null;
       if (daily && anchor <= through) {
@@ -125,5 +141,5 @@ const Statistics = (() => {
     return { grain, rows, states: days.map(day => day.state), hasWork: completed.length > 0 };
   }
 
-  return { date, shiftDate, datesBetween, labels, isWorkedDay, period, classify, summarize, buckets };
+  return { date, shiftDate, datesBetween, labels, isWorkedDay, period, customPeriod, chartGrain, classify, summarize, buckets };
 })();

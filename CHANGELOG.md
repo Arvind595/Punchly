@@ -1,5 +1,10 @@
 # Punchly release notes
 
+## v34
+
+- Added custom start and end dates to Statistics. Both dates count, and the comparison uses the preceding period of the same length.
+- Repaired the Project checks workflow so GitHub can run it after the Dependabot merges.
+
 ## v33
 
 - Added immediate punch undo, including reopening an accidental checkout, and a short guard against double taps.

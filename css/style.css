@@ -443,6 +443,9 @@ textarea { resize: vertical; }
 .stats-heading h2, .stats-heading h3, .stats-heading p { margin: 0; }
 .stats-heading .inline-field { min-width: 0; max-width: 100%; flex-wrap: wrap; }
 .stats-heading select { width: auto; max-width: 100%; }
+.stats-custom-range { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: end; gap: .65rem; margin-top: .85rem; }
+.stats-custom-range .field { flex: 1 1 8rem; max-width: 12rem; }
+.stats-custom-range .matte-input { min-width: 0; }
 .stats-chart-heading { margin-top: 1.25rem; }
 .stats-attendance { padding: .85rem; border: 1px solid var(--border-color); border-radius: 12px; }
 .stats-attendance h3 { margin: 0 0 .65rem; font-size: 1rem; }

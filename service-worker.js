@@ -1,6 +1,6 @@
 // BEGIN GENERATED ASSETS
-const RELEASE = 33;
-const CACHE_NAME = 'punchly-static-v33-17923c2a1b14';
+const RELEASE = 34;
+const CACHE_NAME = 'punchly-static-v34-cbb4704fea84';
 const APP_ASSETS = [
   "./LICENSE",
   "./assets/avatar-coffee.svg",
@@ -23,9 +23,9 @@ const APP_ASSETS = [
   "./assets/logo.svg",
   "./assets/punch-countryside.jpg",
   "./assets/punch-holiday.jpg",
-  "./css/style.css?v=7a5dc49c5e2d",
+  "./css/style.css?v=6cbb5a540750",
   "./js/app-tools.js?v=c48a0c2b78a4",
-  "./js/app.js?v=e9c726832fdf",
+  "./js/app.js?v=4826535af173",
   "./js/attendance.js?v=13ab0023d157",
   "./js/audit.js?v=752164cdd977",
   "./js/charts.js?v=2bfe4ffaf06f",
@@ -37,7 +37,7 @@ const APP_ASSETS = [
   "./js/settings.js?v=6967c43f3396",
   "./js/setup.js?v=8a09ae3dfd49",
   "./js/shift.js?v=49dd3a3ba960",
-  "./js/statistics.js?v=f27d970ed321",
+  "./js/statistics.js?v=f889887a7785",
   "./js/storage.js?v=209d51b33819",
   "./manifest.webmanifest?v=2558bca903f1",
   "./vendor/punchly-sounds.js?v=6428b26e6b88",

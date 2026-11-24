@@ -128,3 +128,34 @@ test('previous periods compare the same elapsed days, falling back to the last v
   assert.deepEqual(prior('yearly', '2024-02-29'), ['2023-01-01', '2023-02-28'])
   assert.equal(Stats.period('all', '2026-11-24').previous, null)
 })
+
+test('custom dates include both ends and compare with the preceding range of equal length', () => {
+  const today = '2026-11-24'
+  const selection = Stats.customPeriod('2026-10-29', '2026-11-02', today)
+  assert.equal(selection.through, '2026-11-02')
+  assert.equal(selection.previous.start, '2026-10-24')
+  assert.equal(selection.previous.end, '2026-10-28')
+  const daily = Stats.buckets(selection, [worked(selection.start), worked(selection.end, 300)])
+  assert.equal(daily.grain, 'day')
+  assert.deepEqual(Array.from(daily.rows, row => row.minutes), [480, 0, 0, 0, 300])
+  assert.equal(Stats.customPeriod(today, today, today).previous.start, '2026-11-23')
+  assert.equal(Stats.customPeriod('0001-01-01', '0001-01-02', today).previous, null)
+  assert.equal(Stats.customPeriod(today, '2026-11-25', today), null)
+  assert.equal(Stats.customPeriod(today, '2026-11-23', today), null)
+  assert.equal(Stats.customPeriod('', today, today), null)
+  assert.equal(Stats.customPeriod('2026-02-29', today, today), null)
+  assert.ok(Stats.customPeriod('2024-02-29', '2024-02-29', today))
+})
+
+test('long custom ranges group by month or year with the selected endpoints', () => {
+  const today = '2026-11-24'
+  const monthly = Stats.customPeriod('2026-09-30', '2026-11-01', today)
+  const data = [worked('2026-09-30'), worked('2026-11-01')]
+  const monthChart = Stats.buckets(monthly, data)
+  assert.equal(monthChart.grain, 'month')
+  assert.deepEqual(Array.from(monthChart.rows, row => row.minutes), [480, 0, 480])
+  const yearly = Stats.customPeriod('2024-01-12', '2026-09-30', today)
+  const yearChart = Stats.buckets(yearly, data.slice(0, 1))
+  assert.equal(yearChart.grain, 'year')
+  assert.deepEqual(Array.from(yearChart.rows, row => row.minutes), [0, 0, 480])
+})

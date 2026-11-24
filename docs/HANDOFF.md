@@ -1,6 +1,6 @@
 # Punchly maintainer handoff
 
-This guide describes the app through v33. Start from the code in your checkout if the app version has moved on. Use the [README](../README.md#how-to-use) for the user workflow and the [changelog](../CHANGELOG.md) for release details.
+This guide describes the app through v34. Start from the code in your checkout if the app version has moved on. Use the [README](../README.md#how-to-use) for the user workflow and the [changelog](../CHANGELOG.md) for release details.
 
 ## Runtime and entry points
 
@@ -32,6 +32,8 @@ Punchly is a static time tracker and attendance PWA hosted on [GitHub Pages](htt
 ## Statistics
 
 Weeks start Monday. Week and month charts use calendar days, year charts use months, and all-time charts switch from months to years when history spans more than 24 months. Previous periods use the same elapsed portion, capped at the previous period’s end. Future dates are excluded from metrics. The attendance breakdown counts full and half days separately, and both contribute to worked hours and averages. Target achievement and overtime require a positive target. Unfinished or invalid punches are marked incomplete. Leave and holidays have their own states. A Sunday without punches counts as a holiday unless Sunday is a configured workday. Empty dates on configured workdays count as no punch and other empty dates count as days off. Week rankings sum completed work inside the selected period. Use **Dates** to browse the attendance calendar and open a shift in Today.
+
+Custom dates include both endpoints and allow dates through today. Charts group ranges of up to 31 days by day, longer ranges by month, and ranges spanning more than 24 calendar months by year. The comparison uses the immediately preceding range of equal length.
 
 ## Preferences and browser features
 

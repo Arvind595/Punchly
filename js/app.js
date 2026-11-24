@@ -15,6 +15,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const historySearch = document.getElementById('historySearch');
   const historyFilter = document.getElementById('historyFilter');
   const statsRange = document.getElementById('statsRange');
+  const statsCustomRange = document.getElementById('statsCustomRange');
+  const statsFrom = document.getElementById('statsFrom');
+  const statsTo = document.getElementById('statsTo');
   const statsView = document.getElementById('statsView');
   const exportRange = document.getElementById('exportRange');
   const todayView = document.getElementById('today-view');
@@ -33,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let hasShiftTarget = false;
   let miniTimer;
   let pendingFirstPunch;
+  let customStatsPeriod;
 
   const version = document.querySelector('meta[name="punchly-release"]').content;
   document.getElementById('appVersion').textContent = `v${version}`;
@@ -386,6 +390,19 @@ document.addEventListener('DOMContentLoaded', () => {
   historySearch.addEventListener('input', () => updateHistory());
   historyFilter.addEventListener('change', updateHistory);
   statsRange.addEventListener('change', updateStatistics);
+  statsCustomRange.addEventListener('input', () => statsTo.setCustomValidity(''));
+  statsCustomRange.addEventListener('submit', event => {
+    event.preventDefault();
+    const today = localDateKey(new Date());
+    const selected = Statistics.customPeriod(statsFrom.value, statsTo.value, today);
+    if (!selected) {
+      statsTo.setCustomValidity('Choose an end date on or after the start date and no later than today.');
+      statsTo.reportValidity();
+      return;
+    }
+    customStatsPeriod = selected;
+    updateStatistics();
+  });
   statsView.addEventListener('change', updateStatistics);
   exportRange.addEventListener('change', updateExport);
   window.getExportRecords = exportRecords;
@@ -399,9 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const period = Statistics.period(range, today, first);
     const days = daily.map(record => logEntry(record.date, record, null, now))
       .map(entry => ({ ...entry, state: Statistics.classify(entry, settings.workdays) }));
-    const trailing = range === 'weekly' || range === 'monthly' ?
-      [...statisticsDays(Statistics.shiftDate(period.start, -6), Statistics.shiftDate(period.start, -1), now), ...days] : days;
-    return Statistics.buckets(period, days, trailing);
+    return statisticsChart(period, days, now);
   };
   if ('ResizeObserver' in window) {
     const chart = document.getElementById('analyticsChart');
@@ -1211,6 +1226,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }));
   }
 
+  function statisticsChart(period, days, now) {
+    const trailing = Statistics.chartGrain(period) === 'day' && period.start > '0001-01-06'
+      ? [...statisticsDays(Statistics.shiftDate(period.start, -6), Statistics.shiftDate(period.start, -1), now), ...days] : days;
+    return Statistics.buckets(period, days, trailing);
+  }
+
   function statsList(id, rows) {
     const items = rows.flatMap(([label, value]) => {
       const term = document.createElement('dt');
@@ -1247,7 +1268,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const points = value => `${(value * 100).toFixed(1).replace(/\.0$/, '')} pp`;
     setText(document.getElementById('statsComparisonNote'), previous
       ? `Compared with ${dateRange(period.previous.start, period.previous.end)}.`
-      : 'All time has no previous equivalent period.');
+      : 'There is no previous equivalent period.');
     statsList('statsComparison', previous ? [
       ['Total worked', delta(current.total, previous.total, formatDuration)],
       ['Overtime', delta(current.overtime, previous.overtime, formatDuration)],
@@ -1271,10 +1292,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const now = new Date();
     const today = localDateKey(now);
     const range = statsRange.value;
+    statsCustomRange.hidden = range !== 'custom';
+    if (range === 'custom') {
+      statsFrom.max = statsTo.max = today;
+      if (!customStatsPeriod || customStatsPeriod.end > today) {
+        statsFrom.value = today.slice(0, 7) + '-01';
+        statsTo.value = today;
+        statsTo.setCustomValidity('');
+        customStatsPeriod = Statistics.customPeriod(statsFrom.value, statsTo.value, today);
+      }
+    }
     const first = range === 'all' ? [
       ...Storage.getHistory().filter(record => record.kind === 'daily').map(record => record.date), ...Object.keys(Storage.getDrafts())
     ].filter(date => /^\d{4}-\d{2}-\d{2}$/.test(date) && date <= today && Number.isFinite(Date.parse(date))).sort()[0] || today : today;
-    const period = Statistics.period(range, today, first);
+    const period = range === 'custom' ? customStatsPeriod : Statistics.period(range, today, first);
     const days = statisticsDays(period.start, period.through, now);
     const current = Statistics.summarize(days);
     const previous = period.previous ? Statistics.summarize(statisticsDays(period.previous.start, period.previous.end, now)) : null;
@@ -1300,9 +1331,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       document.getElementById('statsLogRows').replaceChildren(fragment);
     } else {
-      const trailing = range === 'weekly' || range === 'monthly' ?
-        [...statisticsDays(Statistics.shiftDate(period.start, -6), Statistics.shiftDate(period.start, -1), now), ...days] : days;
-      Charts.update(Statistics.buckets(period, days, trailing), statsView.value, formatDuration);
+      Charts.update(statisticsChart(period, days, now), statsView.value, formatDuration);
     }
   }
 
