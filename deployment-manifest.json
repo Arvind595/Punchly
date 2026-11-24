@@ -1,10 +1,10 @@
 {
   "version": 32,
-  "cache": "punchly-static-v32-854fb1a158be",
+  "cache": "punchly-static-v32-bea4d3275c57",
   "assets": {
     "LICENSE": {
-      "sha256": "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5",
-      "bytes": 11560
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "bytes": 11358
     },
     "assets/avatar-coffee.svg": {
       "sha256": "a057a93df7a21c50f6776251f42b7b6fde5534baf9f7f3141066e1998a5585f0",
@@ -163,7 +163,7 @@
       "bytes": 56691
     },
     "service-worker.js": {
-      "sha256": "a39447a1d7c51bdf85f62625fab584d93f980a3a6120bae62247c6fea67f7844",
+      "sha256": "267a3f5344ee2e504eb7144cdcdf202e08baac121c2bc538771cc0cbb9bc4ab7",
       "bytes": 4827
     }
   }
