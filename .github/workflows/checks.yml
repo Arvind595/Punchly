@@ -11,7 +11,7 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: actions/setup-node@v7
@@ -25,11 +25,11 @@ jobs:
       - run: npm run release:check
       - run: npm run links:check
       - run: npm run release:notes > generated-changelog.md
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: generated-changelog
           path: generated-changelog.md
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         with:
           name: punchly-site-${{ github.sha }}
@@ -48,8 +48,13 @@ jobs:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
+dependabot/github_actions/actions/setup-node-7
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v7
+
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+main
         with:
           node-version: '24'
       - run: npm run links:check -- --external
