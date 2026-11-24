@@ -1,6 +1,6 @@
 // BEGIN GENERATED ASSETS
 const RELEASE = 32;
-const CACHE_NAME = 'punchly-static-v32-854fb1a158be';
+const CACHE_NAME = 'punchly-static-v32-bea4d3275c57';
 const APP_ASSETS = [
   "./LICENSE",
   "./assets/avatar-coffee.svg",

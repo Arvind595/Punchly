@@ -8,7 +8,9 @@ const check = process.argv.includes('--check')
 const config = JSON.parse(await readFile(join(root, 'release.json'), 'utf8'))
 if (!Number.isInteger(config.version) || config.version < 1) throw new Error('release.json needs a positive version number')
 const textTypes = new Set(['.js', '.css', '.svg', '.html', '.webmanifest'])
-const normalized = (file, bytes) => textTypes.has(extname(file)) ? Buffer.from(bytes.toString('utf8').replace(/\r\n/g, '\n')) : bytes
+const normalized = (file, bytes) => file === 'LICENSE' || textTypes.has(extname(file))
+  ? Buffer.from(bytes.toString('utf8').replace(/\r\n/g, '\n'))
+  : bytes
 const hash = bytes => createHash('sha256').update(bytes).digest('hex')
 async function readAsset(file) { return normalized(file, await readFile(join(root, file))) }
 async function walk(directory) {
