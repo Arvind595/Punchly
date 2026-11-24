@@ -6,5 +6,5 @@ Start with [the maintainer handoff](docs/HANDOFF.md) for the architecture, chang
 - Use `js/shift.js` for shift calculations and `js/storage.js` for persisted records, settings, backup validation, and recovery. Preserve existing backups, local shift dates, and the saved lunch policy on completed shifts.
 - Use a separate browser profile or origin for fixture imports, reset, and recovery testing. See [test data](test-data/README.md).
 - With Node.js 24 or later, run `npm ci` when dependencies are missing, `npm test`, and `npm run typecheck`. Run `npm run build` when changing the sound bundle. The handoff lists browser checks by workflow.
-- When releasing app changes, keep the release marker and asset query versions in `index.html` aligned with `RELEASE` in `service-worker.js`. Update the offline asset list when the required files change.
+- When releasing app changes, set the version in [`release.json`](release.json), run `npm run release:sync`, and verify with `npm run release:check`. The generator updates the app release marker, cache, and deployment asset inventory together.
 - Record user-visible changes in the [changelog](CHANGELOG.md). Update the [handoff](docs/HANDOFF.md) when a change affects architecture, compatibility, migration, or verification.

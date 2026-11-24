@@ -507,6 +507,9 @@ textarea { resize: vertical; }
 #setupForm fieldset > .btn-secondary, #setupForm .profile-fields { margin-top: .65rem; }
 .setup-brand { display: flex; align-items: center; gap: .6rem; margin-bottom: .8rem; font-size: 1.25rem; }
 .setup-brand img { border-radius: 12px; }
+.setup-complete { display: grid; justify-items: center; gap: .8rem; padding: .7rem 0 .25rem; text-align: center; }
+#setupDialog[data-complete] #setupHeading { text-align: center; }
+.setup-complete-icon { display: grid; place-items: center; width: 40px; height: 40px; margin: .3rem auto 1rem; border: 2px solid #18885a; border-radius: 50%; color: #18885a; font-size: 1.4rem; font-weight: 800; }
 .setup-brand strong {
   color: var(--accent-color); font-weight: 800; letter-spacing: -.035em;
   text-shadow: 0 1px 0 var(--surface-color), 0 2px 0 var(--accent-color), 0 4px 5px rgb(25 22 70 / 25%);

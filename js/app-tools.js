@@ -274,6 +274,19 @@ const AppTools = (() => {
     });
   }
 
+  async function validatePhotoFile(file) {
+    const types = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!types.includes(file.type)) throw new Error('Choose a JPEG, PNG, or WebP image.');
+    if (!file.size || file.size > 5 * 1024 * 1024) throw new Error('Choose an image of up to 5 MB.');
+    const header = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+    const jpeg = header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff;
+    const png = [137, 80, 78, 71, 13, 10, 26, 10].every((byte, index) => header[index] === byte);
+    const webp = String.fromCharCode(...header.slice(0, 4)) === 'RIFF' && String.fromCharCode(...header.slice(8, 12)) === 'WEBP';
+    if (!(file.type === 'image/jpeg' && jpeg || file.type === 'image/png' && png || file.type === 'image/webp' && webp)) {
+      throw new Error('The image file does not match its format.');
+    }
+  }
+
   function connectPhoto(onCrop, notify) {
     const crop = modal('photoDialog');
     const fileInput = byId('profilePhotoFile');
@@ -283,6 +296,7 @@ const AppTools = (() => {
     const y = byId('photoY');
     const size = canvas.width;
     let image;
+    let selection = 0;
 
     function render() {
       const context = canvas.getContext('2d');
@@ -297,15 +311,25 @@ const AppTools = (() => {
     }
 
     byId('profilePhotoChoose').addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', () => {
+    fileInput.addEventListener('change', async () => {
       const file = fileInput.files[0];
       fileInput.value = '';
       if (!file) return;
+      const current = ++selection;
       const respond = UiSounds.feedback();
+      try { await validatePhotoFile(file); }
+      catch (error) { if (current === selection) { notify(error.message || 'Could not read this image.'); respond('error'); } return; }
+      if (current !== selection) return;
       const url = URL.createObjectURL(file);
       const next = new Image();
       next.onload = () => {
         URL.revokeObjectURL(url);
+        if (current !== selection) return;
+        if (!next.naturalWidth || !next.naturalHeight || next.naturalWidth > 8192 || next.naturalHeight > 8192 || next.naturalWidth * next.naturalHeight > 16000000) {
+          notify('Image dimensions are too large. Choose an image up to 16 megapixels.');
+          respond('error');
+          return;
+        }
         image = next;
         zoom.value = '100';
         x.value = y.value = '50';
@@ -315,6 +339,7 @@ const AppTools = (() => {
       };
       next.onerror = () => {
         URL.revokeObjectURL(url);
+        if (current !== selection) return;
         notify('Choose a JPEG, PNG, or WebP image that this browser can open.');
         respond('error');
       };
@@ -376,5 +401,5 @@ const AppTools = (() => {
     });
   }
 
-  return { modal, connectStartup, connectUpdates, connectHelp, connectInvite, connectPhoto, connectReset };
+  return { modal, connectStartup, connectUpdates, connectHelp, connectInvite, connectPhoto, validatePhotoFile, connectReset };
 })();

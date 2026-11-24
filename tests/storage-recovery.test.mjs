@@ -20,8 +20,8 @@ function browser(initial = {}) {
   class CustomEvent { constructor(type, options) { this.type = type; this.detail = options.detail } }
   const ctx = { localStorage, window: { dispatchEvent: event => events.push(event) }, CustomEvent, console: { warn() {}, error() {} } }
   for (const name of ['shift', 'audit', 'storage']) runInNewContext(readFileSync(`js/${name}.js`, 'utf8'), ctx)
-  runInNewContext('this.Storage = Storage', ctx)
-  return { Storage: ctx.Storage, data, events, setFailure: callback => { fail = callback } }
+  runInNewContext('this.Storage = Storage; this.Audit = Audit', ctx)
+  return { Storage: ctx.Storage, Audit: ctx.Audit, data, events, setFailure: callback => { fail = callback } }
 }
 
 test('valid backup survives export and replace round trip, including drafts and change logs', () => {
@@ -41,6 +41,16 @@ test('replace does not bring back weekly records from an older local calculator'
   const b = browser({ timecard_calculator_history_v1: JSON.stringify([{ id: 'old-week', dateFormatted: '2025-01-01', header: 'Old' }]) })
   b.Storage.importBackup(example, false)
   assert.equal(b.Storage.getHistory().some(row => row.id === 'old-week'), false)
+})
+
+test('legacy history migration retries when storage could not save the imported records', () => {
+  const b = browser({ timecard_calculator_history_v1: JSON.stringify([{ id: 'old-week', dateFormatted: '2025-01-01' }]) })
+  b.setFailure(key => key === 'punchly_history')
+  assert.equal(b.Storage.getHistory()[0].id, 'old-week')
+  assert.equal(b.data.has('punchly_legacy_weekly_migrated_v1'), false)
+  b.setFailure(() => false)
+  assert.equal(b.Storage.getHistory()[0].id, 'old-week')
+  assert.equal(JSON.parse(b.data.get('punchly_history'))[0].id, 'old-week')
 })
 
 test('malformed and duplicate backup data is rejected before changing storage', () => {
@@ -66,6 +76,33 @@ test('merge identifies existing attendance dates and keeps existing records', ()
   assert.equal(b.Storage.duplicateDates(example).length, example.history.filter(row => row.kind === 'daily').length)
   assert.equal(b.Storage.importBackup(example, true), 0)
   assert.equal(b.Storage.getHistory().length, example.history.length)
+})
+
+test('cached history refreshes after external changes and never exposes stale data after corruption', () => {
+  const b = browser()
+  b.Storage.importBackup(example, false)
+  const original = example.history[0]
+  assert.equal(b.Storage.getDaily(original.date).id, original.id)
+  b.Storage.getHistory().pop()
+  assert.equal(b.Storage.getHistory().length, example.history.length)
+  b.data.set('punchly_history', JSON.stringify([{ ...original, notes: 'Changed in another tab' }]))
+  assert.equal(b.Storage.getDaily(original.date).notes, 'Changed in another tab')
+  b.data.set('punchly_history', '{broken')
+  assert.equal(b.Storage.getDaily(original.date), undefined)
+  assert.ok(b.Storage.diagnostics().issues.some(issue => issue.key === 'punchly_history'))
+})
+
+test('repeated daily lookups reuse validated history instead of revalidating every record', () => {
+  const b = browser()
+  b.Storage.importBackup(example, false)
+  let validations = 0
+  const original = b.Audit.valid
+  b.Audit.valid = value => { validations++; return original(value) }
+  b.Storage.getDaily(example.history[0].date)
+  const first = validations
+  assert.ok(first > 0)
+  for (let i = 0; i < 10; i++) b.Storage.getDaily(example.history[0].date)
+  assert.equal(validations, first)
 })
 
 test('corrupted history is reported and preserved rather than normalized or overwritten', () => {

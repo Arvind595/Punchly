@@ -53,6 +53,8 @@ const Setup = (() => {
     const restore = document.getElementById('setupRestore');
     const input = document.getElementById('setupBackup');
     const status = document.getElementById('setupBackupStatus');
+    const complete = document.getElementById('setupComplete');
+    const done = document.getElementById('setupDone');
     let index = -1;
     let finished = false;
     let restoring = false;
@@ -105,8 +107,16 @@ const Setup = (() => {
       } else if (changes.displayName && changes.displayName !== settings.displayName) {
         chosen.profileNameSource = 'user';
       }
-      onDone(chosen, Storage.finishSetup(chosen), respond);
-      dialog.close();
+      const saved = Storage.finishSetup(chosen);
+      onDone(chosen, saved, respond);
+      form.hidden = position.hidden = skipConfirmation.hidden = true;
+      complete.hidden = false;
+      document.getElementById('setupCompleteIcon').hidden = !saved;
+      setupDialog.setAttribute('data-complete', '');
+      setupDialog.setAttribute('aria-describedby', 'setupCompleteMessage');
+      heading.textContent = saved ? "You're all set!" : 'Ready for this session';
+      document.getElementById('setupCompleteMessage').textContent = saved ? 'Welcome to Punchly.' : 'Your setup could not be saved. Check browser storage.';
+      heading.focus();
     }
 
     function showSkipConfirmation() {
@@ -127,11 +137,16 @@ const Setup = (() => {
     }
 
     function dismissSetup() {
+      if (finished) {
+        if (!complete.hidden) dialog.close();
+        return;
+      }
       if (skipConfirmation.hidden) showSkipConfirmation();
       else resumeSetup();
     }
 
     keepSetup.addEventListener('click', resumeSetup);
+    done.addEventListener('click', () => dialog.close());
     confirmSetupSkip.addEventListener('click', () => {
       keepSetup.disabled = confirmSetupSkip.disabled = true;
       finish({ displayName: form.elements.displayName.value.trim() || settings.displayName });

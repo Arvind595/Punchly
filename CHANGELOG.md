@@ -1,5 +1,10 @@
 # Punchly release notes
 
+## v32
+
+- Added a setup completion screen, safer profile-image limits, and more efficient history and calendar updates.
+- Added reproducible release assets, dependency integrity checks, link checks, and a retained previous offline cache.
+
 ## v31
 
 - Added backup validation, duplicate-date warnings, recovery diagnostics, quota handling, and the last backup export time.

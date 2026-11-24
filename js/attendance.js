@@ -122,6 +122,7 @@ const Attendance = (() => {
     let month;
     let selected;
     let entries;
+    let renderedGrid = '';
 
     function showSelection() {
       const today = todayKey();
@@ -166,6 +167,8 @@ const Attendance = (() => {
       byId('calendarMonth').textContent = monthTitle.format(first);
       previous.disabled = month === '0001-01';
       next.disabled = month === '9999-12';
+      const gridKey = JSON.stringify([month, today, dates.map(date => stateFor(date, today, entries.get(date)))]);
+      if (gridKey === renderedGrid) { showSelection(); return; }
 
       const fragment = document.createDocumentFragment();
       for (let i = 0; i < (first.getDay() + 6) % 7; i++) {
@@ -188,6 +191,7 @@ const Attendance = (() => {
         fragment.append(button);
       }
       grid.replaceChildren(fragment);
+      renderedGrid = gridKey;
       showSelection();
     }
 

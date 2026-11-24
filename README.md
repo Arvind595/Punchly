@@ -61,9 +61,15 @@ npm run format
 npm run typecheck
 npm test
 npm run build
+npm run release:sync
+npm run links:check
 ```
 
-When releasing updates, change the release marker and asset query versions in `index.html` and `RELEASE` in `service-worker.js` together. Add new offline dependencies to the service worker’s asset list.
+Set the app version in [`release.json`](release.json) and run `npm run release:sync`. This updates the HTML and service worker, adds content hashes to script and stylesheet URLs, and generates [`deployment-manifest.json`](deployment-manifest.json). The release check also verifies the vendored SheetJS checksum and the background image size limits. SheetJS executes on the first Excel export. The service worker caches its file during installation so Excel is available offline.
+
+The project checks verify the build and local links on each push and pull request. They also generate a changelog artifact from Git commits. Use `npm run release:notes -- <tag-or-commit>` to select the start of the release notes. External links are checked on the scheduled workflow and can also be checked with `npm run links:check -- --external`.
+
+Each successful push to `main` archives the checked site files in GitHub Actions. Record the Git commit that passes the hosted app smoke test for each Pages deployment. To roll back, republish that run's `punchly-site-<commit>` artifact or build the same commit if the artifact has expired. The service worker retains the preceding offline cache and continues serving its active release if a new deployment is incomplete.
 
 ## Version history
 

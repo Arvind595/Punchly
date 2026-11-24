@@ -53,7 +53,7 @@ test('invite copies the link or exposes it for manual copying when unavailable',
 test('setup shows the imported lunch choice and saves a changed choice', async () => {
   const ids = ['setupDialog', 'setupForm', 'setupSkipPane', 'keepSetup', 'confirmSetupSkip',
     'setupHeading', 'setupWelcome', 'setupPosition', 'setupBack', 'setupContinue', 'setupSkip',
-    'setupRestore', 'setupBackup', 'setupBackupStatus']
+    'setupRestore', 'setupBackup', 'setupBackupStatus', 'setupComplete', 'setupDone', 'setupCompleteMessage', 'setupCompleteIcon']
   const nodes = Object.fromEntries(ids.map(id => [id, element()]))
   nodes.setupHeading.textContent = 'Welcome'
   const steps = Array.from({ length: 8 }, (_, i) => ({ ...element(), dataset: { setupStep: `Step ${i}` } }))
@@ -85,6 +85,8 @@ test('setup shows the imported lunch choice and saves a changed choice', async (
   for (let i = 0; i < 9; i++) nodes.setupForm.handlers.submit({ preventDefault() {} })
   assert.equal(saved.minimumLunch, true)
   assert.equal(saved.lunchLimit, 45)
+  assert.equal(nodes.setupComplete.hidden, false)
+  assert.equal(nodes.setupHeading.textContent, "You're all set!")
 })
 
 test('recognizes automatic device labels while respecting explicitly saved names', async () => {

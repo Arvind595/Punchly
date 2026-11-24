@@ -10,6 +10,7 @@ const Storage = (() => {
   const lastBackupKey = 'punchly_last_backup_export';
   const issues = new Map();
   let lastWriteFailure = '';
+  let historyCache;
   const profileLengths = { displayName: 48, employeeId: 40, employeeEmail: 254, role: 60, department: 60 };
   const defaults = {
     targetShift: '08:20',
@@ -69,6 +70,13 @@ const Storage = (() => {
     return Number.isNaN(parsed.getTime()) ? new Date().toISOString().slice(0, 10) : `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`;
   }
   function normalizeHistory(persist = true) {
+    if (persist) {
+      try {
+        const signature = historySignature();
+        if (historyCache && signature.every((value, index) => value === historyCache.signature[index])) return historyCache.records;
+        historyCache = null;
+      } catch (error) { historyCache = null; }
+    }
     const current = read(keys.HISTORY, []);
     if (!Array.isArray(current) || current.some(record => !record || typeof record !== 'object' || Array.isArray(record) ||
       (typeof record.date !== 'string' || !Number.isFinite(Date.parse(record.date)) ||
@@ -117,9 +125,24 @@ const Storage = (() => {
         schedule: Array.isArray(record.schedule) ? record.schedule : [], rounding: 'none', legacy: true
       });
     });
-    if (persist && !issues.has(keys.HISTORY) && JSON.stringify(history) !== JSON.stringify(current)) write(keys.HISTORY, history);
-    if (persist && !migrationDone) write(migrationKey, true);
+    if (persist && !issues.has(keys.HISTORY) && !issues.has(migrationKey) && !issues.has(legacyWeekKey)) {
+      const saved = JSON.stringify(history) === JSON.stringify(current) || write(keys.HISTORY, history);
+      if (!saved || (!migrationDone && !write(migrationKey, true))) return history;
+      try {
+        historyCache = {
+          signature: historySignature(),
+          records: history,
+          daily: dailyIndex(history)
+        };
+      } catch (error) { historyCache = null; }
+    }
     return history;
+  }
+  function historySignature() {
+    return [keys.HISTORY, migrationKey, legacyWeekKey].map(key => localStorage.getItem(key));
+  }
+  function dailyIndex(history) {
+    return new Map(history.filter(record => record.kind === 'daily').map(record => [record.date, record]));
   }
   function parseDuration(value) {
     if (typeof value !== 'string') return 0;
@@ -167,7 +190,7 @@ const Storage = (() => {
     ]));
   }
   function saveRecord(record) {
-    const history = normalizeHistory();
+    const history = normalizeHistory().slice();
     const next = { ...record, id: record.id || `${record.kind || 'daily'}-${record.date}-${Date.now()}` };
     const index = history.findIndex(item => item.id === next.id || (next.kind === 'daily' && item.kind === 'daily' && item.date === next.date));
     if (index >= 0) history[index] = next; else history.push(next);
@@ -404,7 +427,17 @@ const Storage = (() => {
     saveDraft(date, draft) { const drafts = getDrafts(); drafts[date] = draft; return write(keys.DRAFTS, drafts); },
     deleteDraft(date) { const drafts = getDrafts(); delete drafts[date]; return write(keys.DRAFTS, drafts); },
     getWeek: () => read(keys.WEEK, null), saveWeek: data => write(keys.WEEK, data),
-    getHistory: normalizeHistory, getSettings, saveSettings: value => write(keys.SETTINGS, value),
+    getHistory: () => normalizeHistory().slice(),
+    getDaily(date) {
+      const history = normalizeHistory();
+      return historyCache ? historyCache.daily.get(date) : history.find(record => record.kind === 'daily' && record.date === date);
+    },
+    getDailyEntries(dates) {
+      const history = normalizeHistory();
+      const index = historyCache?.daily ?? dailyIndex(history);
+      return new Map(dates.map(date => [date, index.get(date)]));
+    },
+    getSettings, saveSettings: value => write(keys.SETTINGS, value),
     saveRecord,
     deleteRecord(id) { return write(keys.HISTORY, normalizeHistory().filter(item => item.id !== id)); },
     exportBackup() {

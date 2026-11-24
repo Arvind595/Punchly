@@ -1,0 +1,55 @@
+name: Project checks
+permissions:
+  contents: read
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 5 * * 1'
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm run release:check
+      - run: npm run links:check
+      - run: npm run release:notes > generated-changelog.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: generated-changelog
+          path: generated-changelog.md
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        with:
+          name: punchly-site-${{ github.sha }}
+          if-no-files-found: error
+          path: |
+            index.html
+            service-worker.js
+            manifest.webmanifest
+            deployment-manifest.json
+            LICENSE
+            assets/
+            css/
+            js/
+            vendor/
+  external-links:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm run links:check -- --external

@@ -1,0 +1,170 @@
+{
+  "version": 32,
+  "cache": "punchly-static-v32-854fb1a158be",
+  "assets": {
+    "LICENSE": {
+      "sha256": "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5",
+      "bytes": 11560
+    },
+    "assets/avatar-coffee.svg": {
+      "sha256": "a057a93df7a21c50f6776251f42b7b6fde5534baf9f7f3141066e1998a5585f0",
+      "bytes": 750
+    },
+    "assets/avatar-fern.svg": {
+      "sha256": "bb3ed6499b471d53fdd6191b6ca41701643575016469e011fa323d382156a675",
+      "bytes": 701
+    },
+    "assets/avatar-fox.svg": {
+      "sha256": "45c3b0da90d67d4a7bfb7c9f9d344666d716a362b063eaec03a5a1f21240aa2f",
+      "bytes": 675
+    },
+    "assets/avatar-orbit.svg": {
+      "sha256": "36cf1c63a8ed9b8eade58af42e7ffd441f9797566c7649b584664a22933d969b",
+      "bytes": 646
+    },
+    "assets/avatar-whale.svg": {
+      "sha256": "379e65d879cbc59fa8019422d22574593a6053341aa97be6b879c3f379a756e2",
+      "bytes": 770
+    },
+    "assets/fonts/comic-neue-bold.woff": {
+      "sha256": "fa98ad0eb46d0dfc0de6f5d606d33ef48ba02c29659de712d7efd973bfd93238",
+      "bytes": 29140
+    },
+    "assets/fonts/comic-neue-regular.woff": {
+      "sha256": "8c48541897a7bf8125c454abfd2406abdbf9d4d2b0213f6fefdaef4feb0198a3",
+      "bytes": 30012
+    },
+    "assets/fonts/inter-bold.woff": {
+      "sha256": "0f602bf3f95ae35c102ceac21f79c887a9e4ebae42af6566346fb47a9048d62d",
+      "bytes": 30688
+    },
+    "assets/fonts/inter-regular.woff": {
+      "sha256": "09271ba2f60e735fb2da71eae0319434d587d0ac62a47da91d63bd701b41de63",
+      "bytes": 29884
+    },
+    "assets/fonts/manrope-bold.woff": {
+      "sha256": "e1b399faea74a8beb08b73e8a1406f9432469cf96cfee8370555eac3e35e9df1",
+      "bytes": 18052
+    },
+    "assets/fonts/manrope-regular.woff": {
+      "sha256": "8b5f66289a1931669e8b6e4ef92745d568d3ee65eedea3ea6b79b696d39bf037",
+      "bytes": 18016
+    },
+    "assets/fonts/nunito-bold.woff": {
+      "sha256": "1268bf327f8856c045759354c8bbc75262d5bbb033d2f13e6e6369c3cad069df",
+      "bytes": 59196
+    },
+    "assets/fonts/nunito-regular.woff": {
+      "sha256": "e9e6f0ab0f99c82b13616594048793df2d75b9936ab3be5d2c20934b540558dd",
+      "bytes": 59780
+    },
+    "assets/fonts/playpen-sans-bold.woff": {
+      "sha256": "b4d7155c9be9c0cab40c1a175a1cf0547f97d6081e1840eb0b226ddc984898d3",
+      "bytes": 373984
+    },
+    "assets/fonts/playpen-sans-regular.woff": {
+      "sha256": "09a2bf837b38ee3271e4cbb62f69430fb355063985fe23d4863d43f2c502734b",
+      "bytes": 366500
+    },
+    "assets/icon-192.png": {
+      "sha256": "429cb31b9043a38ac1fb8cd48d5e2f670317bcdec33fe3bade7a5af4dfd5a0fb",
+      "bytes": 35776
+    },
+    "assets/icon-512.png": {
+      "sha256": "a5cf9a5037f21c0bae564b9091355ee7391e4bf39cd81e37e8c8a344868b1f03",
+      "bytes": 229783
+    },
+    "assets/logo.svg": {
+      "sha256": "f6475c7e93aa6a8fe35aebd2f86146cac0f64e0c683e36fddf09f904441e81e4",
+      "bytes": 848
+    },
+    "assets/punch-countryside.jpg": {
+      "sha256": "cfd3ff87900944040b90e021241f7fcb8984d480e7e7fd72f683968b18fb1a38",
+      "bytes": 126475
+    },
+    "assets/punch-holiday.jpg": {
+      "sha256": "54ade48da41eda2eb9b11d7a8328344c9f04c162011fb2f826fdd4651109261f",
+      "bytes": 289644
+    },
+    "css/style.css": {
+      "sha256": "7657e2ba76b6dd0d5881db54589c8a90e7035f4de7c0bd023d307c9cab43faf9",
+      "bytes": 50465
+    },
+    "js/app-tools.js": {
+      "sha256": "bfef889ffa4456ee8641c15c977b872917a5ba277f9668b79ac7162f0dfdc616",
+      "bytes": 16098
+    },
+    "js/app.js": {
+      "sha256": "7d7e673f7cf408f1d678d40249391192c76b7a98e0eb7b1e2a6af37232900af1",
+      "bytes": 67331
+    },
+    "js/attendance.js": {
+      "sha256": "3097a9895a1a2d1b8888daa0340e1ceecb1144b87a7291fe8310c39951c7e93e",
+      "bytes": 10433
+    },
+    "js/audit.js": {
+      "sha256": "752164cdd9776591e87f8612cc63507eb84399b340bf53b8dd869a60f8802250",
+      "bytes": 3487
+    },
+    "js/charts.js": {
+      "sha256": "3f318c0d760bebfb45e7778396bee8e2da7ac7f6913549a294007d65c757f629",
+      "bytes": 7565
+    },
+    "js/export.js": {
+      "sha256": "e8b500d7e005e9d9afeeb0f111ad2db0cd500badb3bb479df0c550b7aae2b9ad",
+      "bytes": 22406
+    },
+    "js/guided-punch.js": {
+      "sha256": "ea34e9e7182d1eceb1c108d2892f6c441688f3f7ae6d7eab2faec0851d9608b2",
+      "bytes": 10011
+    },
+    "js/icons.js": {
+      "sha256": "74e70b32813fb993b824ad59454cf5226fa7ae2062001ad44cf44d5eb6a6e2ce",
+      "bytes": 21690
+    },
+    "js/mini-timer.js": {
+      "sha256": "b7e165ac5c70c33de38815bc748f774f6cad62d73892f101182501815f734540",
+      "bytes": 4544
+    },
+    "js/reminders.js": {
+      "sha256": "fe928f88bbebe0820f93905fb016c4de6a67119c38330615321b741d1a15b940",
+      "bytes": 5155
+    },
+    "js/settings.js": {
+      "sha256": "8037eb6423b1d3784e11c04ee31e68055125599e2e70c0a90ef1ebbfb4704834",
+      "bytes": 14894
+    },
+    "js/setup.js": {
+      "sha256": "8a09ae3dfd491023892a790f55660124248ff48412cfd05be27d2ce8dd0822c1",
+      "bytes": 8709
+    },
+    "js/shift.js": {
+      "sha256": "53f923395d39ce929fdaf9e59b04d68621f8bcb6169c4211935db1106891379d",
+      "bytes": 7772
+    },
+    "js/storage.js": {
+      "sha256": "a41e9fa3d107b7e984ca329d84ed6262e94e3ed448ad1e6a806558f623edd168",
+      "bytes": 25621
+    },
+    "manifest.webmanifest": {
+      "sha256": "2558bca903f1cfa6939701ddba28b2fa7bc99f1c5b86fa3cf2feef2f2bcf436e",
+      "bytes": 496
+    },
+    "vendor/punchly-sounds.js": {
+      "sha256": "6428b26e6b886ee9337b8d5e5dfda33de87392bca3a2096571042a0ffd15c779",
+      "bytes": 42757
+    },
+    "vendor/xlsx-0.20.3.mini.js": {
+      "sha256": "0cb353f830d7288385492c83d277b058ddeac664ca51cf1393aa1fd3e2b70939",
+      "bytes": 279523
+    },
+    "index.html": {
+      "sha256": "b62bf4cf1b265fbd1c4e7b3a8fa0d1a4227e1d04a48ecde7191c47e62e9646b2",
+      "bytes": 56691
+    },
+    "service-worker.js": {
+      "sha256": "a39447a1d7c51bdf85f62625fab584d93f980a3a6120bae62247c6fea67f7844",
+      "bytes": 4827
+    }
+  }
+}

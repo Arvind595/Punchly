@@ -1,6 +1,6 @@
 # Punchly maintainer handoff
 
-This guide describes the v31 app as of the changelog update in [`db77940`](https://github.com/Arvind595/Punchly/commit/db77940). Start from the code in your checkout if the app version has moved on. Use the [README](../README.md#how-to-use) for the user workflow and the [changelog](../CHANGELOG.md) for release details.
+This guide describes the app through v32. Start from the code in your checkout if the app version has moved on. Use the [README](../README.md#how-to-use) for the user workflow and the [changelog](../CHANGELOG.md) for release details.
 
 ## Runtime and entry points
 
@@ -30,7 +30,7 @@ Punchly is a static time tracker and attendance PWA hosted on [GitHub Pages](htt
 
 ## Preferences and browser features
 
-- **First run.** Setup begins with a welcome, then installation, backup import, time format, theme, profile, daily target, lunch, and notifications. Skip requires confirmation. Storage checks for existing data or pending recovery before opening the wizard. A blank name can use a device model or fallback label marked with `profileNameSource: 'device'`. Current defaults include a 12-hour clock, the light Periwinkle theme, Manrope, Compact mode, and Monday through Saturday as workdays.
+- **First run.** Setup begins with a welcome, then installation, backup import, time format, theme, profile, daily target, lunch, and notifications. Skip requires confirmation. A successful save opens **You’re all set!** and **Start using Punchly** dismisses the wizard. Storage checks for existing data or pending recovery before opening the wizard. A blank name can use a device model or fallback label marked with `profileNameSource: 'device'`. Current defaults include a 12-hour clock, the light Periwinkle theme, Manrope, Compact mode, and Monday through Saturday as workdays.
 - **Appearance.** The theme definitions, fonts, device theme matching, and profile rendering live in [`js/settings.js`](../js/settings.js). Keep mobile navigation colors tied to the theme variables. Compact mode keeps the countryside or holiday artwork. The Punch dial has its ticks without a separate legend. Mobile haptics default to on and use browser support for vibration. Profile pictures are cropped locally and saved as a bounded JPEG data URL.
 - **Reminders and audio.** Reminder checks run from the open app and use stored deduplication keys. Punchly shows in-app banners and can send device notifications when the browser grants permission. Sound uses one client-side UISFX `zen` player after a trusted gesture, with event cues for committed actions. The persisted volume defaults to 70%, per-cue gain is applied separately, and typing sounds are opt-in. A loading cue can play while Excel is preparing and is stopped on completion, failure, navigation, mute, or teardown. Preserve the visible and accessible feedback when touching either path.
 - **External actions.** The main hostname is used for the install and invite flows. The support form builds an email draft and includes device details only when selected. Satoshi is loaded from Fontshare if selected. The core app assets and the other bundled fonts work offline after caching.
@@ -69,7 +69,7 @@ Install dependencies with Node.js 24 or later and `npm ci`. Run `npm test` for t
 | Setup, sharing, reminders, or sound | [Setup and invite tests](../tests/setup-invite.test.mjs), [reminder tests](../tests/reminders.test.mjs), [UISFX tests](../tests/ui-sounds.test.mjs). Check gesture unlock, mute, and returning to an existing draft. |
 | Layout or PWA | Use desktop and a narrow mobile viewport. Check the Punch artwork, Today disclosure, bottom dock, date picker, and a fresh setup. Serve over localhost or HTTPS, load once online, then reload offline and verify that assets and punches are available. |
 
-For an app release, update the `punchly-release` meta tag and the `?v=` asset versions in [`index.html`](../index.html) together with `RELEASE` in [`service-worker.js`](../service-worker.js). Keep `APP_ASSETS` synchronized with the files needed offline. The worker checks the HTML release before caching, then claims clients and removes earlier Punchly caches once activated. Startup and manual refresh checks read the release marker from the server. Update **What’s New** for highlights and the changelog for the complete release entry.
+For an app release, set the version in [`release.json`](../release.json) and run `npm run release:sync`. This updates the HTML release marker and hash-based asset URLs, the service worker cache and offline asset list, and [`deployment-manifest.json`](../deployment-manifest.json). Run `npm run release:check` and `npm run links:check` before publishing. The worker checks the HTML release before caching and retains the preceding cache after activation. Startup and manual refresh checks read the release marker from the server. Update **What’s New** and the changelog for user-facing notes. GitHub Actions also generates notes from Git history and archives the checked site for each push to `main`. See the [README](../README.md#run-and-build) for rollback.
 
 ## Where to trace changes
 

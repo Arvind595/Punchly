@@ -6,15 +6,19 @@
     "build": "esbuild src/ui-sounds.ts --bundle --minify --target=es2020 --format=iife --global-name=UiSounds --outfile=vendor/punchly-sounds.js",
     "format": "prettier --single-quote --no-semi --write src/ui-sounds.ts tests/ui-sounds.test.mjs package.json",
     "typecheck": "tsc --noEmit --strict --target ES2020 --module ESNext --moduleResolution bundler src/ui-sounds.ts",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "release:sync": "node scripts/release.mjs",
+    "release:check": "node scripts/release.mjs --check",
+    "links:check": "node scripts/check-links.mjs",
+    "release:notes": "node scripts/changelog.mjs"
   },
   "dependencies": {
-    "uisfx": "^0.4.0"
+    "uisfx": "0.4.0"
   },
   "devDependencies": {
-    "esbuild": "^0.28.2",
-    "prettier": "^3.10.1",
-    "typescript": "^7.0.2"
+    "esbuild": "0.28.2",
+    "prettier": "3.10.1",
+    "typescript": "7.0.2"
   },
   "allowScripts": {
     "esbuild@0.28.2": true

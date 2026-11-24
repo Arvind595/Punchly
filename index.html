@@ -4,13 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f7f7ff">
-  <meta name="punchly-release" content="31">
+  <meta name="punchly-release" content="32">
   <meta name="description" content="A private, browser-based time tracker and weekly time-card calculator.">
   <title>Punchly | Time Tracker</title>
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-192.png">
-  <link rel="manifest" href="manifest.webmanifest?v=31">
-  <link rel="stylesheet" href="css/style.css?v=31">
+  <link rel="preload" href="assets/fonts/manrope-regular.woff" as="font" type="font/woff" crossorigin>
+  <link rel="preload" href="assets/fonts/manrope-bold.woff" as="font" type="font/woff" crossorigin>
+  <link rel="manifest" href="manifest.webmanifest?v=2558bca903f1">
+  <link rel="stylesheet" href="css/style.css?v=7657e2ba76b6">
 </head>
 <body>
   <section id="startupScreen" class="startup-screen" aria-label="Starting Punchly" hidden>
@@ -414,6 +416,8 @@
           <summary class="mobile-only">What’s New</summary>
           <h3><span class="ui-icon" data-icon="history" aria-hidden="true"></span> What’s New</h3>
           <div class="release-notes">
+            <h4>v32</h4>
+            <ul><li>Setup ends with a welcome confirmation.</li><li>Improved image validation, history performance, and release reliability.</li></ul>
             <h4>v31</h4>
             <ul><li>Backup imports validate records, identify duplicates, and keep a recovery copy while restoring.</li><li>Settings shows backup and recovery status.</li></ul>
             <h4>v30</h4>
@@ -539,6 +543,7 @@
   <dialog id="setupDialog" class="app-dialog" aria-labelledby="setupHeading">
     <div class="setup-brand"><img src="assets/logo.svg" width="44" height="44" alt=""><strong>Punchly</strong></div>
     <p id="setupPosition" class="eyebrow" aria-live="polite" hidden></p>
+    <span id="setupCompleteIcon" class="setup-complete-icon" aria-hidden="true" hidden>✓</span>
     <h2 id="setupHeading" tabindex="-1">Your workday, calculated.</h2>
     <form id="setupForm">
       <div id="setupWelcome" class="setup-welcome">
@@ -596,6 +601,10 @@
         <button class="btn-text" type="button" id="setupSkip">Skip setup</button>
       </div>
     </form>
+    <div id="setupComplete" class="setup-complete" hidden>
+      <p id="setupCompleteMessage">Welcome to Punchly.</p>
+      <button id="setupDone" class="btn-primary" type="button">Start using Punchly</button>
+    </div>
     <div id="setupSkipPane" hidden>
       <p class="help-text" id="setupSkipDescription">You can complete setup manually in Settings at any time.</p>
       <div class="button-row">
@@ -697,20 +706,20 @@
     <div class="button-row"><a class="btn-primary icon-button" id="openReportEmail" href="mailto:arvindne555@gmail.com"><span class="ui-icon" data-icon="forward_to_inbox" aria-hidden="true"></span>Open email draft</a><button class="btn-text" type="button" data-close>Cancel</button></div>
   </dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="js/shift.js?v=31"></script>
-  <script src="vendor/punchly-sounds.js?v=31"></script>
-  <script src="js/icons.js?v=31"></script>
-  <script src="js/audit.js?v=31"></script>
-  <script src="js/storage.js?v=31"></script>
-  <script src="js/charts.js?v=31"></script>
-  <script src="js/export.js?v=31"></script>
-  <script src="js/settings.js?v=31"></script>
-  <script src="js/reminders.js?v=31"></script>
-  <script src="js/attendance.js?v=31"></script>
-  <script src="js/mini-timer.js?v=31"></script>
-  <script src="js/guided-punch.js?v=31"></script>
-  <script src="js/app-tools.js?v=31"></script>
-  <script src="js/setup.js?v=31"></script>
-  <script src="js/app.js?v=31"></script>
+  <script src="js/shift.js?v=53f923395d39"></script>
+  <script src="vendor/punchly-sounds.js?v=6428b26e6b88"></script>
+  <script src="js/icons.js?v=74e70b32813f"></script>
+  <script src="js/audit.js?v=752164cdd977"></script>
+  <script src="js/storage.js?v=a41e9fa3d107"></script>
+  <script src="js/charts.js?v=3f318c0d760b"></script>
+  <script src="js/export.js?v=e8b500d7e005"></script>
+  <script src="js/settings.js?v=8037eb6423b1"></script>
+  <script src="js/reminders.js?v=fe928f88bbeb"></script>
+  <script src="js/attendance.js?v=3097a9895a1a"></script>
+  <script src="js/mini-timer.js?v=b7e165ac5c70"></script>
+  <script src="js/guided-punch.js?v=ea34e9e7182d"></script>
+  <script src="js/app-tools.js?v=bfef889ffa44"></script>
+  <script src="js/setup.js?v=8a09ae3dfd49"></script>
+  <script src="js/app.js?v=7d7e673f7cf4"></script>
 </body>
 </html>

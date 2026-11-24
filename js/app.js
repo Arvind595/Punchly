@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let todayKey = localDateKey(new Date());
   let lastRenderedMinute = null;
   let lastDayLogs = '';
+  let lastHistoryRender = '';
   let hasShiftTarget = false;
   let miniTimer;
   let pendingFirstPunch;
@@ -527,7 +528,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function readPunchShift(date, now) {
-    const record = Storage.getHistory().find(row => row.kind === 'daily' && row.date === date);
+    const record = Storage.getDaily(date);
     const draft = Storage.getDraft(date) || (!record && legacyDraftOn(date, Storage.getToday()));
     const input = logInput(date, record, draft);
     const elapsed = nowMinutesForDay(now, date);
@@ -696,7 +697,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function readDayEntries(days, now = new Date()) {
-    const records = new Map(Storage.getHistory().filter(record => record.kind === 'daily').map(record => [record.date, record]));
+    const records = Storage.getDailyEntries(days);
     const drafts = Storage.getDrafts();
     const legacy = Storage.getToday();
     return days.map(date => {
@@ -706,6 +707,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function refreshDayLogs(now = new Date()) {
+    if (document.getElementById('weekly-view').hidden) return;
     const today = localDateKey(now);
     const length = (now.getDay() + 6) % 7 + 1;
     const dates = Array.from({ length }, (_, index) => offsetDate(today, index + 1 - length));
@@ -745,7 +747,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function leaveRecord(date) {
-    return Storage.getHistory().find(record => record.kind === 'daily' && record.date === date);
+    return Storage.getDaily(date);
   }
 
   function reserveLeave(date, notes) {
@@ -859,7 +861,7 @@ document.addEventListener('DOMContentLoaded', () => {
     manualPunchSounds.clear();
     const date = selectedDay();
     const draft = Storage.getDraft(date);
-    const record = Storage.getHistory().find(item => item.kind === 'daily' && item.date === date);
+    const record = Storage.getDaily(date);
     loadDayFields(draft || (!record && legacyDraftOn(date, Storage.getToday())), record);
     renderDayHeading();
   }
@@ -876,7 +878,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function measureDay(now = new Date(), punches = readPunches()) {
-    const record = Storage.getHistory().find(item => item.kind === 'daily' && item.date === selectedDay());
+    const record = Storage.getDaily(selectedDay());
     return Shift.measure({
       mode: shiftMode.value, punches, baseTarget: toMinutes(shiftTarget.value),
       ...lunchPolicy(record), now: nowMinutesForDay(now, selectedDay())
@@ -891,11 +893,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function dayForReminder(date) {
     if (date === selectedDay()) {
-      const record = Storage.getHistory().find(item => item.kind === 'daily' && item.date === date);
+      const record = Storage.getDaily(date);
       return { date, mode: shiftMode.value, punches: readPunches(), baseTarget: toMinutes(shiftTarget.value), ...lunchPolicy(record) };
     }
     const draft = Storage.getDraft(date);
-    const record = Storage.getHistory().find(item => item.kind === 'daily' && item.date === date);
+    const record = Storage.getDaily(date);
     return { date, ...logInput(date, record, draft) };
   }
 
@@ -997,7 +999,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setText(document.getElementById('todayStatus'), status);
 
     const lunch = document.getElementById('lunchStatus');
-    const savedRecord = Storage.getHistory().find(item => item.kind === 'daily' && item.date === selectedDay());
+    const savedRecord = Storage.getDaily(selectedDay());
     const policy = lunchPolicy(savedRecord);
     const showMinimum = policy.minimumLunch && mode !== 'half' && result.started;
     lunch.hidden = result.lunch === null && !showMinimum;
@@ -1026,7 +1028,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!date || date > localDateKey(new Date())) return false;
     const draftTarget = (hasShiftTarget || Object.values(punches).some(Boolean)) && toMinutes(shiftTarget.value) > 0
       ? shiftTarget.value : '';
-    const record = Storage.getHistory().find(item => item.kind === 'daily' && item.date === date);
+    const record = Storage.getDaily(date);
     const previous = Storage.getDraft(date) || (!record && legacyDraftOn(date, Storage.getToday()));
     const before = logInput(date, record, previous);
     const next = {
@@ -1069,7 +1071,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const date = selectedDay();
-    const policy = lunchPolicy(Storage.getHistory().find(item => item.kind === 'daily' && item.date === date));
+    const policy = lunchPolicy(Storage.getDaily(date));
     if (!saveDayDraft(readPunches(), now)) { UiSounds.play('error'); return; }
     const record = {
       id: `daily-${date}`, kind: 'daily', date, mode, punches,
@@ -1282,10 +1284,18 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateHistory() {
+    if (document.getElementById('history-view').hidden && document.getElementById('export-view').hidden) {
+      window.getVisibleHistory = () => filteredHistory(new Date());
+      return;
+    }
     const now = new Date();
     const today = localDateKey(now);
     const visible = filteredHistory(now);
     window.getVisibleHistory = () => visible;
+    if (document.getElementById('history-view').hidden) { updateExport(visible); return; }
+    const renderKey = JSON.stringify([visible, today, settings.clockFormat, historySearch.value, historyFilter.value]);
+    if (renderKey === lastHistoryRender) { updateExport(visible); return; }
+    lastHistoryRender = renderKey;
     const body = document.getElementById('historyTableBody'); body.replaceChildren();
     const empty = document.getElementById('emptyHistory');
     empty.hidden = visible.length > 0;
