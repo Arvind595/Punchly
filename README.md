@@ -2,7 +2,7 @@
 
 Punchly is a private time tracker for daily punches, weekly hours, and monthly attendance. It runs in your browser with no account.
 
-[Open Punchly](https://arvind595.github.io/Punchly/) · [What’s new](CHANGELOG.md) · [Apache License 2.0](LICENSE)
+[Open Punchly](https://arvind595.github.io/Punchly/) · [What’s new](CHANGELOG.md) · [Version history](#version-history) · [Apache License 2.0](LICENSE)
 
 ## How to use
 
@@ -64,6 +64,26 @@ npm run build
 ```
 
 When releasing updates, change the release marker and asset query versions in `index.html` and `RELEASE` in `service-worker.js` together. Add new offline dependencies to the service worker’s asset list.
+
+## Version history
+
+The first beta and alpha commits carry no version numbers, and several later versions have no separate Git snapshot. This history covers v0–v14 using the version markers, notes, and features recorded in the repository.
+
+| Version | Changes | Record |
+| --- | --- | --- |
+| v0–v3 | The early builds went from a standalone Time Card Calculator with daily punch, weekly report, and monthly record tools to the first Punchly `index.html` with a four-punch tracker, charts, and exports. Individual version numbers for these builds are unverified. | [Initial beta](https://github.com/Arvind595/Punchly/commit/1c851ac05ef48843cc4b067696916c4963023a89), [first alpha](https://github.com/Arvind595/Punchly/commit/fce2952d35a18085f786951d59e5ff59ab1f0186) |
+| v4 | Brought daily and weekly tracking into `index.html`. Added half-day and leave or holiday logging, JSON backups, reminders, compact and AMOLED settings, and offline installation. | [Alpha 2](https://github.com/Arvind595/Punchly/commit/6f08ba65687b1ca3aa093c5012f47e7f52d361b8) |
+| v5 | Improved startup recovery and offline updates. Added developer and support details in Settings. | [v5 commit](https://github.com/Arvind595/Punchly/commit/9a318f36e03ab80b8f610c201f4612f91efc11cd) |
+| v6 | Streamlined the mobile Today view, weekly report controls, and collapsible Settings sections. | [v6 commit](https://github.com/Arvind595/Punchly/commit/1f2e5364ad153f5e4d5549e427852424386fb1ce) |
+| v7 | Added a weekly time card populated from daily shifts, a seven-day Quick Log, and overnight clock-out handling. | [v7 commit](https://github.com/Arvind595/Punchly/commit/bee0e32a785969795c2d36915fdde5e503c1db55) |
+| v8 | Added the monthly attendance calendar, record search, leave and holiday totals, mobile haptics, and the desktop mini timer. | [v8 commit](https://github.com/Arvind595/Punchly/commit/791a90f82a3da134db4a05d143c7fae5cde0b4ba) |
+| v9–v10 | By v10, Punch could save one punch at a time and resume the shift later. History gained record filters, Stats and Export became separate tabs, and the first and third Saturdays became scheduled holidays. | [v10 snapshot](https://github.com/Arvind595/Punchly/commit/ffc86462836439fcc1faee5b19b71ac55158a9dc) |
+| v11 | The v12 guide identifies v11 as the start of recording when punches and edits were made. The surviving v12 code includes the change log and export timestamps. | [Historical guide](https://github.com/Arvind595/Punchly/blob/c9ff67159f10b34eb5105abee0b07f901485a5ce/README.md#record-a-shift) |
+| v12 | Added illustrated avatars, profile photo cropping, profile deletion and app reset with a backup option, settings export, and in-app help. | [v12 commit](https://github.com/Arvind595/Punchly/commit/c9ff67159f10b34eb5105abee0b07f901485a5ce) |
+| v13 | Individual changes for this version are unverified in the surviving history. | [Commit history](https://github.com/Arvind595/Punchly/commits/main/) |
+| v14 | The Punch dial showed planned and recorded punches as well as the estimated checkout. The archived notes cover the dial changes across v14–v16. | [Archived release notes](CHANGELOG.md#older-releases) |
+
+See [What’s new](CHANGELOG.md) for later releases.
 
 ## License
 
