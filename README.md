@@ -2,7 +2,7 @@
 
 Punchly is a private time tracker for daily punches, weekly hours, and monthly attendance. It runs in your browser with no account.
 
-[Open Punchly](https://arvind595.github.io/Punchly/) · [What’s new](CHANGELOG.md) · [Version history](#version-history) · [Apache License 2.0](LICENSE)
+[Open Punchly](https://arvind595.github.io/Punchly/) · [What’s new](CHANGELOG.md) · [Version history](#version-history) · [Maintainer handoff](docs/HANDOFF.md) · [Apache License 2.0](LICENSE)
 
 ## How to use
 
