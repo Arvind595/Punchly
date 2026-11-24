@@ -25,11 +25,11 @@ jobs:
       - run: npm run release:check
       - run: npm run links:check
       - run: npm run release:notes > generated-changelog.md
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: generated-changelog
           path: generated-changelog.md
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         with:
           name: punchly-site-${{ github.sha }}
