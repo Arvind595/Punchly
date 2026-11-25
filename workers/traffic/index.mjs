@@ -1,7 +1,7 @@
 const analyticsUrl = 'https://api.cloudflare.com/client/v4/graphql';
 const pageOrigin = 'https://arvind595.github.io';
 const ttl = 1800;
-const query = `query PunchlyTraffic($account: String!, $site: String!, $start: Time!, $end: Time!) {
+const query = `query PunchlyTraffic($account: string!, $site: string!, $start: Time!, $end: Time!) {
   viewer {
     accounts(filter: { accountTag: $account }) {
       rumPageloadEventsAdaptiveGroups(
