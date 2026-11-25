@@ -5,6 +5,7 @@ const Shift = (() => {
   const nationalHolidays = new Map([
     ['01-26', 'Republic Day'], ['08-15', 'Independence Day'], ['10-02', 'Gandhi Jayanti']
   ]);
+  let holidayCalendar = new Map();
   const labels = new Map([
     ['full', 'Full day'],
     ['half', 'Half day'],
@@ -49,14 +50,26 @@ const Shift = (() => {
   }
 
   function nationalHoliday(date) {
-    return nationalHolidays.get(date.slice(5));
+    const schedule = holidayCalendar.get(date.slice(0, 4));
+    return schedule ? schedule.holidays.get(date) : nationalHolidays.get(date.slice(5));
+  }
+
+  function holidaysForYear(year) {
+    return holidayCalendar.get(year) ?? {
+      approval: null,
+      holidays: new Map([...nationalHolidays].map(([day, name]) => [`${year}-${day}`, name])),
+      optionalLeaves: new Map()
+    };
+  }
+
+  function optionalLeave(date) {
+    return holidayCalendar.get(date.slice(0, 4))?.optionalLeaves.get(date);
   }
 
   function nationalHolidayDates(start, end) {
     const dates = [];
     for (let year = Number(start.slice(0, 4)); year <= Number(end.slice(0, 4)); year++) {
-      for (const day of nationalHolidays.keys()) {
-        const date = String(year).padStart(4, '0') + '-' + day;
+      for (const date of holidaysForYear(String(year).padStart(4, '0')).holidays.keys()) {
         if (date >= start && date <= end) dates.push(date);
       }
     }
@@ -185,10 +198,12 @@ const Shift = (() => {
     if (record.kind === 'weekly') return 'Saved report';
     if (isDayOff(record.mode)) return label(record.mode);
     if (isSaturday(record.mode) && !hasPunches(record.punches) && !record.in && !record.out) return label(record.mode) + ' holiday';
-    if (record.targetMet) return 'Target met';
-    return record.out ? 'Below target' : 'In progress';
+    const status = record.targetMet ? 'Target met' : record.out ? 'Below target' : 'In progress';
+    return record.out && record.date && nationalHoliday(record.date) && (record.in || hasPunches(record.punches))
+      ? `Worked on holiday · ${status}` : status;
   }
 
   return { fields, label, normalizeMode, dayPeriod, isDayOff, isSaturday, saturdayMode, saturdayNotes, isSundayHoliday, nationalHoliday,
-    nationalHolidayDates, holidayNotes, hasPunches, isHoliday, parseTime, punchesForMode, measure, recordStatus };
+    nationalHolidayDates, holidaysForYear, optionalLeave, setHolidayCalendar: years => { holidayCalendar = years; },
+    holidayNotes, hasPunches, isHoliday, parseTime, punchesForMode, measure, recordStatus };
 })();

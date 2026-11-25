@@ -2,7 +2,7 @@
 
 Punchly is a private time tracker for daily punches, weekly hours, and monthly attendance. It runs in your browser with no account.
 
-[Open Punchly](https://arvind595.github.io/Punchly/) · [What’s new](CHANGELOG.md) · [Version history](#version-history) · [Maintainer handoff](docs/HANDOFF.md) · [Apache License 2.0](LICENSE)
+[Open Punchly](https://arvind595.github.io/Punchly/) · [What’s new](CHANGELOG.md) · [Version history](#version-history) · [Developer changelog](docs/developer-changelog/README.md) · [Maintainer handoff](docs/HANDOFF.md) · [Apache License 2.0](LICENSE)
 
 ## How to use
 
@@ -25,17 +25,21 @@ Punchly is a private time tracker for daily punches, weekly hours, and monthly a
 - **Dates** shows a monthly attendance calendar. Tap the month heading, choose a year, and then choose a month. You can look ahead at holidays and reserve, update, or cancel future leave. Punchly marks unscheduled Sundays without punches, the first and third Saturdays, and the built-in national holidays. Working on a scheduled Saturday adds a note automatically.
 - **History** can search dates and notes and filter leave, holidays, incomplete shifts, overtime, long lunches, and unpunched dates. Expand a record’s **Change log** to see when punches or other details were entered or edited. **Stats** shows worked-hour charts, an attendance breakdown, previous-period comparisons, and work insights. Choose **Custom dates**, enter **From** and **To**, and select **Apply dates** to review an exact period.
 - **Export** offers PDF timesheets, PNG charts, Excel, and CSV. Reports include the export time, app version, and saved profile details. If the profile has no name or uses an automatic device name, Punchly asks for a name and saves it for later exports. Filenames include the app version, export type, and local date. The **Include change logs** checkbox controls change history and recorded timestamps in reports; PNG stores them in image metadata. Excel uses native date cells and, when enabled, a separate **Change log** sheet. Full backups always include change logs.
+- **Custom dates** in Export include both endpoints. In **Dates**, download a PNG of the displayed year’s holiday calendar with its approval details and optional leave. [Holiday calendar format](docs/HOLIDAYS.md)
 
 ### Customize Punchly
 
 - **Appearance** includes light and dark themes with vector color previews, thirteen fonts, Compact mode, mobile haptics, and in-app sound. New setups start in Compact mode with the Punch artwork visible. Use **Show shift details** in Today to expand the form. Audio defaults to 70%, and typing sounds are optional.
 - **Profile** stores your display name, employee ID, employee email, role, department, and avatar or cropped local photo.
+- **Android mini timer** can show the current shift and expected checkout in the notification panel. Enable it in **Settings → Reminders** with device alert permission. The app can update the notification while the browser keeps it running. Tap it to open the mini timer.
 - **Tracking defaults** controls the daily target, lunch limit, workdays, clock format, and default date range. By default, full days require a minimum lunch deduction: a shorter or skipped lunch deducts the configured limit, while a longer lunch deducts its full duration. You can turn this option off in setup or settings. Half days are unaffected. Existing completed shifts retain their saved calculation; the setting applies to current unfinished and new shifts. While a shift is in progress, the unused portion of the minimum is reserved from worked time. **Reminders** can prompt you to punch or tell you when you meet the target while Punchly is open. Device alerts require browser permission.
 - Open **?** for help or use **Settings → Developer & Support** to report an issue, request a feature, or share the Punchly install link. Device details are optional in the email draft.
 
 ## Data and backups
 
 Punchly stores records and settings in this browser. They stay on this device unless you export and transfer a backup. Clearing browser data can remove them.
+
+The GitHub Pages site uses Cloudflare Web Analytics for public site traffic and performance. [Website traffic and deployment](docs/WEB-ANALYTICS.md)
 
 - **Settings → Data & backups → Export backup** saves records, drafts, change logs, and preferences in a `.json` file. Punchly shows a weekly reminder in the open app when there are records to back up.
 - The last backup timestamp records when the browser started the download; check your downloads to confirm the file was saved. If damaged data or an interrupted import is detected, **Data & backups** offers recovery diagnostics and a download of the original stored data.

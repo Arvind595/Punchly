@@ -476,6 +476,7 @@ textarea { resize: vertical; }
 [data-attendance="half"] { --attendance-bg: #ffead8; --attendance-ink: #904915; }
 [data-attendance="incomplete"] { --attendance-bg: #f8e4ef; --attendance-ink: #922d61; }
 [data-attendance="draft"] { --attendance-bg: #e8edf5; --attendance-ink: #435d7b; }
+[data-attendance="optional"] { --attendance-bg: #efe8ff; --attendance-ink: #573998; }
 [data-attendance="day-off"] { --attendance-ink: var(--text-secondary); }
 [data-color-mode="dark"] [data-attendance="completed"] { --attendance-bg: #183c30; --attendance-ink: #8fe3aa; }
 [data-color-mode="dark"] [data-attendance="no-punch"] { --attendance-bg: #492536; --attendance-ink: #ff9fb0; }
@@ -486,6 +487,7 @@ textarea { resize: vertical; }
 [data-color-mode="dark"] [data-attendance="half"] { --attendance-bg: #4c2e23; --attendance-ink: #ffba86; }
 [data-color-mode="dark"] [data-attendance="incomplete"] { --attendance-bg: #472b3e; --attendance-ink: #f0a1ca; }
 [data-color-mode="dark"] [data-attendance="draft"] { --attendance-bg: #2b3649; --attendance-ink: #adc6e6; }
+[data-color-mode="dark"] [data-attendance="optional"] { --attendance-bg: #392a58; --attendance-ink: #d9c5ff; }
 .attendance-panel { max-width: 760px; }
 .calendar-toolbar { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: .5rem; align-items: center; text-align: center; }
 .calendar-toolbar button { font-size: 1.4rem; }
@@ -507,6 +509,7 @@ textarea { resize: vertical; }
 .calendar-selection { margin-bottom: .65rem; }
 #calendarSelection { font-weight: 700; }
 .export-range { max-width: 18rem; margin-bottom: .6rem; }
+.export-custom-range { justify-content: flex-start; margin: .6rem 0 .85rem; }
 .export-actions { margin-top: .85rem; }
 
 .mini-timer {
@@ -784,6 +787,7 @@ dialog.app-dialog[open] { position: fixed; inset: 0; margin: auto; max-height: 9
   #historyTable .audit-log summary { padding-block: .2rem; }
   #historyTable .action-cell { grid-area: actions; display: flex; flex-wrap: wrap; gap: .2rem .5rem; }
   .toast { bottom: calc(var(--navigation-height) + env(safe-area-inset-bottom) + .65rem); }
+  .mini-timer { bottom: calc(var(--navigation-height) + env(safe-area-inset-bottom) + .65rem); }
 }
 @media screen and (max-width: 480px) {
   .app-header { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "brand actions" "status status"; column-gap: .2rem; row-gap: .05rem; padding-bottom: .45rem; }

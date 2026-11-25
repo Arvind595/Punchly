@@ -1,6 +1,6 @@
 # Punchly maintainer handoff
 
-This guide describes the app through v34. Start from the code in your checkout if the app version has moved on. Use the [README](../README.md#how-to-use) for the user workflow and the [changelog](../CHANGELOG.md) for release details.
+This guide describes the app through v35. Start from the code in your checkout if the app version has moved on. Use the [README](../README.md#how-to-use) for the user workflow and the [changelog](../CHANGELOG.md) for release details.
 
 ## Runtime and entry points
 
@@ -35,12 +35,19 @@ Weeks start Monday. Week and month charts use calendar days, year charts use mon
 
 Custom dates include both endpoints and allow dates through today. Charts group ranges of up to 31 days by day, longer ranges by month, and ranges spanning more than 24 calendar months by year. The comparison uses the immediately preceding range of equal length.
 
+Export has its own inclusive custom range. It scopes saved entries, dated drafts and derived holidays. Custom PNG charts use only the selected period.
+
+## Holiday calendar and website traffic
+
+Dates, History, Punch, Stats and exports use the effective year calendar through `Shift`. `Holidays.connect` validates the public feed before replacing its locally cached copy. Optional leave is a calendar category and becomes recorded leave only through an existing leave action. The two public config files use stable URLs outside the versioned app cache. [Holiday calendar format](HOLIDAYS.md) · [Traffic Worker deployment](WEB-ANALYTICS.md)
+
 ## Preferences and browser features
 
 - **First run.** Setup begins with a welcome, then installation, backup import, time format, theme, profile, daily target, lunch, and notifications. Skip requires confirmation. A successful save opens **You’re all set!** and **Start using Punchly** dismisses the wizard. Storage checks for existing data or pending recovery before opening the wizard. A blank name can use a device model or fallback label marked with `profileNameSource: 'device'`. Current defaults include a 12-hour clock, the light Periwinkle theme, Manrope, Compact mode, and Monday through Saturday as workdays.
 - **Appearance.** The theme definitions, fonts, device theme matching, and profile rendering live in [`js/settings.js`](../js/settings.js). Keep mobile navigation colors tied to the theme variables. Compact mode keeps the countryside or holiday artwork. The Punch dial has its ticks without a separate legend. Mobile haptics default to on and use browser support for vibration. Profile pictures are cropped locally and saved as a bounded JPEG data URL.
 - **Reminders and audio.** Reminder checks run from the open app and use stored deduplication keys. Punchly shows in-app banners and can send device notifications when the browser grants permission. Sound uses one client-side UISFX `zen` player after a trusted gesture, with event cues for committed actions. The persisted volume defaults to 70%, per-cue gain is applied separately, and typing sounds are opt-in. A loading cue can play while Excel is preparing and is stopped on completion, failure, navigation, mute, or teardown. Preserve the visible and accessible feedback when touching either path.
 - **Mini timer.** Desktop Settings stores the always-on-top preference and timer opacity. The Always on top checkbox applies immediately. Re-enabling it requests the floating window during the checkbox gesture, while disabling it returns the open timer to the app. The floating window uses Document Picture-in-Picture when available and the in-app panel otherwise. Opacity applies to the timer content. The timer follows the theme and lunch policy, and clicking it focuses the app and opens Punch.
+- **Android notifications.** `js/mobile-timer.js` uses one service worker notification tag for the timer snapshot and optional milestone alerts. Tapping it opens the in-app mini timer. Settings → Reminders controls the feature and device permission. The posted snapshot can stay visible while minimized, while updates and alerts depend on the browser keeping the page alive. A PWA cannot guarantee a running chronometer or an alert during Android suspension. [Chrome page lifecycle](https://developer.chrome.com/docs/web-platform/page-lifecycle-api)
 - **External actions.** The main hostname is used for the install and invite flows. The support form builds an email draft and includes device details only when selected. Satoshi is loaded from Fontshare if selected. The core app assets and the other bundled fonts work offline after caching.
 
 ## Data, backups, and recovery
@@ -83,6 +90,8 @@ Install dependencies with Node.js 24 or later and `npm ci`. Run `npm test` for t
 For an app release, set the version in [`release.json`](../release.json) and run `npm run release:sync`. This updates the HTML release marker and hash-based asset URLs, the service worker cache and offline asset list, and [`deployment-manifest.json`](../deployment-manifest.json). Run `npm run release:check` and `npm run links:check` before publishing. The worker checks the HTML release before caching and retains the preceding cache after activation. Startup and manual refresh checks read the release marker from the server. Update **What’s New** and the changelog for user-facing notes. GitHub Actions also generates notes from Git history and archives the checked site for each push to `main`. See the [README](../README.md#run-and-build) for rollback.
 
 ## Where to trace changes
+
+The [developer changelog](developer-changelog/README.md) links each release or retained group to its implementation, storage contracts, and regression coverage.
 
 Use the [early release table](../CHANGELOG.md#early-version-history) for v0–v14. It links to preserved snapshots and notes where there is no separate record of an individual version. Use the [full changelog](../CHANGELOG.md) and [Git commit history](https://github.com/Arvind595/Punchly/commits/main/) for chronology. A single commit sometimes contains several numbered app releases.
 

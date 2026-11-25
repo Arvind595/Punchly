@@ -1,5 +1,14 @@
 # Punchly release notes
 
+See the [developer changelog](docs/developer-changelog/README.md) for implementation history, commit diffs, and code references from v0 onward.
+
+## v35
+
+- Added inclusive custom dates to record exports and a PNG holiday calendar for the year shown in Dates.
+- Added a year-specific holiday feed with optional leave, approval details, and offline fallback.
+- Added a mobile mini timer and opt-in Android timer, target-out and overtime notifications.
+- Added the Cloudflare page-view beacon on GitHub Pages and a public traffic panel backed by an aggregate-only Worker.
+
 ## v34
 
 - Added custom start and end dates to Statistics. Both dates count, and the comparison uses the preceding period of the same length.

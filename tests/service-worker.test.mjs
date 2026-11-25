@@ -30,7 +30,7 @@ function worker() {
   }
   const context = { self, caches, URL, Request, Response, AbortController, setTimeout, clearTimeout, fetch: async () => response }
   runInNewContext(readFileSync('service-worker.js', 'utf8') + '\nthis.config = { RELEASE, CACHE_NAME, APP_ASSETS }', context)
-  return { handlers, stores, config: context.config, caches, setResponse: value => { response = value }, fail: () => { failAssets = true } }
+  return { handlers, stores, config: context.config, caches, self, setResponse: value => { response = value }, fail: () => { failAssets = true } }
 }
 
 function dispatch(fn, extras = {}) {
@@ -62,4 +62,22 @@ test('failed install removes its partial cache and mismatched HTML falls back to
   active.setResponse(new Response(`<meta name="punchly-release" content="${version + 1}">`))
   const result = await dispatch(active.handlers.fetch, { request: { method: 'GET', mode: 'navigate', url: 'https://example.test/Punchly/index.html' } })
   assert.ok((await result.text()).includes(`content="${version}"`))
+})
+
+test('tapping the mobile timer notification focuses an open app or opens the mini timer route', async () => {
+  const w = worker()
+  const notification = { tag: 'punchly-mini-timer', data: { openMiniTimer: true }, close() {} }
+  const actions = []
+  const app = {
+    url: 'https://example.test/Punchly/#settings-view',
+    postMessage: data => actions.push(data.type),
+    focus: async () => actions.push('focus'),
+  }
+  w.self.clients.matchAll = async () => [app]
+  w.self.clients.openWindow = async url => actions.push(url)
+  await dispatch(w.handlers.notificationclick, { notification })
+  assert.deepEqual(actions, ['open-mini-timer', 'focus'])
+  w.self.clients.matchAll = async () => []
+  await dispatch(w.handlers.notificationclick, { notification })
+  assert.equal(actions.at(-1), 'https://example.test/Punchly/index.html#mini-timer')
 })

@@ -20,6 +20,48 @@
     const link = document.createElement('a'); link.href = url; link.download = filename; link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
+  window.exportHolidayCalendar = year => {
+    const { approval, holidays, optionalLeaves } = Shift.holidaysForYear(year);
+    const rows = [
+      { heading: 'Holidays' },
+      ...Array.from(holidays, ([date, name]) => ({ date, name })),
+      ...(!holidays.size ? [{ name: 'No holidays listed' }] : []),
+      { heading: 'Optional leave' },
+      ...Array.from(optionalLeaves, ([date, name]) => ({ date, name })),
+      ...(!optionalLeaves.size ? [{ name: 'No optional leave listed' }] : [])
+    ];
+    const canvas = document.createElement('canvas');
+    const maxRows = 48;
+    const columns = Math.ceil(rows.length / maxRows);
+    const columnWidth = columns === 1 ? 720 : 440;
+    canvas.width = 64 + columns * columnWidth;
+    canvas.height = 156 + 32 * Math.min(rows.length, maxRows);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) { window.showPunchlyToast?.('This browser could not draw the holiday calendar.', 'error'); return; }
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#213858';
+    ctx.fillRect(0, 0, canvas.width, 88);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 30px sans-serif';
+    ctx.fillText(`Punchly · ${year} holiday calendar`, 32, 53);
+    ctx.fillStyle = '#213858';
+    ctx.font = '17px sans-serif';
+    ctx.fillText(`Approved by: ${approval?.by ?? 'Approval not recorded'}`, 32, 116, canvas.width - 64);
+    ctx.fillText(`Approval date: ${approval?.date ?? '—'}`, 32, 140);
+    rows.forEach(({ heading, date, name }, index) => {
+      const x = 32 + columnWidth * Math.floor(index / maxRows);
+      const y = 171 + 32 * (index % maxRows);
+      ctx.fillStyle = heading ? '#213858' : '#273447';
+      ctx.font = heading ? 'bold 19px sans-serif' : '16px sans-serif';
+      if (date) ctx.fillText(date, x, y);
+      ctx.fillText(heading ?? name, x + (date ? 110 : 0), y, columnWidth - (date ? 130 : 20));
+    });
+    canvas.toBlob(blob => {
+      if (blob) download(blob, filename(`holidays_${year}`, 'png'), 'image/png');
+      else window.showPunchlyToast?.('The holiday calendar PNG could not be created.', 'error');
+    }, 'image/png');
+  };
   function csvCell(value) {
     let text = String(value ?? '');
     if (/^[\s]*[=+@\-]/.test(text)) text = `'${text}`;

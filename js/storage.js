@@ -26,6 +26,9 @@ const Storage = (() => {
     typingSounds: false,
     miniTimerOnTop: true,
     miniTimerOpacity: 100,
+    mobileTimerEnabled: false,
+    mobileTimerTarget: true,
+    mobileTimerOvertime: false,
     reminderIn: '',
     reminderLunchOut: '',
     reminderLunchReturn: '',
@@ -181,6 +184,9 @@ const Storage = (() => {
     settings.typingSounds = settings.typingSounds === true;
     settings.miniTimerOnTop = settings.miniTimerOnTop !== false;
     settings.miniTimerOpacity ??= defaults.miniTimerOpacity;
+    settings.mobileTimerEnabled = settings.mobileTimerEnabled === true;
+    settings.mobileTimerTarget = settings.mobileTimerTarget !== false;
+    settings.mobileTimerOvertime = settings.mobileTimerOvertime === true;
     settings.reminderTarget = settings.reminderTarget === true;
     ['reminderIn', 'reminderLunchOut', 'reminderLunchReturn', 'reminderOut'].forEach(key => {
       if (Shift.parseTime(settings[key]) === null) settings[key] = '';
@@ -409,7 +415,8 @@ const Storage = (() => {
   }
 
   function reset() {
-    const entries = [...Object.values(keys), setupKey, legacyWeekKey, migrationKey, lastBackupKey, backupReminderKey, 'punchly_reminder_log'].map(key => [key, null]);
+    const entries = [...Object.values(keys), setupKey, legacyWeekKey, migrationKey, lastBackupKey, backupReminderKey,
+      'punchly_reminder_log', 'punchly_mobile_timer_alerts'].map(key => [key, null]);
     try {
       restoreKeys([...entries, [resetKey, new Date().toISOString()]]);
       return true;

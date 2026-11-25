@@ -1,6 +1,6 @@
 // BEGIN GENERATED ASSETS
-const RELEASE = 34;
-const CACHE_NAME = 'punchly-static-v34-cbb4704fea84';
+const RELEASE = 35;
+const CACHE_NAME = 'punchly-static-v35-60e6a0312e89';
 const APP_ASSETS = [
   "./LICENSE",
   "./assets/avatar-coffee.svg",
@@ -23,22 +23,25 @@ const APP_ASSETS = [
   "./assets/logo.svg",
   "./assets/punch-countryside.jpg",
   "./assets/punch-holiday.jpg",
-  "./css/style.css?v=6cbb5a540750",
+  "./css/style.css?v=bf863e5e1b0d",
   "./js/app-tools.js?v=c48a0c2b78a4",
-  "./js/app.js?v=4826535af173",
-  "./js/attendance.js?v=13ab0023d157",
+  "./js/app.js?v=d2d7e1990340",
+  "./js/attendance.js?v=1d77eee19a31",
   "./js/audit.js?v=752164cdd977",
   "./js/charts.js?v=2bfe4ffaf06f",
-  "./js/export.js?v=420bae8bc23d",
+  "./js/export.js?v=3e97570aa4ab",
   "./js/guided-punch.js?v=7ade12da661a",
+  "./js/holidays.js?v=5e4d136c295b",
   "./js/icons.js?v=74e70b32813f",
-  "./js/mini-timer.js?v=60179a89f2b2",
-  "./js/reminders.js?v=ad70c3dec172",
-  "./js/settings.js?v=6967c43f3396",
+  "./js/mini-timer.js?v=51aa43dc2528",
+  "./js/mobile-timer.js?v=81be853bbe54",
+  "./js/reminders.js?v=401da2544c05",
+  "./js/settings.js?v=41d225bf368f",
   "./js/setup.js?v=8a09ae3dfd49",
-  "./js/shift.js?v=49dd3a3ba960",
+  "./js/shift.js?v=79e2fe9926b5",
   "./js/statistics.js?v=f889887a7785",
-  "./js/storage.js?v=209d51b33819",
+  "./js/storage.js?v=21d5df1afc06",
+  "./js/web-traffic.js?v=3400f3826c75",
   "./manifest.webmanifest?v=2558bca903f1",
   "./vendor/punchly-sounds.js?v=6428b26e6b88",
   "./vendor/xlsx-0.20.3.mini.js"
@@ -119,11 +122,16 @@ async function loadAppPage(request) {
 }
 
 self.addEventListener('notificationclick', event => {
+  const miniTimer = event.notification.tag === 'punchly-mini-timer' && event.notification.data?.openMiniTimer === true;
   event.notification.close();
   event.waitUntil((async () => {
     const pages = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     const page = pages.find(client => client.url.startsWith(self.registration.scope));
-    if (page) await page.focus();
-    else await self.clients.openWindow(entryUrl);
+    if (page) {
+      if (miniTimer) page.postMessage({ type: 'open-mini-timer' });
+      await page.focus();
+    } else {
+      await self.clients.openWindow(miniTimer ? `${entryUrl}#mini-timer` : entryUrl);
+    }
   })());
 });

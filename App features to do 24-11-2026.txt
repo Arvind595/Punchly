@@ -1,0 +1,23 @@
+ask image generation format ai promt
+holidays theme scene (with daynight cycle)
+Birthday theme scene (with daynight cycle + profile)
+Sounds tune it
+Detailed docuemntation on each and every settings in github help
+Calander holiday field updateder input from owner, can be feteched from seperate repo? or bundled within before push?
+and add canander updated on and link to see list or to download holidays list png
+add upcomming features section?
+January 15, 2027 (Fri): Makara Sankranti
+January 26, 2027 (Tue): Republic Day
+March 6, 2027 (Sat): Maha Shivaratri
+March 10, 2027: Ramzan
+March 26, 2027: Good Friday
+April 7, 2027 (Wed): Ugadi
+May 1, 2027 (Sat): Labour Day
+April 14, 2027 (Wed): Dr. B.R. Ambedkar Jayanti
+September 4, 2027 (Sat): Varasiddhi Vinayaka Vrata / Ganesh Chaturthi
+October 2, 2027 (Sat): Gandhi Jayanti
+October 28, 2027: Naraka Chaturdashi
+October 30, 2027: Deepavali
+November 1, 2027 (Mon): Kannada Rajyotsava
+Christmas 
+Remaindders notification? top bar?

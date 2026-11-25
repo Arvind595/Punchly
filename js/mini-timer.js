@@ -137,13 +137,18 @@ const MiniTimer = (() => {
       return floatTimer();
     }
 
-    button.addEventListener('click', () => {
-      if (!desktop()) return;
-      if (!panel.hidden) { close(); return; }
+    function show() {
+      if (!panel.hidden) return;
       panel.hidden = false;
       button.setAttribute('aria-pressed', 'true');
       refresh();
       ticker = setInterval(() => refresh(), 1000);
+    }
+
+    button.addEventListener('click', () => {
+      if (!desktop()) return;
+      if (!panel.hidden) { close(); return; }
+      show();
       return floatTimer();
     });
 
@@ -151,7 +156,7 @@ const MiniTimer = (() => {
     document.getElementById('miniTimerOpen').addEventListener('click', openMain);
     panel.addEventListener('click', event => { if (!event.target.closest('button')) openMain(); });
     window.addEventListener('pagehide', close);
-    return { close, refresh, applyOnTop };
+    return { close, refresh, applyOnTop, show };
   }
 
   return { connect, countdown, timing };

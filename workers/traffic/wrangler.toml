@@ -1,0 +1,7 @@
+name = "punchly-traffic"
+main = "index.mjs"
+compatibility_date = "2026-01-01"
+workers_dev = true
+
+[vars]
+CF_WEB_ANALYTICS_SITE_TAG = "7d082ed2634e4a418cfe3535e047cd27"

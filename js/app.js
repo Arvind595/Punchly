@@ -20,6 +20,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const statsTo = document.getElementById('statsTo');
   const statsView = document.getElementById('statsView');
   const exportRange = document.getElementById('exportRange');
+  const exportCustomRange = document.getElementById('exportCustomRange');
+  const exportFrom = document.getElementById('exportFrom');
+  const exportTo = document.getElementById('exportTo');
   const todayView = document.getElementById('today-view');
   const compactDetails = document.getElementById('compactDetails');
   const compactDetailsLabel = document.getElementById('compactDetailsLabel');
@@ -37,7 +40,20 @@ document.addEventListener('DOMContentLoaded', () => {
   let miniTimer;
   let pendingFirstPunch;
   let customStatsPeriod;
+  let customExportPeriod;
 
+  const holidayFeed = Holidays.connect(() => {
+    const date = selectedDay();
+    if (!Storage.getDaily(date) && !Storage.getDraft(date) && !Shift.hasPunches(readPunches())) {
+      restoreToday();
+      renderDay();
+    }
+    if (!document.getElementById('calendar-view').hidden) attendance.refresh();
+    refreshDayLogs();
+    refreshGuided();
+    updateHistory();
+    updateStatistics();
+  });
   const version = document.querySelector('meta[name="punchly-release"]').content;
   document.getElementById('appVersion').textContent = `v${version}`;
   document.title = `Punchly v${version} | Time Tracker`;
@@ -66,10 +82,16 @@ document.addEventListener('DOMContentLoaded', () => {
     onReset: reopenAfterReset
   });
   const reminders = Reminders.connect(settings);
+  const mobileTimerNotifications = MobileTimerNotifications.connect(settings);
   const attendance = Attendance.connect({
     todayKey: () => localDateKey(new Date()), localDateKey, workdays: () => settings.workdays, entriesFor: readDayEntries,
     openDay: openDailyLog, describePunches, reserveLeave, cancelLeave
   });
+  document.getElementById('mobileMiniTimerToggle').addEventListener('click', openMobileTimer);
+  navigator.serviceWorker?.addEventListener('message', event => {
+    if (event.data?.type === 'open-mini-timer') openMobileTimer();
+  });
+  navigator.serviceWorker?.addEventListener('controllerchange', () => syncMobileTimer());
   miniTimer = MiniTimer.connect({
     desktop: () => !handheld.matches, snapshot: timerSnapshot, preferences: () => settings,
     openMain() {
@@ -95,9 +117,11 @@ document.addEventListener('DOMContentLoaded', () => {
   restoreToday();
   scheduleTrackingRefresh();
   document.addEventListener('visibilitychange', () => {
+    syncMobileTimer();
     if (document.hidden) return;
     refreshTracking();
     refreshGuided();
+    holidayFeed.refresh();
   });
   window.addEventListener('storage', event => {
     if (event.key === Storage.resetKey && event.newValue) {
@@ -108,11 +132,13 @@ document.addEventListener('DOMContentLoaded', () => {
       Object.assign(settings, Storage.getSettings());
       preferences.refresh();
       updateStatistics();
+      syncMobileTimer();
     }
     if (!event.key || Object.values(Storage.keys).includes(event.key)) refreshStorageStatus();
     if (!event.key || [Storage.keys.DRAFTS, Storage.keys.HISTORY, Storage.keys.TODAY].includes(event.key)) {
       refreshGuided();
       updateStatistics();
+      syncMobileTimer();
     }
   });
   updateHistory();
@@ -196,12 +222,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tab.dataset.target === 'calendar-view') attendance.refresh();
     if (tab.dataset.target === 'stats-view') updateStatistics();
     if (tab.dataset.target === 'export-view') updateExport();
+    if (tab.dataset.target === 'settings-view') window.dispatchEvent(new Event('punchly:settings-opened'));
     if (changed && withSound) UiSounds.play('select', { volume: .12, cooldownMs: 110 });
   }
 
   function openLinkedTab() {
+    if (location.hash === '#mini-timer') { openMobileTimer(); return; }
     const tab = tabs.find(item => `#${item.dataset.target}` === location.hash);
     activateTab(tab || tabs[0], false);
+  }
+  function openMobileTimer() {
+    activateTab(document.getElementById('tab-punch'), false);
+    miniTimer.show();
+    syncMobileTimer();
+    document.getElementById('miniTimerClose').focus();
   }
   window.addEventListener('hashchange', openLinkedTab);
   openLinkedTab();
@@ -261,7 +295,10 @@ document.addEventListener('DOMContentLoaded', () => {
       renderDay();
       refreshDayLogs();
     }
-    if (section === 'tracking' || section === 'reminders') runReminders(new Date(), false, false);
+    if (section === 'tracking' || section === 'reminders') {
+      runReminders(new Date(), false, false);
+      syncMobileTimer();
+    }
     if (section === 'appearance' || section === 'tracking') updateHistory();
     if (section === 'appearance' || section === 'tracking') updateStatistics();
     refreshGuided();
@@ -405,6 +442,18 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   statsView.addEventListener('change', updateStatistics);
   exportRange.addEventListener('change', updateExport);
+  exportCustomRange.addEventListener('input', () => exportTo.setCustomValidity(''));
+  exportCustomRange.addEventListener('submit', event => {
+    event.preventDefault();
+    const period = Statistics.customPeriod(exportFrom.value, exportTo.value, localDateKey(new Date()));
+    if (!period) {
+      exportTo.setCustomValidity('Choose an end date on or after the start date and no later than today.');
+      exportTo.reportValidity();
+      return;
+    }
+    customExportPeriod = period;
+    updateExport();
+  });
   window.getExportRecords = exportRecords;
   window.getExportChartKind = () => statsView.value === 'log' ? 'bar' : statsView.value;
   window.getExportChartData = records => {
@@ -413,10 +462,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const daily = records.filter(record => record.kind === 'daily');
     const first = daily.reduce((oldest, record) => record.date < oldest ? record.date : oldest, today);
     const range = exportRange.value === 'history' ? historyRange.value : exportRange.value;
-    const period = Statistics.period(range, today, first);
+    const period = range === 'custom' ? customExportPeriod : Statistics.period(range, today, first);
     const days = daily.map(record => logEntry(record.date, record, null, now))
       .map(entry => ({ ...entry, state: Statistics.classify(entry, settings.workdays) }));
-    return statisticsChart(period, days, now);
+    return range === 'custom' ? Statistics.buckets(period, days) : statisticsChart(period, days, now);
   };
   if ('ResizeObserver' in window) {
     const chart = document.getElementById('analyticsChart');
@@ -546,6 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function refreshTracking() {
     const now = new Date();
+    if (!document.hidden) holidayFeed.refresh();
     reminders.checkBackup(now);
     const nextDay = localDateKey(now);
     if (nextDay !== todayKey) {
@@ -571,6 +621,7 @@ document.addEventListener('DOMContentLoaded', () => {
       renderDay(now);
       refreshDayLogs(now);
       runReminders(now);
+      syncMobileTimer(now);
       miniTimer.refresh(now);
       refreshGuided(now);
     }
@@ -946,23 +997,23 @@ document.addEventListener('DOMContentLoaded', () => {
     return localDateKey(yesterday);
   }
 
-  function dayForReminder(date) {
-    if (date === selectedDay()) {
+  function dayForReminder(date, stored = false) {
+    if (!stored && date === selectedDay()) {
       const record = Storage.getDaily(date);
       return { date, mode: shiftMode.value, punches: readPunches(), baseTarget: toMinutes(shiftTarget.value), ...lunchPolicy(record) };
     }
-    const draft = Storage.getDraft(date);
     const record = Storage.getDaily(date);
+    const draft = Storage.getDraft(date) || (!record && legacyDraftOn(date, Storage.getToday()));
     return { date, ...logInput(date, record, draft) };
   }
 
-  function timerSnapshot(now) {
+  function timerSnapshot(now, stored = false) {
     const today = localDateKey(now);
-    let shift = dayForReminder(today);
+    let shift = dayForReminder(today, stored);
     const measure = day => Shift.measure({ ...day, now: nowMinutesForDay(now, day.date) });
     let result = measure(shift);
     if (!shift.punches.morningIn) {
-      const previous = dayForReminder(yesterdayKey(now));
+      const previous = dayForReminder(yesterdayKey(now), stored);
       const overnight = measure(previous);
       const start = Shift.parseTime(previous.punches.morningIn);
       const elapsed = nowMinutesForDay(now, previous.date);
@@ -976,12 +1027,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const elapsed = nowMinutesForDay(now, shift.date);
     const attendance = Statistics.classify(shift, settings.workdays);
     return {
+      active: result.started && !result.complete && !result.error && result.timeline?.now != null,
+      shift: `${shift.date}:${shift.punches.morningIn}`,
+      updatedAt: now.getTime(),
+      targetReached: result.target > 0 && result.total >= result.target && !result.lunchOpen,
       worked: formatDuration(result.total),
       target: result.targetOut === null ? '—' : `${displayClock(result.targetOut)}${nextDay}`,
       ...MiniTimer.timing(result, elapsed, now, ['day-off', 'holiday', 'leave'].includes(attendance)),
       note: result.error || (Shift.isDayOff(shift.mode) ? Shift.label(shift.mode) :
         shift.date !== today ? `Overnight shift · ${formatDate(shift.date)}` : '')
     };
+  }
+
+  function syncMobileTimer(now = new Date()) {
+    if (mobileTimerNotifications.supported) {
+      const active = settings.mobileTimerEnabled && Notification.permission === 'granted';
+      mobileTimerNotifications.update(active ? timerSnapshot(now, true) : null);
+    }
   }
 
   function runReminders(now, justEdited = false, audible = !justEdited) {
@@ -1000,7 +1062,9 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       activeShift.result = Shift.measure({ ...activeShift, now: elapsed });
     }
-    reminders.check(now, date, today, activeShift, audible);
+    const mobileTarget = mobileTimerNotifications.supported && navigator.serviceWorker.controller &&
+      settings.mobileTimerEnabled && settings.mobileTimerTarget;
+    reminders.check(now, date, today, activeShift, audible, mobileTarget);
   }
 
   function renderDay(now = new Date()) {
@@ -1110,6 +1174,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderDay(now);
     const saved = saveDayDraft(readPunches(), now);
     runReminders(now, true);
+    syncMobileTimer(now);
     return saved;
   }
 
@@ -1339,17 +1404,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const now = new Date();
     if (exportRange.value === 'history') return Array.isArray(visibleHistory) ? visibleHistory : filteredHistory(now);
     const range = exportRange.value;
-    return withDailyEntries(inRange(Storage.getHistory(), range, now), range, now).sort((a, b) => b.date.localeCompare(a.date));
+    const history = Storage.getHistory();
+    const selection = range === 'custom' ? customExportPeriod : null;
+    const records = selection ? history.filter(record => record.date >= selection.start && record.date <= selection.end) : inRange(history, range, now);
+    return withDailyEntries(records, range, now, selection).sort((a, b) => b.date.localeCompare(a.date));
   }
 
-  function withDailyEntries(records, range, now) {
-    const today = localDateKey(now);
+  function withDailyEntries(records, range, now, selection) {
+    const through = selection?.end ?? localDateKey(now);
     const draftDates = Object.keys(Storage.getDrafts());
-    const start = periodStart(range, now, records, draftDates);
-    const dates = new Set(draftDates.filter(date => date <= today && date >= start));
+    const start = selection?.start ?? periodStart(range, now, records, draftDates);
+    const dates = new Set(draftDates.filter(date => date <= through && date >= start));
     records.filter(record => record.kind === 'daily' && !record.out && Shift.hasPunches(record.punches))
       .forEach(record => dates.add(record.date));
-    const holidays = Shift.nationalHolidayDates(start, today);
+    const holidays = Shift.nationalHolidayDates(start, through);
     holidays.forEach(date => dates.add(date));
     const entries = readDayEntries([...dates], now).filter(entry => entry.isDraft || (entry.hasRecord && !entry.complete && Shift.hasPunches(entry.punches)) ||
       (entry.mode === 'holiday' && Shift.nationalHoliday(entry.date)));
@@ -1403,6 +1471,18 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateExport(visibleHistory) {
+    const custom = exportRange.value === 'custom';
+    exportCustomRange.hidden = !custom;
+    if (custom) {
+      const today = localDateKey(new Date());
+      exportFrom.max = exportTo.max = today;
+      if (!customExportPeriod || customExportPeriod.end > today) {
+        exportFrom.value = today.slice(0, 7) + '-01';
+        exportTo.value = today;
+        exportTo.setCustomValidity('');
+        customExportPeriod = Statistics.customPeriod(exportFrom.value, exportTo.value, today);
+      }
+    }
     const count = exportRecords(visibleHistory).length;
     setText(document.getElementById('exportCount'), `${count} ${count === 1 ? 'record' : 'records'} ready to export.`);
     document.querySelectorAll('#export-view .export-actions button').forEach(button => { button.disabled = !count; });
@@ -1520,6 +1600,7 @@ document.addEventListener('DOMContentLoaded', () => {
       updateStatistics();
       refreshGuided();
       miniTimer.refresh();
+      syncMobileTimer();
       toast(`${Audit.labels[field]} undone.`);
       if (!focus.closest('[hidden]')) focus.focus();
     });
@@ -1553,5 +1634,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function localDateKey(date) { return `${String(date.getFullYear()).padStart(4, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
   function formatDate(date) { return new Date(`${date}T12:00:00`).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); }
   document.documentElement.setAttribute('data-app-ready', '');
+  holidayFeed.refresh();
+  window.addEventListener('online', () => holidayFeed.refresh(true));
+  document.getElementById('refreshPage').addEventListener('click', () => holidayFeed.refresh(true));
   startup.finish(initialUpdate, setup.open);
 });

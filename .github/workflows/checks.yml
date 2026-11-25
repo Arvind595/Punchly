@@ -41,6 +41,7 @@ jobs:
             deployment-manifest.json
             LICENSE
             assets/
+            config/
             css/
             js/
             vendor/

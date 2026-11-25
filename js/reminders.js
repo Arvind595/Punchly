@@ -77,7 +77,7 @@ const Reminders = (() => {
     window.addEventListener('focus', showPermission);
     showPermission();
 
-    function check(now, today, day, activeShift, audible) {
+    function check(now, today, day, activeShift, audible, mobileTarget = false) {
       const messages = [];
       const elapsed = now.getHours() * 60 + now.getMinutes();
       function due(value) {
@@ -98,16 +98,18 @@ const Reminders = (() => {
               claim(`${today}:lunch-return:${settings.reminderLunchReturn}`, today)) messages.push('Time to punch back in from lunch.');
         }
       }
+      const deviceMessages = messages.slice();
       const result = activeShift?.result;
       if (settings.reminderTarget && result?.started && result.target > 0 &&
           result.total >= result.target && claim(`${activeShift.date}:target`, today)) {
         messages.push('You reached your work target.');
+        if (!mobileTarget) deviceMessages.push('You reached your work target.');
       }
       if (!messages.length) return;
       message.textContent = messages.join(' ');
       banner.hidden = false;
       if (audible) UiSounds.play('notification', { cooldownMs: 2000 });
-      sendDeviceAlert(message.textContent);
+      if (deviceMessages.length) sendDeviceAlert(deviceMessages.join(' '));
     }
     function checkBackup(now) {
       if (document.hidden) return;

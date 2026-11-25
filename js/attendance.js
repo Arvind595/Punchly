@@ -2,7 +2,7 @@ const Attendance = (() => {
   const labels = {
     completed: 'Completed workday', 'no-punch': 'No punch', leave: 'Leave', holiday: 'Holiday',
     sat1: '1st Saturday', sat3: '3rd Saturday', half: 'Half day', upcoming: 'Upcoming',
-    incomplete: 'Incomplete shift', draft: 'Draft'
+    incomplete: 'Incomplete shift', draft: 'Draft', optional: 'Optional leave'
   };
   const asDate = date => new Date(`${date}T12:00:00`);
   const byId = id => document.getElementById(id);
@@ -15,8 +15,10 @@ const Attendance = (() => {
     const saturday = Shift.saturdayMode(date);
     if (entry?.mode === 'leave' || entry?.mode === 'holiday') return entry.mode;
     const sundayHoliday = Shift.isSundayHoliday(date, workdays);
-    if (date > today) return sundayHoliday || Shift.nationalHoliday(date) ? 'holiday' : saturday || 'upcoming';
     const hasPunches = Shift.hasPunches(entry?.punches);
+    if (!hasPunches && Shift.nationalHoliday(date)) return 'holiday';
+    if (!hasPunches && Shift.optionalLeave(date)) return 'optional';
+    if (date > today) return sundayHoliday ? 'holiday' : saturday || 'upcoming';
     if (entry?.mode === 'half' && hasPunches) return 'half';
     if (saturday) return saturday;
     if (!hasPunches) return sundayHoliday ? 'holiday' : 'no-punch';
@@ -132,7 +134,11 @@ const Attendance = (() => {
       const status = stateFor(selected, today, entry, workdays());
       const future = selected > today;
       const reserved = future && entry?.hasRecord && entry.mode === 'leave';
-      const detail = Shift.isSaturday(status) ? (Shift.hasPunches(entry?.punches) ? ' · Worked' : ' · Scheduled holiday') : '';
+      const holiday = Shift.nationalHoliday(selected);
+      const worked = Shift.hasPunches(entry?.punches);
+      const detail = holiday && worked ? ` · Worked on holiday · ${holiday}` :
+        status === 'optional' ? ` · ${Shift.optionalLeave(selected)}` :
+        Shift.isSaturday(status) ? (worked ? ' · Worked' : ' · Scheduled holiday') : '';
       const date = asDate(selected);
       const parts = Object.fromEntries(compactDate.formatToParts(date).map(({ type, value }) => [type, value]));
       byId('calendarSelectedDate').textContent = fullDate.format(date);
@@ -171,6 +177,7 @@ const Attendance = (() => {
       const dates = Array.from({ length: last.getDate() }, (_, i) => `${month}-${String(i + 1).padStart(2, '0')}`);
       entries = new Map(entriesFor(dates).map(entry => [entry.date, entry]));
       byId('calendarMonth').textContent = monthTitle.format(first);
+      byId('exportHolidayCalendar').textContent = `Download ${month.slice(0, 4)} holiday calendar (PNG)`;
       previous.disabled = month === '0001-01';
       next.disabled = month === '9999-12';
       const scheduled = workdays();
@@ -225,6 +232,7 @@ const Attendance = (() => {
       }
     });
     edit.addEventListener('click', () => { if (selected && selected <= todayKey()) openDay(selected); });
+    byId('exportHolidayCalendar').addEventListener('click', () => window.exportHolidayCalendar(month.slice(0, 4)));
     leaveForm.addEventListener('submit', event => {
       event.preventDefault();
       if (reserveLeave(selected, leaveNotes.value.trim())) refresh();

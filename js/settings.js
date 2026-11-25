@@ -191,6 +191,9 @@ const Preferences = (() => {
       byId('reminderLunchReturn').value = settings.reminderLunchReturn;
       byId('reminderOut').value = settings.reminderOut;
       byId('reminderTarget').checked = settings.reminderTarget;
+      byId('mobileTimerEnabled').checked = settings.mobileTimerEnabled;
+      byId('mobileTimerTarget').checked = settings.mobileTimerTarget;
+      byId('mobileTimerOvertime').checked = settings.mobileTimerOvertime;
       timerOnTop.checked = settings.miniTimerOnTop;
       timerOpacity.value = settings.miniTimerOpacity;
       timerOpacityValue.value = `${settings.miniTimerOpacity}%`;
@@ -256,7 +259,10 @@ const Preferences = (() => {
         reminderLunchOut: byId('reminderLunchOut').value,
         reminderLunchReturn: byId('reminderLunchReturn').value,
         reminderOut: byId('reminderOut').value,
-        reminderTarget: byId('reminderTarget').checked
+        reminderTarget: byId('reminderTarget').checked,
+        mobileTimerEnabled: byId('mobileTimerEnabled').checked,
+        mobileTimerTarget: byId('mobileTimerTarget').checked,
+        mobileTimerOvertime: byId('mobileTimerOvertime').checked
       }, 'reminders', 'Reminders saved.');
     });
     function saveProfile(photo, message) {
